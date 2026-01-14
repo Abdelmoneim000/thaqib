@@ -229,69 +229,70 @@ export default function DashboardsPage() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredDashboards.map((dashboard) => (
-                  <Card 
-                    key={dashboard.id} 
-                    className="hover-elevate cursor-pointer"
-                    data-testid={`card-dashboard-${dashboard.id}`}
-                  >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1">
-                          <CardTitle className="text-base">{dashboard.name}</CardTitle>
-                          {dashboard.projectName && (
-                            <CardDescription>{dashboard.projectName}</CardDescription>
-                          )}
+                  <Link key={dashboard.id} href="/analyst/sample-dashboard">
+                    <Card 
+                      className="hover-elevate cursor-pointer h-full"
+                      data-testid={`card-dashboard-${dashboard.id}`}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1">
+                            <CardTitle className="text-base">{dashboard.name}</CardTitle>
+                            {dashboard.projectName && (
+                              <CardDescription>{dashboard.projectName}</CardDescription>
+                            )}
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.preventDefault()}>
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Copy className="h-4 w-4 mr-2" />
-                              Duplicate
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {dashboard.description && (
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {dashboard.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <BarChart3 className="h-4 w-4" />
-                          {dashboard.chartCount} charts
+                      </CardHeader>
+                      <CardContent>
+                        {dashboard.description && (
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {dashboard.description}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <BarChart3 className="h-4 w-4" />
+                            {dashboard.chartCount} charts
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={dashboard.status === "published" ? "default" : "secondary"}>
+                              {dashboard.status}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={dashboard.status === "published" ? "default" : "secondary"}>
-                            {dashboard.status}
-                          </Badge>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
+                          <Clock className="h-3 w-3" />
+                          Edited {dashboard.lastEdited}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
-                        <Clock className="h-3 w-3" />
-                        Edited {dashboard.lastEdited}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             )}
