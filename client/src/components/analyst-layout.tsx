@@ -83,7 +83,10 @@ function AnalystSidebar() {
                     asChild 
                     isActive={location === item.url || location.startsWith(item.url + "/")}
                   >
-                    <Link href={item.url}>
+                    <Link 
+                      href={item.url}
+                      data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -98,7 +101,7 @@ function AnalystSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link href="/">
+              <Link href="/" data-testid="link-logout">
                 <LogOut className="h-4 w-4" />
                 <span>Log out</span>
               </Link>

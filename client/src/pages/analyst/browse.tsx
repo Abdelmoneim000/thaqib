@@ -328,7 +328,7 @@ export default function BrowseProjectsPage() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setApplyingTo(null)}>
+                        <Button variant="outline" onClick={() => setApplyingTo(null)} data-testid="button-cancel-application">
                           Cancel
                         </Button>
                         <Button onClick={handleApply} data-testid="button-submit-application">

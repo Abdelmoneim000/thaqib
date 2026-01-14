@@ -13,6 +13,7 @@ import AnalystDashboardPage from "@/pages/analyst/dashboard";
 import BrowseProjectsPage from "@/pages/analyst/browse";
 import ApplicationsPage from "@/pages/analyst/applications";
 import AnalystProjectsPage from "@/pages/analyst/projects";
+import AnalystSettingsPage from "@/pages/analyst/settings";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/analyst/browse" component={BrowseProjectsPage} />
       <Route path="/analyst/applications" component={ApplicationsPage} />
       <Route path="/analyst/projects" component={AnalystProjectsPage} />
+      <Route path="/analyst/settings" component={AnalystSettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );
