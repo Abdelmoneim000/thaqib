@@ -174,6 +174,7 @@ function CreateProjectDialog() {
 
 function ProjectCard({ project }: { project: Project }) {
   return (
+    <Link href={`/client/projects/${project.id}`}>
     <Card className="border-card-border bg-card hover-elevate cursor-pointer">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
@@ -237,6 +238,7 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
       </CardContent>
     </Card>
+    </Link>
   );
 }
 
