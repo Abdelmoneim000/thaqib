@@ -43,17 +43,21 @@ function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost"
-            data-testid="button-login"
-          >
-            Log in
-          </Button>
-          <Button 
-            data-testid="button-register"
-          >
-            Get Started
-          </Button>
+          <Link href="/auth">
+            <Button 
+              variant="ghost"
+              data-testid="button-login"
+            >
+              Log in
+            </Button>
+          </Link>
+          <Link href="/auth">
+            <Button 
+              data-testid="button-register"
+            >
+              Get Started
+            </Button>
+          </Link>
         </div>
       </div>
     </header>
@@ -79,13 +83,17 @@ function HeroSection() {
             actionable insights delivered as interactive dashboards.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button size="lg" className="gap-2" data-testid="button-post-project">
-              Post a Project
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button size="lg" variant="outline" data-testid="button-find-work">
-              Find Work as Analyst
-            </Button>
+            <Link href="/auth">
+              <Button size="lg" className="gap-2" data-testid="button-post-project">
+                Post a Project
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/auth">
+              <Button size="lg" variant="outline" data-testid="button-find-work">
+                Find Work as Analyst
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -254,15 +262,17 @@ function CTASection() {
             Join thousands of organizations and analysts already using DataWork.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button 
-              size="lg" 
-              variant="secondary"
-              className="gap-2"
-              data-testid="button-cta-start"
-            >
-              Get Started Free
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            <Link href="/auth">
+              <Button 
+                size="lg" 
+                variant="secondary"
+                className="gap-2"
+                data-testid="button-cta-start"
+              >
+                Get Started Free
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
