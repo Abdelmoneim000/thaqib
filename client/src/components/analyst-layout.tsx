@@ -20,7 +20,8 @@ import {
   Settings, 
   LogOut,
   BarChart3,
-  User
+  User,
+  PieChart
 } from "lucide-react";
 
 const menuItems = [
@@ -43,6 +44,11 @@ const menuItems = [
     title: "Active Projects",
     url: "/analyst/projects",
     icon: FolderKanban,
+  },
+  {
+    title: "BI Studio",
+    url: "/analyst/dashboards",
+    icon: PieChart,
   },
   {
     title: "Settings",
