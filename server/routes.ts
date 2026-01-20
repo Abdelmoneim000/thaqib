@@ -427,5 +427,118 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/projects/:id", async (req: Request, res: Response) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
+  // Conversations API
+  app.get("/api/conversations", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string;
+      const role = req.query.role as string;
+      
+      if (!userId || !role) {
+        return res.status(400).json({ error: "userId and role are required" });
+      }
+      
+      const conversations = await storage.getConversationsByUser(userId, role);
+      res.json(conversations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+
+  app.get("/api/conversations/project/:projectId", async (req: Request, res: Response) => {
+    try {
+      let conversation = await storage.getConversationByProject(req.params.projectId);
+      
+      if (!conversation) {
+        const project = await storage.getProject(req.params.projectId);
+        if (!project || !project.analystId) {
+          return res.status(404).json({ error: "Project not found or no analyst assigned" });
+        }
+        
+        conversation = await storage.createConversation({
+          projectId: project.id,
+          clientId: project.clientId,
+          analystId: project.analystId,
+        });
+      }
+      
+      res.json(conversation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+  });
+
+  // Messages API
+  app.get("/api/conversations/:conversationId/messages", async (req: Request, res: Response) => {
+    try {
+      const messages = await storage.getMessagesByConversation(req.params.conversationId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/conversations/:conversationId/messages", async (req: Request, res: Response) => {
+    try {
+      const { senderId, senderRole, content } = req.body;
+      
+      if (!senderId || !senderRole || !content) {
+        return res.status(400).json({ error: "senderId, senderRole, and content are required" });
+      }
+      
+      const message = await storage.createMessage({
+        conversationId: req.params.conversationId,
+        senderId,
+        senderRole,
+        content,
+      });
+      
+      res.json(message);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  app.post("/api/conversations/:conversationId/read", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+      
+      await storage.markMessagesAsRead(req.params.conversationId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
+
+  app.get("/api/conversations/:conversationId/unread", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+      
+      const count = await storage.getUnreadCount(req.params.conversationId, userId);
+      res.json({ count });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get unread count" });
+    }
+  });
+
   return httpServer;
 }
