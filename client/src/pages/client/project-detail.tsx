@@ -26,8 +26,10 @@ import {
   Upload,
   Eye,
   Download,
-  Star
+  Star,
+  MessageSquare
 } from "lucide-react";
+import { ProjectChat } from "@/components/chat/project-chat";
 
 interface Applicant {
   id: string;
@@ -366,6 +368,10 @@ export default function ClientProjectDetailPage() {
               <BarChart3 className="h-4 w-4 mr-2" />
               Dashboards
             </TabsTrigger>
+            <TabsTrigger value="chat" data-testid="tab-chat">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Chat
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="applicants">
@@ -435,6 +441,14 @@ export default function ClientProjectDetailPage() {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="chat" className="h-[500px]">
+            <ProjectChat
+              projectId={project.id}
+              currentUserId="client-1"
+              currentUserRole="client"
+            />
           </TabsContent>
         </Tabs>
       </div>
