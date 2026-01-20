@@ -168,10 +168,12 @@ export type SharedDashboard = typeof sharedDashboards.$inferSelect;
 
 export const conversations = pgTable("conversations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull(),
+  projectId: varchar("project_id"),
   clientId: varchar("client_id").notNull(),
   analystId: varchar("analyst_id").notNull(),
+  analystName: text("analyst_name"),
   lastMessageAt: timestamp("last_message_at").defaultNow(),
+  lastMessagePreview: text("last_message_preview"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -179,6 +181,7 @@ export const insertConversationSchema = createInsertSchema(conversations).omit({
   id: true,
   createdAt: true,
   lastMessageAt: true,
+  lastMessagePreview: true,
 });
 
 export type InsertConversation = z.infer<typeof insertConversationSchema>;

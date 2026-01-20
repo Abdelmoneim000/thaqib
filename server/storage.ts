@@ -46,8 +46,10 @@ export interface IStorage {
   
   getConversation(id: string): Promise<Conversation | undefined>;
   getConversationByProject(projectId: string): Promise<Conversation | undefined>;
+  getConversationByUsers(clientId: string, analystId: string): Promise<Conversation | undefined>;
   getConversationsByUser(userId: string, role: string): Promise<Conversation[]>;
   createConversation(conversation: InsertConversation): Promise<Conversation>;
+  updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | undefined>;
   
   getMessage(id: string): Promise<Message | undefined>;
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
@@ -443,6 +445,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.conversations.values()).find(c => c.projectId === projectId);
   }
 
+  async getConversationByUsers(clientId: string, analystId: string): Promise<Conversation | undefined> {
+    return Array.from(this.conversations.values()).find(c => c.clientId === clientId && c.analystId === analystId);
+  }
+
   async getConversationsByUser(userId: string, role: string): Promise<Conversation[]> {
     return Array.from(this.conversations.values()).filter(c => 
       role === "client" ? c.clientId === userId : c.analystId === userId
@@ -454,14 +460,24 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const newConversation: Conversation = {
       id,
-      projectId: conversation.projectId,
+      projectId: conversation.projectId || null,
       clientId: conversation.clientId,
       analystId: conversation.analystId,
+      analystName: conversation.analystName || null,
       lastMessageAt: now,
+      lastMessagePreview: null,
       createdAt: now,
     };
     this.conversations.set(id, newConversation);
     return newConversation;
+  }
+
+  async updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | undefined> {
+    const conversation = this.conversations.get(id);
+    if (!conversation) return undefined;
+    const updated = { ...conversation, ...updates };
+    this.conversations.set(id, updated);
+    return updated;
   }
 
   async getMessage(id: string): Promise<Message | undefined> {
@@ -490,7 +506,11 @@ export class MemStorage implements IStorage {
     
     const conversation = this.conversations.get(message.conversationId);
     if (conversation) {
-      this.conversations.set(message.conversationId, { ...conversation, lastMessageAt: now });
+      this.conversations.set(message.conversationId, { 
+        ...conversation, 
+        lastMessageAt: now,
+        lastMessagePreview: message.content.substring(0, 100),
+      });
     }
     
     return newMessage;

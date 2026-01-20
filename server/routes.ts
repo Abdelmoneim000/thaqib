@@ -456,6 +456,30 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/conversations", async (req: Request, res: Response) => {
+    try {
+      const { clientId, analystId, analystName } = req.body;
+      
+      if (!clientId || !analystId) {
+        return res.status(400).json({ error: "clientId and analystId are required" });
+      }
+      
+      let conversation = await storage.getConversationByUsers(clientId, analystId);
+      
+      if (!conversation) {
+        conversation = await storage.createConversation({
+          clientId,
+          analystId,
+          analystName: analystName || null,
+        });
+      }
+      
+      res.json(conversation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create conversation" });
+    }
+  });
+
   app.get("/api/conversations/project/:projectId", async (req: Request, res: Response) => {
     try {
       let conversation = await storage.getConversationByProject(req.params.projectId);
