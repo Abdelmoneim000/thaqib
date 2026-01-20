@@ -119,6 +119,14 @@ Preferred communication style: Simple, everyday language.
 - **PDF Export**: Export dashboards as PDF documents using jspdf
 - **Client-Side Rendering**: Export happens in browser for data privacy
 
+### Private Messaging
+- **Project-Based Conversations**: Each project has its own chat conversation between client and analyst
+- **Auto-Create Conversation**: Conversations are automatically created when accessing chat for projects with assigned analysts
+- **Real-Time Updates**: Messages poll every 3 seconds for near-real-time experience
+- **Read Status Tracking**: Server-side tracking of message read status
+- **Message UI**: Avatar indicators (C for client, A for analyst), timestamps, message ownership styling
+- **Empty States**: Proper handling when no messages exist or chat is unavailable
+
 ## API Endpoints
 
 ### Datasets
@@ -147,3 +155,9 @@ Preferred communication style: Simple, everyday language.
 
 ### Public Access
 - `GET /api/shared/:token` - Access shared dashboard (validates expiration)
+
+### Conversations & Messages
+- `GET /api/conversations/project/:projectId` - Get or create conversation for a project
+- `GET /api/conversations/:conversationId/messages` - Get all messages in a conversation
+- `POST /api/conversations/:conversationId/messages` - Send a new message
+- `PUT /api/conversations/:conversationId/read` - Mark messages as read
