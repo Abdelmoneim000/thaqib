@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,12 +7,161 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").notNull().default("analyst"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  role: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  clientId: varchar("client_id").notNull(),
+  analystId: varchar("analyst_id"),
+  status: text("status").notNull().default("open"),
+  budget: integer("budget"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = typeof projects.$inferSelect;
+
+export const datasets = pgTable("datasets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  projectId: varchar("project_id").notNull(),
+  uploadedBy: varchar("uploaded_by").notNull(),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size"),
+  rowCount: integer("row_count"),
+  columns: jsonb("columns").$type<DatasetColumn[]>().notNull(),
+  data: jsonb("data").$type<Record<string, unknown>[]>().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export interface DatasetColumn {
+  name: string;
+  type: "string" | "number" | "date" | "boolean";
+  sampleValues: unknown[];
+}
+
+export const insertDatasetSchema = createInsertSchema(datasets).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertDataset = z.infer<typeof insertDatasetSchema>;
+export type Dataset = typeof datasets.$inferSelect;
+
+export const dashboards = pgTable("dashboards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  projectId: varchar("project_id"),
+  createdBy: varchar("created_by").notNull(),
+  isPublished: boolean("is_published").default(false),
+  layout: jsonb("layout").$type<DashboardLayout>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export interface DashboardLayout {
+  items: DashboardLayoutItem[];
+}
+
+export interface DashboardLayoutItem {
+  id: string;
+  visualizationId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export const insertDashboardSchema = createInsertSchema(dashboards).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertDashboard = z.infer<typeof insertDashboardSchema>;
+export type Dashboard = typeof dashboards.$inferSelect;
+
+export const visualizations = pgTable("visualizations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  dashboardId: varchar("dashboard_id"),
+  datasetId: varchar("dataset_id"),
+  chartType: text("chart_type").notNull(),
+  query: jsonb("query").$type<VisualizationQuery>(),
+  config: jsonb("config").$type<VisualizationConfig>(),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export interface VisualizationQuery {
+  type: "visual" | "sql";
+  columns?: string[];
+  filters?: QueryFilter[];
+  aggregation?: { column: string; function: string };
+  groupBy?: string;
+  sql?: string;
+}
+
+export interface QueryFilter {
+  column: string;
+  operator: string;
+  value: string;
+}
+
+export interface VisualizationConfig {
+  xAxis?: string;
+  yAxis?: string;
+  categoryField?: string;
+  valueField?: string;
+  colors?: { primary: string; palette: string[] };
+  formatting?: {
+    numberFormat?: string;
+    decimals?: number;
+    showGrid?: boolean;
+    showLegend?: boolean;
+    showLabels?: boolean;
+  };
+}
+
+export const insertVisualizationSchema = createInsertSchema(visualizations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertVisualization = z.infer<typeof insertVisualizationSchema>;
+export type Visualization = typeof visualizations.$inferSelect;
+
+export const sharedDashboards = pgTable("shared_dashboards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dashboardId: varchar("dashboard_id").notNull(),
+  shareToken: text("share_token").notNull().unique(),
+  expiresAt: timestamp("expires_at"),
+  allowExport: boolean("allow_export").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSharedDashboardSchema = createInsertSchema(sharedDashboards).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertSharedDashboard = z.infer<typeof insertSharedDashboardSchema>;
+export type SharedDashboard = typeof sharedDashboards.$inferSelect;
