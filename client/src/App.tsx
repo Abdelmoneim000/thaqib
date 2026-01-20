@@ -17,12 +17,14 @@ import AnalystSettingsPage from "@/pages/analyst/settings";
 import DashboardsPage from "@/pages/analyst/dashboards";
 import VisualizationBuilderPage from "@/pages/analyst/visualization-builder";
 import SampleDashboardPage from "@/pages/analyst/sample-dashboard";
+import SharedDashboardPage from "@/pages/shared-dashboard";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/shared/:token" component={SharedDashboardPage} />
       <Route path="/client/projects" component={ClientProjectsPage} />
       <Route path="/client/projects/:id" component={ClientProjectDetailPage} />
       <Route path="/client/projects/:id/upload" component={DatasetUploadPage} />

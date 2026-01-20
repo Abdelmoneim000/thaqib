@@ -4,7 +4,7 @@ export type ColumnType = "string" | "number" | "date" | "boolean";
 
 export interface DataColumn {
   name: string;
-  type: ColumnType;
+  type: ColumnType | string;
   displayName?: string;
 }
 
@@ -13,17 +13,18 @@ export interface Dataset {
   name: string;
   description?: string;
   columns: DataColumn[];
-  data: Record<string, unknown>[];
-  rowCount: number;
-  uploadedAt: string;
+  data?: Record<string, unknown>[];
+  rowCount?: number;
+  uploadedAt?: string;
 }
 
 export type AggregationType = "sum" | "count" | "avg" | "min" | "max" | "none";
 
 export interface QueryFilter {
   column: string;
-  operator: "=" | "!=" | ">" | "<" | ">=" | "<=" | "contains" | "startsWith" | "endsWith";
+  operator: "=" | "!=" | ">" | "<" | ">=" | "<=" | "contains" | "startsWith" | "endsWith" | "equals" | "not_equals" | "greater_than" | "less_than" | "between";
   value: string | number;
+  value2?: string | number;
 }
 
 export interface QueryColumn {
@@ -34,9 +35,13 @@ export interface QueryColumn {
 
 export interface VisualQuery {
   datasetId: string;
-  columns: QueryColumn[];
+  columns: QueryColumn[] | string[];
   filters: QueryFilter[];
   groupBy: string[];
+  aggregation?: {
+    column: string;
+    function: "sum" | "avg" | "count" | "min" | "max";
+  };
   orderBy?: { column: string; direction: "asc" | "desc" };
   limit?: number;
 }
@@ -62,7 +67,7 @@ export interface Visualization {
   id: string;
   name: string;
   type: ChartType;
-  query: VisualQuery | string; // VisualQuery for visual builder, string for SQL
+  query: VisualQuery | string;
   queryMode: "visual" | "sql";
   colors: ChartColors;
   formatting: ChartFormatting;
@@ -87,11 +92,10 @@ export interface Dashboard {
   description?: string;
   projectId?: string;
   items: DashboardItem[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-// Default color palettes
 export const colorPalettes = {
   default: ["#0f62fe", "#6929c4", "#1192e8", "#005d5d", "#9f1853", "#fa4d56", "#570408", "#198038"],
   warm: ["#da1e28", "#ff832b", "#f1c21b", "#24a148", "#0072c3", "#6929c4"],
@@ -100,7 +104,6 @@ export const colorPalettes = {
   sunset: ["#750e13", "#a2191f", "#da1e28", "#fa4d56", "#ff8389", "#ffb3b8"],
 };
 
-// Sample datasets for demo
 export const sampleDatasets: Dataset[] = [
   {
     id: "sales-2024",

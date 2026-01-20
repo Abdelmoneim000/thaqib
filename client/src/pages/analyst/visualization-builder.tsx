@@ -1,38 +1,41 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import AnalystLayout from "@/components/analyst-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft,
   Save,
   Eye,
   Code,
-  MousePointer
+  MousePointer,
+  Loader2
 } from "lucide-react";
 import { QueryBuilder } from "@/components/bi/query-builder";
 import { SqlEditor } from "@/components/bi/sql-editor";
 import { VisualizationConfig } from "@/components/bi/visualization-config";
 import { ChartRenderer } from "@/components/bi/chart-renderer";
-import { executeVisualQuery, executeSqlQuery } from "@/lib/query-executor";
-import { sampleDatasets, colorPalettes } from "@/lib/bi-types";
+import { colorPalettes } from "@/lib/bi-types";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { 
-  VisualQuery, 
   ChartType, 
   ChartColors, 
   ChartFormatting,
-  DataColumn 
+  DataColumn,
+  Dataset,
+  VisualQuery
 } from "@/lib/bi-types";
 
 export default function VisualizationBuilderPage() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [vizName, setVizName] = useState("New Visualization");
   const [queryMode, setQueryMode] = useState<"visual" | "sql">("visual");
   
-  // Query state
   const [visualQuery, setVisualQuery] = useState<VisualQuery>({
     datasetId: "",
     columns: [],
@@ -41,7 +44,6 @@ export default function VisualizationBuilderPage() {
   });
   const [sqlQuery, setSqlQuery] = useState("");
   
-  // Chart configuration
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [colors, setColors] = useState<ChartColors>({
     primary: colorPalettes.default[0],
@@ -57,34 +59,88 @@ export default function VisualizationBuilderPage() {
   const [xAxis, setXAxis] = useState<string>("");
   const [yAxis, setYAxis] = useState<string>("");
   
-  // Results
   const [queryResults, setQueryResults] = useState<Record<string, unknown>[]>([]);
   const [hasRun, setHasRun] = useState(false);
 
-  const selectedDataset = sampleDatasets.find(d => d.id === visualQuery.datasetId);
+  const { data: datasets = [], isLoading: datasetsLoading } = useQuery<Dataset[]>({
+    queryKey: ["/api/datasets"],
+  });
+
+  const convertedDatasets: Dataset[] = useMemo(() => {
+    return datasets.map(d => ({
+      id: d.id,
+      name: d.name,
+      columns: d.columns.map(c => ({
+        name: c.name,
+        type: c.type,
+        displayName: c.name,
+      })),
+      data: [],
+    }));
+  }, [datasets]);
+
+  const selectedDataset = convertedDatasets.find(d => d.id === visualQuery.datasetId);
   const columns: DataColumn[] = selectedDataset?.columns || [];
 
-  const runQuery = () => {
-    let results: Record<string, unknown>[];
-    
-    if (queryMode === "visual") {
-      results = executeVisualQuery(visualQuery, sampleDatasets);
-    } else {
-      results = executeSqlQuery(sqlQuery, sampleDatasets);
+  const queryMutation = useMutation({
+    mutationFn: async (params: { datasetId: string; query: any }) => {
+      const res = await apiRequest("POST", "/api/query", params);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setQueryResults(data.data);
+      setHasRun(true);
+      
+      if (data.data.length > 0 && !xAxis && !yAxis) {
+        const keys = Object.keys(data.data[0]);
+        const numericKey = keys.find(k => typeof data.data[0][k] === "number");
+        const stringKey = keys.find(k => typeof data.data[0][k] === "string");
+        if (stringKey) setXAxis(stringKey);
+        if (numericKey) setYAxis(numericKey);
+      }
+    },
+    onError: () => {
+      toast({ title: "Query failed", description: "Could not execute query", variant: "destructive" });
     }
-    
-    setQueryResults(results);
-    setHasRun(true);
+  });
 
-    // Auto-select axes if not set
-    if (results.length > 0 && !xAxis && !yAxis) {
-      const keys = Object.keys(results[0]);
-      const numericKey = keys.find(k => typeof results[0][k] === "number");
-      const stringKey = keys.find(k => typeof results[0][k] === "string");
-      if (stringKey) setXAxis(stringKey);
-      if (numericKey) setYAxis(numericKey);
+  const runQuery = () => {
+    if (!visualQuery.datasetId) {
+      toast({ title: "Select a dataset", description: "Please select a dataset to query", variant: "destructive" });
+      return;
     }
+
+    const columnNames = Array.isArray(visualQuery.columns) 
+      ? visualQuery.columns.map(c => typeof c === 'string' ? c : c.column)
+      : [];
+    
+    const query = queryMode === "visual" 
+      ? { 
+          type: "visual",
+          columns: columnNames,
+          filters: visualQuery.filters,
+          groupBy: visualQuery.groupBy?.[0],
+          aggregation: visualQuery.aggregation,
+        }
+      : { type: "sql", sql: sqlQuery };
+
+    queryMutation.mutate({ datasetId: visualQuery.datasetId, query });
   };
+
+  const saveMutation = useMutation({
+    mutationFn: async (vizData: any) => {
+      const res = await apiRequest("POST", "/api/visualizations", vizData);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Saved!", description: "Visualization saved successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/visualizations"] });
+      navigate("/analyst/dashboards");
+    },
+    onError: () => {
+      toast({ title: "Save failed", description: "Could not save visualization", variant: "destructive" });
+    }
+  });
 
   const handleAxisChange = (axis: "x" | "y", column: string) => {
     if (axis === "x") setXAxis(column);
@@ -92,21 +148,18 @@ export default function VisualizationBuilderPage() {
   };
 
   const handleSave = () => {
-    // In a real app, this would save to the backend
-    console.log("Saving visualization:", {
+    saveMutation.mutate({
       name: vizName,
-      queryMode,
-      query: queryMode === "visual" ? visualQuery : sqlQuery,
+      datasetId: visualQuery.datasetId,
       chartType,
-      colors,
-      formatting,
-      xAxis,
-      yAxis,
+      query: queryMode === "visual" 
+        ? { type: "visual", columns: visualQuery.columns, filters: visualQuery.filters, groupBy: visualQuery.groupBy?.[0], aggregation: visualQuery.aggregation }
+        : { type: "sql", sql: sqlQuery },
+      config: { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting },
+      createdBy: "analyst-1",
     });
-    navigate("/analyst/dashboards");
   };
 
-  // Derive columns from results for config
   const resultColumns: DataColumn[] = useMemo(() => {
     if (queryResults.length === 0) return columns;
     const firstRow = queryResults[0];
@@ -116,6 +169,16 @@ export default function VisualizationBuilderPage() {
       displayName: key,
     }));
   }, [queryResults, columns]);
+
+  if (datasetsLoading) {
+    return (
+      <AnalystLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AnalystLayout>
+    );
+  }
 
   return (
     <AnalystLayout>
@@ -138,12 +201,29 @@ export default function VisualizationBuilderPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={runQuery} data-testid="button-preview">
-              <Eye className="h-4 w-4 mr-2" />
+            <Button 
+              variant="outline" 
+              onClick={runQuery} 
+              disabled={queryMutation.isPending}
+              data-testid="button-preview"
+            >
+              {queryMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Eye className="h-4 w-4 mr-2" />
+              )}
               Preview
             </Button>
-            <Button onClick={handleSave} data-testid="button-save-viz">
-              <Save className="h-4 w-4 mr-2" />
+            <Button 
+              onClick={handleSave} 
+              disabled={saveMutation.isPending}
+              data-testid="button-save-viz"
+            >
+              {saveMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
               Save
             </Button>
           </div>
@@ -164,14 +244,14 @@ export default function VisualizationBuilderPage() {
               </TabsList>
               <TabsContent value="visual" className="mt-4">
                 <QueryBuilder
-                  datasets={sampleDatasets}
+                  datasets={convertedDatasets}
                   onQueryChange={setVisualQuery}
                   onRunQuery={runQuery}
                 />
               </TabsContent>
               <TabsContent value="sql" className="mt-4">
                 <SqlEditor
-                  datasets={sampleDatasets}
+                  datasets={convertedDatasets}
                   onQueryChange={setSqlQuery}
                   onRunQuery={runQuery}
                   initialSql={sqlQuery}
