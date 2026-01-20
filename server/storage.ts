@@ -4,7 +4,9 @@ import {
   type Dataset, type InsertDataset,
   type Dashboard, type InsertDashboard,
   type Visualization, type InsertVisualization,
-  type SharedDashboard, type InsertSharedDashboard
+  type SharedDashboard, type InsertSharedDashboard,
+  type Conversation, type InsertConversation,
+  type Message, type InsertMessage
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -41,6 +43,17 @@ export interface IStorage {
   getSharedDashboard(token: string): Promise<SharedDashboard | undefined>;
   createSharedDashboard(share: InsertSharedDashboard): Promise<SharedDashboard>;
   deleteSharedDashboard(id: string): Promise<boolean>;
+  
+  getConversation(id: string): Promise<Conversation | undefined>;
+  getConversationByProject(projectId: string): Promise<Conversation | undefined>;
+  getConversationsByUser(userId: string, role: string): Promise<Conversation[]>;
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  
+  getMessage(id: string): Promise<Message | undefined>;
+  getMessagesByConversation(conversationId: string): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  markMessagesAsRead(conversationId: string, userId: string): Promise<void>;
+  getUnreadCount(conversationId: string, userId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -50,6 +63,8 @@ export class MemStorage implements IStorage {
   private dashboards: Map<string, Dashboard>;
   private visualizations: Map<string, Visualization>;
   private sharedDashboards: Map<string, SharedDashboard>;
+  private conversations: Map<string, Conversation>;
+  private messages: Map<string, Message>;
 
   constructor() {
     this.users = new Map();
@@ -58,6 +73,8 @@ export class MemStorage implements IStorage {
     this.dashboards = new Map();
     this.visualizations = new Map();
     this.sharedDashboards = new Map();
+    this.conversations = new Map();
+    this.messages = new Map();
     
     this.seedSampleData();
   }
@@ -416,6 +433,81 @@ export class MemStorage implements IStorage {
 
   async deleteSharedDashboard(id: string): Promise<boolean> {
     return this.sharedDashboards.delete(id);
+  }
+
+  async getConversation(id: string): Promise<Conversation | undefined> {
+    return this.conversations.get(id);
+  }
+
+  async getConversationByProject(projectId: string): Promise<Conversation | undefined> {
+    return Array.from(this.conversations.values()).find(c => c.projectId === projectId);
+  }
+
+  async getConversationsByUser(userId: string, role: string): Promise<Conversation[]> {
+    return Array.from(this.conversations.values()).filter(c => 
+      role === "client" ? c.clientId === userId : c.analystId === userId
+    );
+  }
+
+  async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    const id = randomUUID();
+    const now = new Date();
+    const newConversation: Conversation = {
+      id,
+      projectId: conversation.projectId,
+      clientId: conversation.clientId,
+      analystId: conversation.analystId,
+      lastMessageAt: now,
+      createdAt: now,
+    };
+    this.conversations.set(id, newConversation);
+    return newConversation;
+  }
+
+  async getMessage(id: string): Promise<Message | undefined> {
+    return this.messages.get(id);
+  }
+
+  async getMessagesByConversation(conversationId: string): Promise<Message[]> {
+    return Array.from(this.messages.values())
+      .filter(m => m.conversationId === conversationId)
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+  }
+
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const id = randomUUID();
+    const now = new Date();
+    const newMessage: Message = {
+      id,
+      conversationId: message.conversationId,
+      senderId: message.senderId,
+      senderRole: message.senderRole,
+      content: message.content,
+      isRead: false,
+      createdAt: now,
+    };
+    this.messages.set(id, newMessage);
+    
+    const conversation = this.conversations.get(message.conversationId);
+    if (conversation) {
+      this.conversations.set(message.conversationId, { ...conversation, lastMessageAt: now });
+    }
+    
+    return newMessage;
+  }
+
+  async markMessagesAsRead(conversationId: string, userId: string): Promise<void> {
+    for (const [id, message] of this.messages.entries()) {
+      if (message.conversationId === conversationId && message.senderId !== userId && !message.isRead) {
+        this.messages.set(id, { ...message, isRead: true });
+      }
+    }
+  }
+
+  async getUnreadCount(conversationId: string, userId: string): Promise<number> {
+    return Array.from(this.messages.values())
+      .filter(m => m.conversationId === conversationId && m.senderId !== userId && !m.isRead)
+      .length;
   }
 }
 
