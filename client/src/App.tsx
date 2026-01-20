@@ -8,6 +8,7 @@ import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
 import ClientProjectsPage from "@/pages/client/projects";
 import ClientProjectDetailPage from "@/pages/client/project-detail";
+import ClientChatsPage from "@/pages/client/chats";
 import DatasetUploadPage from "@/pages/client/dataset-upload";
 import AnalystDashboardPage from "@/pages/analyst/dashboard";
 import BrowseProjectsPage from "@/pages/analyst/browse";
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/client/projects" component={ClientProjectsPage} />
       <Route path="/client/projects/:id" component={ClientProjectDetailPage} />
       <Route path="/client/projects/:id/upload" component={DatasetUploadPage} />
+      <Route path="/client/chats" component={ClientChatsPage} />
       <Route path="/analyst/dashboard" component={AnalystDashboardPage} />
       <Route path="/analyst/browse" component={BrowseProjectsPage} />
       <Route path="/analyst/applications" component={ApplicationsPage} />

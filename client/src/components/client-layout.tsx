@@ -19,7 +19,8 @@ import {
   Settings, 
   LogOut,
   Users,
-  Building2
+  Building2,
+  MessageSquare
 } from "lucide-react";
 
 const menuItems = [
@@ -27,6 +28,11 @@ const menuItems = [
     title: "My Projects",
     url: "/client/projects",
     icon: FolderKanban,
+  },
+  {
+    title: "Chats",
+    url: "/client/chats",
+    icon: MessageSquare,
   },
   {
     title: "Datasets",

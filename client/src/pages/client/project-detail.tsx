@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import ClientLayout from "@/components/client-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,11 +121,13 @@ const mockDashboards: Dashboard[] = [
 function ApplicantCard({ 
   applicant, 
   onAccept, 
-  onReject 
+  onReject,
+  onChat
 }: { 
   applicant: Applicant; 
   onAccept: () => void;
   onReject: () => void;
+  onChat: () => void;
 }) {
   return (
     <Card className="border-card-border bg-card">
@@ -163,31 +167,42 @@ function ApplicantCard({
                 </Badge>
               )}
             </div>
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
               <span className="text-sm font-medium">
                 ${applicant.proposedRate.toLocaleString()}
               </span>
-              {applicant.status === "applied" && (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={onReject}
-                    data-testid={`button-reject-${applicant.id}`}
-                  >
-                    <XCircle className="h-4 w-4 mr-1" />
-                    Reject
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={onAccept}
-                    data-testid={`button-accept-${applicant.id}`}
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Accept
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={onChat}
+                  data-testid={`button-chat-${applicant.id}`}
+                >
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  Chat
+                </Button>
+                {applicant.status === "applied" && (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={onReject}
+                      data-testid={`button-reject-${applicant.id}`}
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Reject
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={onAccept}
+                      data-testid={`button-accept-${applicant.id}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Accept
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -259,7 +274,31 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
 
 export default function ClientProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
   const [applicants, setApplicants] = useState(mockApplicants);
+
+  const startChatMutation = useMutation({
+    mutationFn: async ({ analystId, analystName }: { analystId: string; analystName: string }) => {
+      return apiRequest("/api/conversations", {
+        method: "POST",
+        body: JSON.stringify({
+          clientId: "client-1",
+          analystId,
+          analystName,
+        }),
+      });
+    },
+    onSuccess: () => {
+      setLocation("/client/chats");
+    },
+  });
+
+  const handleChat = (applicant: Applicant) => {
+    startChatMutation.mutate({
+      analystId: `analyst-${applicant.id}`,
+      analystName: applicant.name,
+    });
+  };
 
   const project = {
     id: id || "1",
@@ -393,6 +432,7 @@ export default function ClientProjectDetailPage() {
                     applicant={applicant}
                     onAccept={() => handleAccept(applicant.id)}
                     onReject={() => handleReject(applicant.id)}
+                    onChat={() => handleChat(applicant)}
                   />
                 ))}
               </div>
