@@ -33,13 +33,10 @@ function ChatPanel({
 
   const sendMutation = useMutation({
     mutationFn: async (content: string) => {
-      return apiRequest(`/api/conversations/${conversation.id}/messages`, {
-        method: "POST",
-        body: JSON.stringify({
-          senderId: currentUserId,
-          senderRole: "client",
-          content,
-        }),
+      return apiRequest("POST", `/api/conversations/${conversation.id}/messages`, {
+        senderId: currentUserId,
+        senderRole: "client",
+        content,
       });
     },
     onSuccess: () => {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import ClientLayout from "@/components/client-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -279,16 +279,14 @@ export default function ClientProjectDetailPage() {
 
   const startChatMutation = useMutation({
     mutationFn: async ({ analystId, analystName }: { analystId: string; analystName: string }) => {
-      return apiRequest("/api/conversations", {
-        method: "POST",
-        body: JSON.stringify({
-          clientId: "client-1",
-          analystId,
-          analystName,
-        }),
+      return apiRequest("POST", "/api/conversations", {
+        clientId: "client-1",
+        analystId,
+        analystName,
       });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       setLocation("/client/chats");
     },
   });
