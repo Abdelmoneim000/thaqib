@@ -177,10 +177,12 @@ function ProjectCard({ project, showActions = true }: { project: ActiveProject; 
 
         {showActions && (
           <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
-            <Button variant="outline" size="sm" data-testid={`button-message-${project.id}`}>
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Message
-            </Button>
+            <Link href="/analyst/projects/project-1">
+              <Button variant="outline" size="sm" data-testid={`button-message-${project.id}`}>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Message Client
+              </Button>
+            </Link>
             <Button variant="outline" size="sm" data-testid={`button-datasets-${project.id}`}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               View Data

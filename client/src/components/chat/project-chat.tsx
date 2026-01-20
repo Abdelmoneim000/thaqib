@@ -90,6 +90,16 @@ export function ProjectChat({ projectId, currentUserId, currentUserRole }: Proje
     );
   }
 
+  if (!conversation) {
+    return (
+      <Card className="h-full flex flex-col items-center justify-center" data-testid="card-chat-unavailable">
+        <MessageSquare className="h-10 w-10 mb-2 text-muted-foreground opacity-50" />
+        <p className="text-sm text-muted-foreground">Chat unavailable</p>
+        <p className="text-xs text-muted-foreground">An analyst must be assigned to enable chat</p>
+      </Card>
+    );
+  }
+
   return (
     <Card className="h-full flex flex-col" data-testid="card-project-chat">
       <CardHeader className="pb-3 border-b">

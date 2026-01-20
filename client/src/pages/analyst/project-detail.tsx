@@ -1,0 +1,180 @@
+import { useParams, Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import AnalystLayout from "@/components/analyst-layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ArrowLeft, 
+  Calendar, 
+  DollarSign,
+  Building2,
+  FileSpreadsheet,
+  BarChart3,
+  MessageSquare,
+  Loader2
+} from "lucide-react";
+import { ProjectChat } from "@/components/chat/project-chat";
+import type { Project } from "@shared/schema";
+
+export default function AnalystProjectDetailPage() {
+  const { id } = useParams<{ id: string }>();
+
+  const { data: project, isLoading } = useQuery<Project>({
+    queryKey: ["/api/projects", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${id}`);
+      if (!res.ok) throw new Error("Project not found");
+      return res.json();
+    },
+    enabled: !!id,
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge>Active</Badge>;
+      case "open":
+        return <Badge variant="secondary">Open</Badge>;
+      case "completed":
+        return <Badge className="bg-green-600">Completed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AnalystLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AnalystLayout>
+    );
+  }
+
+  if (!project) {
+    return (
+      <AnalystLayout>
+        <div className="p-6">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <h3 className="text-lg font-medium mb-2">Project not found</h3>
+              <Link href="/analyst/projects">
+                <Button variant="outline">Back to Projects</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </AnalystLayout>
+    );
+  }
+
+  return (
+    <AnalystLayout>
+      <div className="p-6 space-y-6">
+        <div>
+          <Link href="/analyst/projects">
+            <button 
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
+              data-testid="button-back-projects"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Projects
+            </button>
+          </Link>
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>
+                {getStatusBadge(project.status)}
+              </div>
+              {project.description && (
+                <p className="text-muted-foreground max-w-2xl">{project.description}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+            {project.budget && (
+              <div className="flex items-center gap-1.5">
+                <DollarSign className="h-4 w-4" />
+                <span>${project.budget.toLocaleString()} budget</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <Building2 className="h-4 w-4" />
+              <span>Client: {project.clientId}</span>
+            </div>
+            {project.createdAt && (
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" />
+                <span>Started {new Date(project.createdAt).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Tabs defaultValue="chat" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="chat" data-testid="tab-chat">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Chat with Client
+            </TabsTrigger>
+            <TabsTrigger value="datasets" data-testid="tab-datasets">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Datasets
+            </TabsTrigger>
+            <TabsTrigger value="dashboards" data-testid="tab-dashboards">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Dashboards
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="chat" className="h-[500px]">
+            <ProjectChat
+              projectId={project.id}
+              currentUserId="analyst-1"
+              currentUserRole="analyst"
+            />
+          </TabsContent>
+
+          <TabsContent value="datasets">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Project Datasets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                  <FileSpreadsheet className="h-10 w-10 mb-2 opacity-50" />
+                  <p className="text-sm">Datasets uploaded by the client will appear here</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="dashboards">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Your Dashboards</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                  <BarChart3 className="h-10 w-10 mb-2 opacity-50" />
+                  <p className="text-sm">Dashboards you create will appear here</p>
+                  <Link href="/analyst/visualization-builder">
+                    <Button className="mt-4" size="sm" data-testid="button-create-visualization">
+                      Create Visualization
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AnalystLayout>
+  );
+}
