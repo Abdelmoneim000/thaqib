@@ -16,6 +16,7 @@ import ApplicationsPage from "@/pages/analyst/applications";
 import AnalystProjectsPage from "@/pages/analyst/projects";
 import AnalystProjectDetailPage from "@/pages/analyst/project-detail";
 import AnalystSettingsPage from "@/pages/analyst/settings";
+import AnalystChatsPage from "@/pages/analyst/chats";
 import DashboardsPage from "@/pages/analyst/dashboards";
 import VisualizationBuilderPage from "@/pages/analyst/visualization-builder";
 import SampleDashboardPage from "@/pages/analyst/sample-dashboard";
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/analyst/applications" component={ApplicationsPage} />
       <Route path="/analyst/projects" component={AnalystProjectsPage} />
       <Route path="/analyst/projects/:id" component={AnalystProjectDetailPage} />
+      <Route path="/analyst/chats" component={AnalystChatsPage} />
       <Route path="/analyst/dashboards" component={DashboardsPage} />
       <Route path="/analyst/visualization-builder" component={VisualizationBuilderPage} />
       <Route path="/analyst/sample-dashboard" component={SampleDashboardPage} />
