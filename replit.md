@@ -91,3 +91,59 @@ Preferred communication style: Simple, everyday language.
 ### Design Resources
 - **IBM Plex Sans/Mono**: Typography via Google Fonts CDN
 - **Carbon Design System**: Design principles for data-heavy enterprise applications
+
+## BI Studio Features
+
+### Dataset Integration
+- **CSV Parsing**: Upload CSV files with automatic type inference (string, number, date, boolean)
+- **Schema Extraction**: Automatically extracts column names, types, and sample values
+- **Dataset Management**: Full CRUD operations for datasets with project association
+- **Sample Data**: Pre-seeded with Sales Data and Customer Analytics datasets for demo
+
+### Visualization Builder
+- **Visual Query Builder**: Select datasets, configure category/value fields, apply aggregations (sum, avg, count, min, max)
+- **SQL Editor**: Raw SQL mode for advanced queries
+- **Chart Types**: Bar, line, area, pie, donut, table, and metric charts
+- **Color Customization**: Multiple color palettes (default, cool, warm, ocean, forest)
+- **Number Formatting**: Currency, percentage, and number formats with configurable decimals
+- **Live Preview**: Real-time chart preview as configuration changes
+
+### Dashboard Sharing
+- **Token-Based Sharing**: Secure share links with random tokens (nanoid)
+- **Expiration Control**: Configurable link expiration (1-365 days)
+- **Export Permissions**: Toggle to allow/disallow PDF/PNG export for shared links
+- **Server-Side Validation**: Expired links return 410 Gone status
+
+### Export Functionality
+- **PNG Export**: Download dashboards as high-quality PNG images using html2canvas
+- **PDF Export**: Export dashboards as PDF documents using jspdf
+- **Client-Side Rendering**: Export happens in browser for data privacy
+
+## API Endpoints
+
+### Datasets
+- `GET /api/datasets` - List all datasets (optional: `?projectId=`)
+- `GET /api/datasets/:id` - Get single dataset with columns
+- `POST /api/datasets/upload` - Upload CSV and create dataset
+- `DELETE /api/datasets/:id` - Delete dataset
+
+### Dashboards
+- `GET /api/dashboards` - List dashboards (optional: `?projectId=`)
+- `GET /api/dashboards/:id` - Get dashboard with layout
+- `POST /api/dashboards` - Create new dashboard
+- `PUT /api/dashboards/:id` - Update dashboard
+- `DELETE /api/dashboards/:id` - Delete dashboard
+- `POST /api/dashboards/:id/share` - Create share link
+
+### Visualizations
+- `GET /api/visualizations` - List visualizations (optional: `?dashboardId=`)
+- `GET /api/visualizations/:id` - Get single visualization
+- `POST /api/visualizations` - Create visualization
+- `PUT /api/visualizations/:id` - Update visualization
+- `DELETE /api/visualizations/:id` - Delete visualization
+
+### Query Execution
+- `POST /api/query` - Execute query on dataset (visual or SQL mode)
+
+### Public Access
+- `GET /api/shared/:token` - Access shared dashboard (validates expiration)
