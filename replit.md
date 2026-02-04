@@ -55,7 +55,9 @@ Preferred communication style: Simple, everyday language.
 
 **Monorepo with Shared Types**: The `shared/` directory contains Drizzle schemas that generate both database tables and TypeScript types, ensuring type safety across the full stack.
 
-**Storage Interface Pattern**: `server/storage.ts` defines an `IStorage` interface abstracting data operations. Currently uses in-memory storage (`MemStorage`) but designed for easy PostgreSQL migration.
+**Storage Interface Pattern**: `server/storage.ts` defines an `IStorage` interface abstracting data operations. Uses PostgreSQL via `DatabaseStorage` class with Drizzle ORM.
+
+**Authentication & Authorization**: Replit Auth integration with OIDC for secure login/logout. All API endpoints are protected with `isAuthenticated` middleware. New users select their role (client/analyst) on first login, and the `ProtectedRoute` component enforces role-based access on the frontend.
 
 **Role-Based UI**: Separate page hierarchies for clients (`/client/*`) and analysts (`/analyst/*`) with dedicated layout components providing role-specific navigation.
 
