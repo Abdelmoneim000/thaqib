@@ -14,15 +14,48 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
-  // Datasets API
-  app.get("/api/datasets", async (req: Request, res: Response) => {
+  // Helper function to get authenticated user ID
+  const getUserId = (req: Request): string | null => {
+    const user = req.user as any;
+    return user?.claims?.sub || null;
+  };
+
+  // Role selection endpoint
+  app.patch("/api/auth/role", isAuthenticated, async (req: Request, res: Response) => {
     try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const { role } = req.body;
+      if (!role || !["client", "analyst"].includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be 'client' or 'analyst'" });
+      }
+      
+      const user = await storage.updateUserRole(userId, role);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update role" });
+    }
+  });
+
+  // Datasets API
+  app.get("/api/datasets", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
       const projectId = req.query.projectId as string | undefined;
       let datasets;
       if (projectId) {
         datasets = await storage.getDatasetsByProject(projectId);
+      } else if (userId) {
+        datasets = await storage.getDatasetsByUser(userId);
       } else {
-        datasets = await storage.getAllDatasets();
+        datasets = [];
       }
       const summary = datasets.map(d => ({
         id: d.id,
@@ -39,7 +72,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/datasets/:id", async (req: Request, res: Response) => {
+  app.get("/api/datasets/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const dataset = await storage.getDataset(req.params.id);
       if (!dataset) {
@@ -51,7 +84,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/datasets/:id/data", async (req: Request, res: Response) => {
+  app.get("/api/datasets/:id/data", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const dataset = await storage.getDataset(req.params.id);
       if (!dataset) {
@@ -69,9 +102,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/datasets/upload", async (req: Request, res: Response) => {
+  app.post("/api/datasets/upload", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { name, projectId, uploadedBy, fileName, csvContent } = req.body;
+      const userId = getUserId(req);
+      const { name, projectId, fileName, csvContent } = req.body;
       
       if (!csvContent || !name || !projectId) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -87,7 +121,7 @@ export async function registerRoutes(
       const dataset = await storage.createDataset({
         name,
         projectId,
-        uploadedBy: uploadedBy || "anonymous",
+        uploadedBy: userId || "anonymous",
         fileName: fileName || "uploaded.csv",
         fileSize: csvContent.length,
         rowCount: parsedData.length,
@@ -107,7 +141,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/datasets/:id", async (req: Request, res: Response) => {
+  app.delete("/api/datasets/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const deleted = await storage.deleteDataset(req.params.id);
       if (!deleted) {
@@ -120,9 +154,9 @@ export async function registerRoutes(
   });
 
   // Dashboards API
-  app.get("/api/dashboards", async (req: Request, res: Response) => {
+  app.get("/api/dashboards", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.query.userId as string | undefined;
+      const userId = getUserId(req);
       const projectId = req.query.projectId as string | undefined;
       
       let dashboards;
@@ -131,7 +165,7 @@ export async function registerRoutes(
       } else if (userId) {
         dashboards = await storage.getDashboardsByUser(userId);
       } else {
-        dashboards = await storage.getDashboardsByUser("analyst-1");
+        dashboards = [];
       }
       res.json(dashboards);
     } catch (error) {
@@ -139,7 +173,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/dashboards/:id", async (req: Request, res: Response) => {
+  app.get("/api/dashboards/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const dashboard = await storage.getDashboard(req.params.id);
       if (!dashboard) {
@@ -151,14 +185,15 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/dashboards", async (req: Request, res: Response) => {
+  app.post("/api/dashboards", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { name, description, projectId, createdBy, layout } = req.body;
+      const userId = getUserId(req);
+      const { name, description, projectId, layout } = req.body;
       const dashboard = await storage.createDashboard({
         name,
         description,
         projectId,
-        createdBy: createdBy || "analyst-1",
+        createdBy: userId!,
         isPublished: false,
         layout,
       });
@@ -168,7 +203,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/dashboards/:id", async (req: Request, res: Response) => {
+  app.patch("/api/dashboards/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const dashboard = await storage.updateDashboard(req.params.id, req.body);
       if (!dashboard) {
@@ -180,7 +215,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/dashboards/:id", async (req: Request, res: Response) => {
+  app.delete("/api/dashboards/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const deleted = await storage.deleteDashboard(req.params.id);
       if (!deleted) {
@@ -193,7 +228,7 @@ export async function registerRoutes(
   });
 
   // Visualizations API
-  app.get("/api/visualizations", async (req: Request, res: Response) => {
+  app.get("/api/visualizations", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const dashboardId = req.query.dashboardId as string;
       if (!dashboardId) {
@@ -206,7 +241,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/visualizations/:id", async (req: Request, res: Response) => {
+  app.get("/api/visualizations/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const viz = await storage.getVisualization(req.params.id);
       if (!viz) {
@@ -218,9 +253,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/visualizations", async (req: Request, res: Response) => {
+  app.post("/api/visualizations", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { name, dashboardId, datasetId, chartType, query, config, createdBy } = req.body;
+      const userId = getUserId(req);
+      const { name, dashboardId, datasetId, chartType, query, config } = req.body;
       const viz = await storage.createVisualization({
         name,
         dashboardId,
@@ -228,7 +264,7 @@ export async function registerRoutes(
         chartType,
         query,
         config,
-        createdBy: createdBy || "analyst-1",
+        createdBy: userId!,
       });
       res.json(viz);
     } catch (error) {
@@ -236,7 +272,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/visualizations/:id", async (req: Request, res: Response) => {
+  app.patch("/api/visualizations/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const viz = await storage.updateVisualization(req.params.id, req.body);
       if (!viz) {
@@ -248,7 +284,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/visualizations/:id", async (req: Request, res: Response) => {
+  app.delete("/api/visualizations/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const deleted = await storage.deleteVisualization(req.params.id);
       if (!deleted) {
@@ -412,18 +448,23 @@ export async function registerRoutes(
   });
 
   // Projects API
-  app.get("/api/projects", async (req: Request, res: Response) => {
+  app.get("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const clientId = req.query.clientId as string;
-      const analystId = req.query.analystId as string;
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId!);
+      const status = req.query.status as string | undefined;
       
       let projects;
-      if (clientId) {
-        projects = await storage.getProjectsByClient(clientId);
-      } else if (analystId) {
-        projects = await storage.getProjectsByAnalyst(analystId);
+      if (user?.role === "client") {
+        projects = await storage.getProjectsByClient(userId!);
+      } else if (user?.role === "analyst") {
+        if (status === "open") {
+          projects = await storage.getAllOpenProjects();
+        } else {
+          projects = await storage.getProjectsByAnalyst(userId!);
+        }
       } else {
-        projects = await storage.getProjectsByClient("client-1");
+        projects = [];
       }
       res.json(projects);
     } catch (error) {
@@ -431,7 +472,30 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/projects/:id", async (req: Request, res: Response) => {
+  app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { title, description, budget } = req.body;
+      
+      if (!title) {
+        return res.status(400).json({ error: "Title is required" });
+      }
+      
+      const project = await storage.createProject({
+        title,
+        description,
+        budget,
+        clientId: userId!,
+        status: "open",
+      });
+      
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create project" });
+    }
+  });
+
+  app.get("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const project = await storage.getProject(req.params.id);
       if (!project) {
@@ -444,36 +508,41 @@ export async function registerRoutes(
   });
 
   // Conversations API
-  app.get("/api/conversations", async (req: Request, res: Response) => {
+  app.get("/api/conversations", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.query.userId as string;
-      const role = req.query.role as string;
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId!);
       
-      if (!userId || !role) {
-        return res.status(400).json({ error: "userId and role are required" });
+      if (!userId || !user) {
+        return res.status(401).json({ error: "Unauthorized" });
       }
       
-      const conversations = await storage.getConversationsByUser(userId, role);
+      const conversations = await storage.getConversationsByUser(userId, user.role);
       res.json(conversations);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch conversations" });
     }
   });
 
-  app.post("/api/conversations", async (req: Request, res: Response) => {
+  app.post("/api/conversations", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { clientId, analystId, analystName } = req.body;
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId!);
+      const { otherUserId, analystName } = req.body;
       
-      if (!clientId || !analystId) {
-        return res.status(400).json({ error: "clientId and analystId are required" });
+      if (!otherUserId) {
+        return res.status(400).json({ error: "otherUserId is required" });
       }
       
-      let conversation = await storage.getConversationByUsers(clientId, analystId);
+      const clientId = user?.role === "client" ? userId : otherUserId;
+      const analystId = user?.role === "analyst" ? userId : otherUserId;
+      
+      let conversation = await storage.getConversationByUsers(clientId!, analystId!);
       
       if (!conversation) {
         conversation = await storage.createConversation({
-          clientId,
-          analystId,
+          clientId: clientId!,
+          analystId: analystId!,
           analystName: analystName || null,
         });
       }
@@ -484,7 +553,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/conversations/project/:projectId", async (req: Request, res: Response) => {
+  app.get("/api/conversations/project/:projectId", isAuthenticated, async (req: Request, res: Response) => {
     try {
       let conversation = await storage.getConversationByProject(req.params.projectId);
       
@@ -508,7 +577,7 @@ export async function registerRoutes(
   });
 
   // Messages API
-  app.get("/api/conversations/:conversationId/messages", async (req: Request, res: Response) => {
+  app.get("/api/conversations/:conversationId/messages", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const messages = await storage.getMessagesByConversation(req.params.conversationId);
       res.json(messages);
@@ -517,18 +586,20 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/conversations/:conversationId/messages", async (req: Request, res: Response) => {
+  app.post("/api/conversations/:conversationId/messages", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { senderId, senderRole, content } = req.body;
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId!);
+      const { content } = req.body;
       
-      if (!senderId || !senderRole || !content) {
-        return res.status(400).json({ error: "senderId, senderRole, and content are required" });
+      if (!content) {
+        return res.status(400).json({ error: "content is required" });
       }
       
       const message = await storage.createMessage({
         conversationId: req.params.conversationId,
-        senderId,
-        senderRole,
+        senderId: userId!,
+        senderRole: user?.role || "client",
         content,
       });
       
@@ -538,12 +609,12 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/conversations/:conversationId/read", async (req: Request, res: Response) => {
+  app.post("/api/conversations/:conversationId/read", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.body;
+      const userId = getUserId(req);
       
       if (!userId) {
-        return res.status(400).json({ error: "userId is required" });
+        return res.status(401).json({ error: "Unauthorized" });
       }
       
       await storage.markMessagesAsRead(req.params.conversationId, userId);
@@ -553,12 +624,12 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/conversations/:conversationId/unread", async (req: Request, res: Response) => {
+  app.get("/api/conversations/:conversationId/unread", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.query.userId as string;
+      const userId = getUserId(req);
       
       if (!userId) {
-        return res.status(400).json({ error: "userId is required" });
+        return res.status(401).json({ error: "Unauthorized" });
       }
       
       const count = await storage.getUnreadCount(req.params.conversationId, userId);

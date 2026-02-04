@@ -1,5 +1,4 @@
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +21,7 @@ import {
   Building2,
   MessageSquare
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 const menuItems = [
   {
@@ -48,6 +48,8 @@ const menuItems = [
 
 function ClientSidebar() {
   const [location] = useLocation();
+  const { user, logout } = useAuth();
+  const userName = user?.firstName || user?.email?.split("@")[0] || "User";
 
   return (
     <Sidebar>
@@ -67,7 +69,7 @@ function ClientSidebar() {
           <SidebarGroupLabel className="px-4 py-2">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              <span>Acme Inc.</span>
+              <span>{userName}</span>
             </div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -92,11 +94,9 @@ function ClientSidebar() {
       <div className="mt-auto border-t border-sidebar-border p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/">
-                <LogOut className="h-4 w-4" />
-                <span>Log out</span>
-              </Link>
+            <SidebarMenuButton onClick={() => logout()} data-testid="button-logout">
+              <LogOut className="h-4 w-4" />
+              <span>Log out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -106,6 +106,11 @@ function ClientSidebar() {
 }
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const initials = user?.firstName && user?.lastName 
+    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+    : user?.email?.[0]?.toUpperCase() || "U";
+  
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -120,8 +125,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex-1" />
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                JD
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium" data-testid="avatar-user">
+                {initials}
               </div>
             </div>
           </header>

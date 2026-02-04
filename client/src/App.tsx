@@ -1,11 +1,13 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
-import AuthPage from "@/pages/auth";
+import RoleSelectionPage from "@/pages/role-selection";
 import ClientProjectsPage from "@/pages/client/projects";
 import ClientProjectDetailPage from "@/pages/client/project-detail";
 import ClientChatsPage from "@/pages/client/chats";
@@ -22,26 +24,81 @@ import VisualizationBuilderPage from "@/pages/analyst/visualization-builder";
 import SampleDashboardPage from "@/pages/analyst/sample-dashboard";
 import SharedDashboardPage from "@/pages/shared-dashboard";
 
+function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: string[] }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    window.location.href = "/api/login";
+    return null;
+  }
+
+  if (!user.role || user.role === "") {
+    return <Redirect to="/role-selection" />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Redirect to={user.role === "client" ? "/client/projects" : "/analyst/dashboard"} />;
+  }
+
+  return <Component />;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
-      <Route path="/auth" component={AuthPage} />
+      <Route path="/role-selection" component={RoleSelectionPage} />
       <Route path="/shared/:token" component={SharedDashboardPage} />
-      <Route path="/client/projects" component={ClientProjectsPage} />
-      <Route path="/client/projects/:id" component={ClientProjectDetailPage} />
-      <Route path="/client/projects/:id/upload" component={DatasetUploadPage} />
-      <Route path="/client/chats" component={ClientChatsPage} />
-      <Route path="/analyst/dashboard" component={AnalystDashboardPage} />
-      <Route path="/analyst/browse" component={BrowseProjectsPage} />
-      <Route path="/analyst/applications" component={ApplicationsPage} />
-      <Route path="/analyst/projects" component={AnalystProjectsPage} />
-      <Route path="/analyst/projects/:id" component={AnalystProjectDetailPage} />
-      <Route path="/analyst/chats" component={AnalystChatsPage} />
-      <Route path="/analyst/dashboards" component={DashboardsPage} />
-      <Route path="/analyst/visualization-builder" component={VisualizationBuilderPage} />
-      <Route path="/analyst/sample-dashboard" component={SampleDashboardPage} />
-      <Route path="/analyst/settings" component={AnalystSettingsPage} />
+      <Route path="/client/projects">
+        <ProtectedRoute component={ClientProjectsPage} allowedRoles={["client"]} />
+      </Route>
+      <Route path="/client/projects/:id">
+        <ProtectedRoute component={ClientProjectDetailPage} allowedRoles={["client"]} />
+      </Route>
+      <Route path="/client/projects/:id/upload">
+        <ProtectedRoute component={DatasetUploadPage} allowedRoles={["client"]} />
+      </Route>
+      <Route path="/client/chats">
+        <ProtectedRoute component={ClientChatsPage} allowedRoles={["client"]} />
+      </Route>
+      <Route path="/analyst/dashboard">
+        <ProtectedRoute component={AnalystDashboardPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/browse">
+        <ProtectedRoute component={BrowseProjectsPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/applications">
+        <ProtectedRoute component={ApplicationsPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/projects">
+        <ProtectedRoute component={AnalystProjectsPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/projects/:id">
+        <ProtectedRoute component={AnalystProjectDetailPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/chats">
+        <ProtectedRoute component={AnalystChatsPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/dashboards">
+        <ProtectedRoute component={DashboardsPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/visualization-builder">
+        <ProtectedRoute component={VisualizationBuilderPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/sample-dashboard">
+        <ProtectedRoute component={SampleDashboardPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/analyst/settings">
+        <ProtectedRoute component={AnalystSettingsPage} allowedRoles={["analyst"]} />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
