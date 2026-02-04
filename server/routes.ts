@@ -4,11 +4,15 @@ import { storage } from "./storage";
 import { parseCSV, inferColumnTypes } from "./csv-parser";
 import { nanoid } from "nanoid";
 import type { DatasetColumn } from "@shared/schema";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  await setupAuth(app);
+  registerAuthRoutes(app);
 
   // Datasets API
   app.get("/api/datasets", async (req: Request, res: Response) => {

@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -9,10 +9,15 @@ import {
   Zap, 
   TrendingUp,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
 
 function Header() {
+  const { user, isLoading, logout } = useAuth();
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-6 gap-4">
@@ -43,21 +48,42 @@ function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/auth">
-            <Button 
-              variant="ghost"
-              data-testid="button-login"
-            >
-              Log in
-            </Button>
-          </Link>
-          <Link href="/auth">
-            <Button 
-              data-testid="button-register"
-            >
-              Get Started
-            </Button>
-          </Link>
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : user ? (
+            <>
+              <Link href={user.role === "client" ? "/client/projects" : "/analyst/dashboard"}>
+                <Button variant="ghost" data-testid="button-dashboard">
+                  Dashboard
+                </Button>
+              </Link>
+              <Button 
+                variant="outline"
+                onClick={() => logout()}
+                data-testid="button-logout"
+              >
+                Log out
+              </Button>
+            </>
+          ) : (
+            <>
+              <a href="/api/login">
+                <Button 
+                  variant="ghost"
+                  data-testid="button-login"
+                >
+                  Log in
+                </Button>
+              </a>
+              <a href="/api/login">
+                <Button 
+                  data-testid="button-register"
+                >
+                  Get Started
+                </Button>
+              </a>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -83,17 +109,17 @@ function HeroSection() {
             actionable insights delivered as interactive dashboards.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/auth">
+            <a href="/api/login">
               <Button size="lg" className="gap-2" data-testid="button-post-project">
                 Post a Project
                 <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
-            <Link href="/auth">
+            </a>
+            <a href="/api/login">
               <Button size="lg" variant="outline" data-testid="button-find-work">
                 Find Work as Analyst
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </div>
@@ -262,7 +288,7 @@ function CTASection() {
             Join thousands of organizations and analysts already using DataWork.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/auth">
+            <a href="/api/login">
               <Button 
                 size="lg" 
                 variant="secondary"
@@ -272,7 +298,7 @@ function CTASection() {
                 Get Started Free
                 <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </div>
