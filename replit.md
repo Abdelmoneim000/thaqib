@@ -163,3 +163,38 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/conversations/:conversationId/messages` - Get all messages in a conversation
 - `POST /api/conversations/:conversationId/messages` - Send a new message
 - `PUT /api/conversations/:conversationId/read` - Mark messages as read
+
+### Admin Panel
+The admin panel is accessible at `/admin/` routes and requires the "admin" role. Features include:
+
+**Dashboard (`/admin/dashboard`)**
+- Platform statistics: Projects created today, completed projects, total revenue
+- User counts: Total users, clients, analysts
+
+**Client Management (`/admin/clients`)**
+- View all clients and their projects
+- Access client datasets
+- Start support chat with clients
+
+**Analyst Management (`/admin/analysts`)**
+- View all analysts
+- Assign/remove analysts from projects
+- Start support chat with analysts
+
+**Support Chats (`/admin/chats`)**
+- Admin conversations appear to users as "Thaqib Help"
+- Real-time messaging with clients and analysts
+
+### Admin API Endpoints
+- `GET /api/admin/stats` - Platform statistics
+- `GET /api/admin/users` - List all users (optional: `?role=`)
+- `GET /api/admin/users/:id` - Get single user
+- `POST /api/admin/users` - Create new user
+- `PATCH /api/admin/users/:id` - Update user
+- `DELETE /api/admin/users/:id` - Delete user
+- `GET /api/admin/projects` - List all projects
+- `PATCH /api/admin/projects/:id` - Update project (assign analyst, change status)
+- `GET /api/admin/datasets` - List all datasets
+- `GET /api/admin/dashboards` - List all dashboards
+- `GET /api/admin/conversations` - List admin support conversations
+- `POST /api/admin/conversations` - Create admin support conversation with user

@@ -1,5 +1,5 @@
 import { 
-  type User,
+  type User, type UpsertUser,
   type Project, type InsertProject,
   type Dataset, type InsertDataset,
   type Dashboard, type InsertDashboard,
@@ -17,16 +17,30 @@ import {
   messages as messagesTable
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, ne, desc } from "drizzle-orm";
+import { eq, or, and, ne, desc, sql, gte, count } from "drizzle-orm";
+
+export interface AdminStats {
+  projectsToday: number;
+  projectsSubmitted: number;
+  totalRevenue: number;
+  totalUsers: number;
+  totalClients: number;
+  totalAnalysts: number;
+}
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   updateUserRole(id: string, role: string): Promise<User | undefined>;
+  getAllUsers(role?: string): Promise<User[]>;
+  createUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
   
   getProject(id: string): Promise<Project | undefined>;
   getProjectsByClient(clientId: string): Promise<Project[]>;
   getProjectsByAnalyst(analystId: string): Promise<Project[]>;
   getAllOpenProjects(): Promise<Project[]>;
+  getAllProjects(): Promise<Project[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
   
@@ -40,6 +54,7 @@ export interface IStorage {
   getDashboard(id: string): Promise<Dashboard | undefined>;
   getDashboardsByUser(userId: string): Promise<Dashboard[]>;
   getDashboardsByProject(projectId: string): Promise<Dashboard[]>;
+  getAllDashboards(): Promise<Dashboard[]>;
   createDashboard(dashboard: InsertDashboard): Promise<Dashboard>;
   updateDashboard(id: string, updates: Partial<Dashboard>): Promise<Dashboard | undefined>;
   deleteDashboard(id: string): Promise<boolean>;
@@ -66,6 +81,11 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   markMessagesAsRead(conversationId: string, userId: string): Promise<void>;
   getUnreadCount(conversationId: string, userId: string): Promise<number>;
+
+  // Admin-specific methods
+  getAdminStats(): Promise<AdminStats>;
+  getAdminConversations(): Promise<Conversation[]>;
+  createAdminConversation(adminId: string, userId: string): Promise<Conversation>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -83,6 +103,32 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getAllUsers(role?: string): Promise<User[]> {
+    if (role) {
+      return db.select().from(usersTable).where(eq(usersTable.role, role));
+    }
+    return db.select().from(usersTable);
+  }
+
+  async createUser(user: UpsertUser): Promise<User> {
+    const [newUser] = await db.insert(usersTable).values(user).returning();
+    return newUser;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const [user] = await db
+      .update(usersTable)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(usersTable.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(usersTable).where(eq(usersTable.id, id)).returning();
+    return result.length > 0;
+  }
+
   async getProject(id: string): Promise<Project | undefined> {
     const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, id));
     return project;
@@ -98,6 +144,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllOpenProjects(): Promise<Project[]> {
     return db.select().from(projectsTable).where(eq(projectsTable.status, "open"));
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return db.select().from(projectsTable).orderBy(desc(projectsTable.createdAt));
   }
 
   async createProject(project: InsertProject): Promise<Project> {
@@ -152,6 +202,10 @@ export class DatabaseStorage implements IStorage {
 
   async getDashboardsByProject(projectId: string): Promise<Dashboard[]> {
     return db.select().from(dashboardsTable).where(eq(dashboardsTable.projectId, projectId));
+  }
+
+  async getAllDashboards(): Promise<Dashboard[]> {
+    return db.select().from(dashboardsTable).orderBy(desc(dashboardsTable.createdAt));
   }
 
   async createDashboard(dashboard: InsertDashboard): Promise<Dashboard> {
@@ -312,6 +366,82 @@ export class DatabaseStorage implements IStorage {
         eq(messagesTable.isRead, false)
       ));
     return messages.length;
+  }
+
+  // Admin-specific methods
+  async getAdminStats(): Promise<AdminStats> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Projects created today
+    const projectsTodayResult = await db
+      .select({ count: count() })
+      .from(projectsTable)
+      .where(gte(projectsTable.createdAt, today));
+    
+    // Projects submitted (completed status)
+    const projectsSubmittedResult = await db
+      .select({ count: count() })
+      .from(projectsTable)
+      .where(eq(projectsTable.status, "completed"));
+    
+    // Total revenue from platform fees
+    const revenueResult = await db
+      .select({ total: sql<number>`COALESCE(SUM(platform_fee), 0)` })
+      .from(projectsTable);
+    
+    // User counts
+    const totalUsersResult = await db.select({ count: count() }).from(usersTable);
+    const clientsResult = await db.select({ count: count() }).from(usersTable).where(eq(usersTable.role, "client"));
+    const analystsResult = await db.select({ count: count() }).from(usersTable).where(eq(usersTable.role, "analyst"));
+    
+    return {
+      projectsToday: projectsTodayResult[0]?.count || 0,
+      projectsSubmitted: projectsSubmittedResult[0]?.count || 0,
+      totalRevenue: revenueResult[0]?.total || 0,
+      totalUsers: totalUsersResult[0]?.count || 0,
+      totalClients: clientsResult[0]?.count || 0,
+      totalAnalysts: analystsResult[0]?.count || 0,
+    };
+  }
+
+  async getAdminConversations(): Promise<Conversation[]> {
+    return db
+      .select()
+      .from(conversationsTable)
+      .where(eq(conversationsTable.isAdminChat, true))
+      .orderBy(desc(conversationsTable.lastMessageAt));
+  }
+
+  async createAdminConversation(adminId: string, userId: string): Promise<Conversation> {
+    // Check if conversation already exists
+    const existing = await db
+      .select()
+      .from(conversationsTable)
+      .where(and(
+        eq(conversationsTable.isAdminChat, true),
+        or(
+          eq(conversationsTable.clientId, userId),
+          eq(conversationsTable.analystId, userId)
+        )
+      ));
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
+    // Create new admin chat conversation
+    const [conversation] = await db
+      .insert(conversationsTable)
+      .values({
+        clientId: userId,
+        analystId: adminId,
+        analystName: "Thaqib Help",
+        isAdminChat: true,
+      })
+      .returning();
+    
+    return conversation;
   }
 }
 

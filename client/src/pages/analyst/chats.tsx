@@ -56,7 +56,9 @@ function ChatPanel({
     }
   };
 
-  const clientName = conversation.clientId?.replace("client-", "Client ") || "Client";
+  const chatName = conversation.isAdminChat 
+    ? "Thaqib Help" 
+    : (conversation.clientId?.replace("client-", "Client ") || "Client");
 
   return (
     <div className="flex flex-col h-full">
@@ -66,12 +68,14 @@ function ChatPanel({
         </Button>
         <Avatar className="h-8 w-8">
           <AvatarFallback className="bg-secondary text-secondary-foreground text-sm">
-            C
+            {conversation.isAdminChat ? "T" : "C"}
           </AvatarFallback>
         </Avatar>
         <div>
-          <p className="font-medium">{clientName}</p>
-          <p className="text-xs text-muted-foreground">Project Owner</p>
+          <p className="font-medium">{chatName}</p>
+          <p className="text-xs text-muted-foreground">
+            {conversation.isAdminChat ? "Support" : "Project Owner"}
+          </p>
         </div>
       </div>
 

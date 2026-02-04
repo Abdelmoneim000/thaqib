@@ -13,6 +13,8 @@ export const projects = pgTable("projects", {
   analystId: varchar("analyst_id"),
   status: text("status").notNull().default("open"),
   budget: integer("budget"),
+  platformFee: integer("platform_fee").default(0),
+  submittedAt: timestamp("submitted_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -158,6 +160,7 @@ export const conversations = pgTable("conversations", {
   clientId: varchar("client_id").notNull(),
   analystId: varchar("analyst_id").notNull(),
   analystName: text("analyst_name"),
+  isAdminChat: boolean("is_admin_chat").default(false),
   lastMessageAt: timestamp("last_message_at").defaultNow(),
   lastMessagePreview: text("last_message_preview"),
   createdAt: timestamp("created_at").defaultNow(),

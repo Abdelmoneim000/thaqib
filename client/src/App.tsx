@@ -23,6 +23,10 @@ import DashboardsPage from "@/pages/analyst/dashboards";
 import VisualizationBuilderPage from "@/pages/analyst/visualization-builder";
 import SampleDashboardPage from "@/pages/analyst/sample-dashboard";
 import SharedDashboardPage from "@/pages/shared-dashboard";
+import AdminDashboardPage from "@/pages/admin/dashboard";
+import AdminClientsPage from "@/pages/admin/clients";
+import AdminAnalystsPage from "@/pages/admin/analysts";
+import AdminChatsPage from "@/pages/admin/chats";
 
 function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -45,6 +49,9 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (user.role === "admin") {
+      return <Redirect to="/admin/dashboard" />;
+    }
     return <Redirect to={user.role === "client" ? "/client/projects" : "/analyst/dashboard"} />;
   }
 
@@ -98,6 +105,18 @@ function Router() {
       </Route>
       <Route path="/analyst/settings">
         <ProtectedRoute component={AnalystSettingsPage} allowedRoles={["analyst"]} />
+      </Route>
+      <Route path="/admin/dashboard">
+        <ProtectedRoute component={AdminDashboardPage} allowedRoles={["admin"]} />
+      </Route>
+      <Route path="/admin/clients">
+        <ProtectedRoute component={AdminClientsPage} allowedRoles={["admin"]} />
+      </Route>
+      <Route path="/admin/analysts">
+        <ProtectedRoute component={AdminAnalystsPage} allowedRoles={["admin"]} />
+      </Route>
+      <Route path="/admin/chats">
+        <ProtectedRoute component={AdminChatsPage} allowedRoles={["admin"]} />
       </Route>
       <Route component={NotFound} />
     </Switch>

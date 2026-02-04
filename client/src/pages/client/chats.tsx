@@ -69,7 +69,9 @@ function ChatPanel({
         </Avatar>
         <div>
           <p className="font-medium">{conversation.analystName || "Analyst"}</p>
-          <p className="text-xs text-muted-foreground">Data Analyst</p>
+          <p className="text-xs text-muted-foreground">
+            {conversation.isAdminChat ? "Support" : "Data Analyst"}
+          </p>
         </div>
       </div>
 

@@ -49,13 +49,11 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const projectId = req.query.projectId as string | undefined;
-      let datasets;
+      let datasets: Awaited<ReturnType<typeof storage.getDatasetsByProject>> = [];
       if (projectId) {
         datasets = await storage.getDatasetsByProject(projectId);
       } else if (userId) {
         datasets = await storage.getDatasetsByUser(userId);
-      } else {
-        datasets = [];
       }
       const summary = datasets.map(d => ({
         id: d.id,
@@ -159,13 +157,11 @@ export async function registerRoutes(
       const userId = getUserId(req);
       const projectId = req.query.projectId as string | undefined;
       
-      let dashboards;
+      let dashboards: Awaited<ReturnType<typeof storage.getDashboardsByProject>> = [];
       if (projectId) {
         dashboards = await storage.getDashboardsByProject(projectId);
       } else if (userId) {
         dashboards = await storage.getDashboardsByUser(userId);
-      } else {
-        dashboards = [];
       }
       res.json(dashboards);
     } catch (error) {
@@ -454,19 +450,17 @@ export async function registerRoutes(
       const user = await storage.getUser(userId!);
       const status = req.query.status as string | undefined;
       
-      let projects;
+      let projectsList: Awaited<ReturnType<typeof storage.getProjectsByClient>> = [];
       if (user?.role === "client") {
-        projects = await storage.getProjectsByClient(userId!);
+        projectsList = await storage.getProjectsByClient(userId!);
       } else if (user?.role === "analyst") {
         if (status === "open") {
-          projects = await storage.getAllOpenProjects();
+          projectsList = await storage.getAllOpenProjects();
         } else {
-          projects = await storage.getProjectsByAnalyst(userId!);
+          projectsList = await storage.getProjectsByAnalyst(userId!);
         }
-      } else {
-        projects = [];
       }
-      res.json(projects);
+      res.json(projectsList);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch projects" });
     }
@@ -636,6 +630,161 @@ export async function registerRoutes(
       res.json({ count });
     } catch (error) {
       res.status(500).json({ error: "Failed to get unread count" });
+    }
+  });
+
+  // Admin middleware to check if user is admin
+  const isAdmin = async (req: Request, res: Response, next: Function) => {
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ error: "Forbidden: Admin access required" });
+    }
+    next();
+  };
+
+  // Admin API endpoints
+  app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch admin stats" });
+    }
+  });
+
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const role = req.query.role as string | undefined;
+      const users = await storage.getAllUsers(role);
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
+  app.post("/api/admin/users", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { email, firstName, lastName, role } = req.body;
+      if (!email || !role) {
+        return res.status(400).json({ error: "Email and role are required" });
+      }
+      const user = await storage.createUser({
+        id: nanoid(),
+        email,
+        firstName,
+        lastName,
+        role,
+      });
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { role, firstName, lastName } = req.body;
+      const user = await storage.updateUser(req.params.id, { role, firstName, lastName });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const success = await storage.deleteUser(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  app.get("/api/admin/projects", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const allProjects = await storage.getAllProjects();
+      res.json(allProjects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  app.patch("/api/admin/projects/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { analystId, status } = req.body;
+      const project = await storage.updateProject(req.params.id, { analystId, status });
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update project" });
+    }
+  });
+
+  app.get("/api/admin/datasets", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const allDatasets = await storage.getAllDatasets();
+      res.json(allDatasets);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch datasets" });
+    }
+  });
+
+  app.get("/api/admin/dashboards", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const allDashboards = await storage.getAllDashboards();
+      res.json(allDashboards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch dashboards" });
+    }
+  });
+
+  // Admin chat endpoints - conversations with users that appear as "Thaqib Help"
+  app.get("/api/admin/conversations", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const conversations = await storage.getAdminConversations();
+      res.json(conversations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch admin conversations" });
+    }
+  });
+
+  app.post("/api/admin/conversations", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const adminUserId = getUserId(req);
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+      
+      // Create conversation with admin as analyst, appearing as "Thaqib Help"
+      const conversation = await storage.createAdminConversation(adminUserId!, userId);
+      res.json(conversation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create admin conversation" });
     }
   });
 
