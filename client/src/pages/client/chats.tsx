@@ -88,36 +88,45 @@ function ChatPanel({
           </div>
         ) : (
           <div className="space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-2 ${msg.senderRole === "client" ? "justify-end" : "justify-start"}`}
-                data-testid={`message-${msg.id}`}
-              >
-                {msg.senderRole === "analyst" && (
-                  <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">A</AvatarFallback>
-                  </Avatar>
-                )}
+            {messages.map((msg) => {
+              const isOwnMessage = msg.senderRole === "client";
+              const isAdminMessage = msg.senderRole === "admin";
+              const avatarInitial = isAdminMessage ? "T" : "A";
+              
+              return (
                 <div
-                  className={`max-w-[70%] rounded-lg px-3 py-2 ${
-                    msg.senderRole === "client"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}
+                  key={msg.id}
+                  className={`flex gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                  data-testid={`message-${msg.id}`}
                 >
-                  <p className="text-sm">{msg.content}</p>
-                  <p className={`text-xs mt-1 ${msg.senderRole === "client" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                    {msg.createdAt && formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
-                  </p>
+                  {!isOwnMessage && (
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">{avatarInitial}</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={`max-w-[70%] rounded-lg px-3 py-2 ${
+                      isOwnMessage
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}
+                  >
+                    {isAdminMessage && (
+                      <p className="text-xs font-medium mb-1">Thaqib Help</p>
+                    )}
+                    <p className="text-sm">{msg.content}</p>
+                    <p className={`text-xs mt-1 ${isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                      {msg.createdAt && formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
+                    </p>
+                  </div>
+                  {isOwnMessage && (
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">C</AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
-                {msg.senderRole === "client" && (
-                  <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">C</AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
+              );
+            })}
             <div ref={messagesEndRef} />
           </div>
         )}

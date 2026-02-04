@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import AdminLayout from "@/components/admin-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   FolderKanban, 
@@ -8,7 +10,10 @@ import {
   DollarSign, 
   Users,
   UserCheck,
-  Briefcase
+  Briefcase,
+  ArrowRight,
+  LayoutDashboard,
+  BarChart3
 } from "lucide-react";
 
 interface AdminStats {
@@ -135,6 +140,55 @@ export default function AdminDashboardPage() {
               <p className="text-xs text-muted-foreground">Freelance data analysts</p>
             </CardContent>
           </Card>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Quick Access</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="hover-elevate" data-testid="card-client-dashboard">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-primary/10">
+                    <LayoutDashboard className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Client Dashboard</CardTitle>
+                    <CardDescription>Post projects and manage datasets</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Link href="/client/projects">
+                  <Button className="w-full" data-testid="button-goto-client">
+                    Go to Client Dashboard
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-elevate" data-testid="card-analyst-dashboard">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-primary/10">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Analyst Dashboard</CardTitle>
+                    <CardDescription>Browse projects and build visualizations</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Link href="/analyst/dashboard">
+                  <Button className="w-full" data-testid="button-goto-analyst">
+                    Go to Analyst Dashboard
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </AdminLayout>

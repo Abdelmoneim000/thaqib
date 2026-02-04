@@ -48,10 +48,8 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
     return <Redirect to="/role-selection" />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    if (user.role === "admin") {
-      return <Redirect to="/admin/dashboard" />;
-    }
+  // Admin can access all routes
+  if (allowedRoles && !allowedRoles.includes(user.role) && user.role !== "admin") {
     return <Redirect to={user.role === "client" ? "/client/projects" : "/analyst/dashboard"} />;
   }
 
