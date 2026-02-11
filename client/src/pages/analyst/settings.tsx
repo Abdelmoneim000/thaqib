@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import AnalystLayout from "@/components/analyst-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { 
+import { useToast } from "@/hooks/use-toast";
+import {
   User,
   Mail,
   Briefcase,
@@ -15,9 +18,33 @@ import {
   X
 } from "lucide-react";
 
-const skills = ["Python", "SQL", "Tableau", "Machine Learning", "Data Visualization", "Pandas"];
-
 export default function AnalystSettingsPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [newSkill, setNewSkill] = useState("");
+
+  // Parse skills from comma-separated string or array if stored differently
+  const initialSkills = user?.skills ? user.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
+  const [skills, setSkills] = useState<string[]>(initialSkills);
+
+  const handleSaveProfile = () => {
+    toast({
+      title: "Profile updated",
+      description: "Your changes have been saved (simulated).",
+    });
+  };
+
+  const handleAddSkill = () => {
+    if (newSkill && !skills.includes(newSkill)) {
+      setSkills([...skills, newSkill]);
+      setNewSkill("");
+    }
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    setSkills(skills.filter(s => s !== skillToRemove));
+  };
+
   return (
     <AnalystLayout>
       <div className="p-6 space-y-6 max-w-4xl">
@@ -42,48 +69,50 @@ export default function AnalystSettingsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
-                <Input 
-                  id="firstName" 
-                  defaultValue="Sarah" 
+                <Input
+                  id="firstName"
+                  defaultValue={user?.firstName || ""}
                   data-testid="input-first-name"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input 
-                  id="lastName" 
-                  defaultValue="Anderson" 
+                <Input
+                  id="lastName"
+                  defaultValue={user?.lastName || ""}
                   data-testid="input-last-name"
                 />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                defaultValue="sarah@example.com" 
+              <Input
+                id="email"
+                type="email"
+                defaultValue={user?.email || ""}
+                disabled
+                className="bg-muted"
                 data-testid="input-email"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="title">Professional Title</Label>
-              <Input 
-                id="title" 
-                defaultValue="Senior Data Analyst" 
+              <Input
+                id="title"
+                defaultValue="Data Analyst"
                 data-testid="input-title"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
-              <Textarea 
-                id="bio" 
+              <Textarea
+                id="bio"
                 rows={4}
-                defaultValue="Experienced data analyst with 5+ years in financial and e-commerce analytics. Specialized in Python, SQL, and creating actionable dashboards."
+                defaultValue="Experienced data analyst ready to help you unlock insights from your data."
                 data-testid="textarea-bio"
               />
             </div>
-            <Button data-testid="button-save-profile">Save Profile</Button>
+            <Button onClick={handleSaveProfile} data-testid="button-save-profile">Save Profile</Button>
           </CardContent>
         </Card>
 
@@ -99,27 +128,35 @@ export default function AnalystSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              {skills.map((skill) => (
-                <Badge key={skill} variant="secondary" className="pr-1">
-                  {skill}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-4 w-4 ml-1"
-                    data-testid={`button-remove-skill-${skill.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
+              {skills.length > 0 ? (
+                skills.map((skill) => (
+                  <Badge key={skill} variant="secondary" className="pr-1">
+                    {skill}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeSkill(skill)}
+                      className="h-4 w-4 ml-1"
+                      data-testid={`button-remove-skill-${skill.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground italic">No skills listed yet.</p>
+              )}
             </div>
             <div className="flex gap-2">
-              <Input 
-                placeholder="Add a skill..." 
+              <Input
+                placeholder="Add a skill..."
                 className="max-w-xs"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddSkill()}
                 data-testid="input-add-skill"
               />
-              <Button variant="outline" data-testid="button-add-skill">Add</Button>
+              <Button variant="outline" onClick={handleAddSkill} data-testid="button-add-skill">Add</Button>
             </div>
           </CardContent>
         </Card>

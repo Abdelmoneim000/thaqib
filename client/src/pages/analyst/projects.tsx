@@ -1,12 +1,14 @@
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import AnalystLayout from "@/components/analyst-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Calendar, 
+import type { Project } from "@shared/schema";
+import {
+  Calendar,
   DollarSign,
   Building2,
   Clock,
@@ -14,97 +16,17 @@ import {
   BarChart3,
   Upload,
   MessageSquare,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from "lucide-react";
 
-type ProjectStatus = "in_progress" | "review" | "completed";
-
-interface ActiveProject {
-  id: string;
-  title: string;
-  client: string;
-  budget: number;
-  status: ProjectStatus;
-  deadline: string;
-  startDate: string;
-  progress: number;
-  datasets: number;
-  dashboards: number;
-  lastActivity: string;
+interface EnrichedProject extends Project {
+  clientName: string;
+  datasetsCount: number;
+  dashboardsCount: number;
 }
 
-const activeProjects: ActiveProject[] = [
-  {
-    id: "proj1",
-    title: "Sales Performance Dashboard",
-    client: "TechCorp Inc.",
-    budget: 2500,
-    status: "in_progress",
-    deadline: "Jan 25, 2026",
-    startDate: "Jan 5, 2026",
-    progress: 65,
-    datasets: 3,
-    dashboards: 1,
-    lastActivity: "2 hours ago",
-  },
-  {
-    id: "proj2",
-    title: "Customer Churn Analysis",
-    client: "RetailMax",
-    budget: 1800,
-    status: "in_progress",
-    deadline: "Jan 30, 2026",
-    startDate: "Jan 8, 2026",
-    progress: 40,
-    datasets: 2,
-    dashboards: 0,
-    lastActivity: "1 day ago",
-  },
-  {
-    id: "proj3",
-    title: "Marketing ROI Report",
-    client: "GrowthLabs",
-    budget: 1200,
-    status: "review",
-    deadline: "Jan 18, 2026",
-    startDate: "Jan 2, 2026",
-    progress: 100,
-    datasets: 2,
-    dashboards: 2,
-    lastActivity: "3 hours ago",
-  },
-];
-
-const completedProjects: ActiveProject[] = [
-  {
-    id: "proj4",
-    title: "Quarterly Financial Report",
-    client: "InvestCo",
-    budget: 3000,
-    status: "completed",
-    deadline: "Dec 20, 2025",
-    startDate: "Dec 1, 2025",
-    progress: 100,
-    datasets: 4,
-    dashboards: 3,
-    lastActivity: "Jan 5, 2026",
-  },
-  {
-    id: "proj5",
-    title: "User Behavior Analysis",
-    client: "AppDev Studios",
-    budget: 2200,
-    status: "completed",
-    deadline: "Dec 15, 2025",
-    startDate: "Nov 25, 2025",
-    progress: 100,
-    datasets: 2,
-    dashboards: 2,
-    lastActivity: "Dec 15, 2025",
-  },
-];
-
-function getStatusBadge(status: ProjectStatus) {
+function getStatusBadge(status: string) {
   switch (status) {
     case "in_progress":
       return <Badge variant="default">In Progress</Badge>;
@@ -117,7 +39,10 @@ function getStatusBadge(status: ProjectStatus) {
   }
 }
 
-function ProjectCard({ project, showActions = true }: { project: ActiveProject; showActions?: boolean }) {
+function ProjectCard({ project, showActions = true }: { project: EnrichedProject; showActions?: boolean }) {
+  // Simple progress estimation based on status
+  const progress = project.status === "completed" ? 100 : project.status === "review" ? 90 : 40;
+
   return (
     <Card data-testid={`card-project-${project.id}`}>
       <CardHeader>
@@ -126,12 +51,12 @@ function ProjectCard({ project, showActions = true }: { project: ActiveProject; 
             <CardTitle className="text-lg">{project.title}</CardTitle>
             <CardDescription className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              {project.client}
+              {project.clientName}
             </CardDescription>
           </div>
           <div className="flex flex-col items-end gap-2">
             {getStatusBadge(project.status)}
-            <div className="text-lg font-bold">${project.budget.toLocaleString()}</div>
+            <div className="text-lg font-bold">${(project.budget || 0).toLocaleString()}</div>
           </div>
         </div>
       </CardHeader>
@@ -139,9 +64,9 @@ function ProjectCard({ project, showActions = true }: { project: ActiveProject; 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{project.progress}%</span>
+            <span className="font-medium">{progress}%</span>
           </div>
-          <Progress value={project.progress} className="h-2" />
+          <Progress value={progress} className="h-2" />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -149,54 +74,52 @@ function ProjectCard({ project, showActions = true }: { project: ActiveProject; 
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <div>
               <p className="text-muted-foreground">Deadline</p>
-              <p className="font-medium">{project.deadline}</p>
+              <p className="font-medium">{project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
             <div>
               <p className="text-muted-foreground">Datasets</p>
-              <p className="font-medium">{project.datasets} files</p>
+              <p className="font-medium">{project.datasetsCount} files</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
             <div>
               <p className="text-muted-foreground">Dashboards</p>
-              <p className="font-medium">{project.dashboards} created</p>
+              <p className="font-medium">{project.dashboardsCount} created</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <div>
               <p className="text-muted-foreground">Last Activity</p>
-              <p className="font-medium">{project.lastActivity}</p>
+              <p className="font-medium">{project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently'}</p>
             </div>
           </div>
         </div>
 
         {showActions && (
           <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
-            <Link href="/analyst/projects/project-1">
+            <Link href={`/analyst/projects/${project.id}`}>
+              <Button variant="outline" size="sm" data-testid={`button-details-${project.id}`}>
+                View Details
+              </Button>
+            </Link>
+
+            {/* 
+            <Link href={`/analyst/projects/${project.id}/chat`}>
               <Button variant="outline" size="sm" data-testid={`button-message-${project.id}`}>
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Message Client
               </Button>
             </Link>
-            <Button variant="outline" size="sm" data-testid={`button-datasets-${project.id}`}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              View Data
-            </Button>
+            */}
+
             {project.status === "in_progress" && (
               <>
-                <Button variant="outline" size="sm" data-testid={`button-upload-${project.id}`}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Dashboard
-                </Button>
-                <Button size="sm" data-testid={`button-submit-${project.id}`}>
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Submit for Review
-                </Button>
+                {/* Upload Dashboard functionality would be implemented in project details page or separate modal */}
               </>
             )}
             {project.status === "review" && (
@@ -212,8 +135,25 @@ function ProjectCard({ project, showActions = true }: { project: ActiveProject; 
 }
 
 export default function AnalystProjectsPage() {
+  const { data: projects, isLoading } = useQuery<EnrichedProject[]>({
+    queryKey: ["/api/projects"],
+  });
+
+  const activeProjects = projects?.filter(p => ["in_progress", "review"].includes(p.status)) || [];
+  const completedProjects = projects?.filter(p => p.status === "completed") || [];
+
   const inProgressProjects = activeProjects.filter(p => p.status === "in_progress");
   const underReviewProjects = activeProjects.filter(p => p.status === "review");
+
+  if (isLoading) {
+    return (
+      <AnalystLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AnalystLayout>
+    );
+  }
 
   return (
     <AnalystLayout>
@@ -270,6 +210,7 @@ export default function AnalystProjectsPage() {
               Completed ({completedProjects.length})
             </TabsTrigger>
           </TabsList>
+
           <TabsContent value="active" className="space-y-4 mt-4">
             {activeProjects.length > 0 ? (
               activeProjects.map((project) => (
@@ -292,6 +233,7 @@ export default function AnalystProjectsPage() {
               </Card>
             )}
           </TabsContent>
+
           <TabsContent value="completed" className="space-y-4 mt-4">
             {completedProjects.length > 0 ? (
               completedProjects.map((project) => (

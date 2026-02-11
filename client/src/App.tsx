@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import NotFound from "@/pages/not-found";
+import AuthPage from "@/pages/auth";
 import LandingPage from "@/pages/landing";
 import RoleSelectionPage from "@/pages/role-selection";
 import ClientProjectsPage from "@/pages/client/projects";
@@ -40,8 +41,7 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
   }
 
   if (!user) {
-    window.location.href = "/api/login";
-    return null;
+    return <Redirect to="/auth" />;
   }
 
   if (!user.role || user.role === "") {
@@ -60,6 +60,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
+      <Route path="/auth" component={AuthPage} />
       <Route path="/role-selection" component={RoleSelectionPage} />
       <Route path="/shared/:token" component={SharedDashboardPage} />
       <Route path="/client/projects">

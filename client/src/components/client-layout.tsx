@@ -12,10 +12,10 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { 
-  FolderKanban, 
-  FileSpreadsheet, 
-  Settings, 
+import {
+  FolderKanban,
+  FileSpreadsheet,
+  Settings,
   LogOut,
   Users,
   Building2,
@@ -55,12 +55,12 @@ function ClientSidebar() {
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <Link href="/">
-          <span 
+          <span
             className="flex items-center gap-2 text-lg font-semibold cursor-pointer"
             data-testid="link-logo"
           >
             <Users className="h-5 w-5 text-primary" />
-            DataWork
+            Thaqib
           </span>
         </Link>
       </SidebarHeader>
@@ -76,8 +76,8 @@ function ClientSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     isActive={location === item.url}
                   >
                     <Link href={item.url}>
@@ -107,10 +107,10 @@ function ClientSidebar() {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const initials = user?.firstName && user?.lastName 
+  const initials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : user?.email?.[0]?.toUpperCase() || "U";
-  
+
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",

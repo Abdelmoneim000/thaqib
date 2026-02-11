@@ -35,14 +35,14 @@ export default function RoleSelectionPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2" data-testid="text-welcome-title">Welcome to DataWork</h1>
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-welcome-title">Welcome to Thaqib</h1>
           <p className="text-muted-foreground" data-testid="text-role-prompt">
             Choose how you want to use the platform
           </p>
         </div>
-        
+
         <div className="grid gap-4 md:grid-cols-2">
-          <Card 
+          <Card
             className="cursor-pointer transition-all hover-elevate"
             onClick={() => !isSettingRole && handleRoleSelection("client")}
             data-testid="card-role-client"
@@ -63,8 +63,8 @@ export default function RoleSelectionPage() {
                 <li>Review analyst proposals</li>
                 <li>Receive interactive dashboards</li>
               </ul>
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 disabled={isSettingRole}
                 data-testid="button-select-client"
               >
@@ -77,7 +77,7 @@ export default function RoleSelectionPage() {
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             className="cursor-pointer transition-all hover-elevate"
             onClick={() => !isSettingRole && handleRoleSelection("analyst")}
             data-testid="card-role-analyst"
@@ -98,8 +98,8 @@ export default function RoleSelectionPage() {
                 <li>Build interactive dashboards</li>
                 <li>Manage your portfolio</li>
               </ul>
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 variant="secondary"
                 disabled={isSettingRole}
                 data-testid="button-select-analyst"

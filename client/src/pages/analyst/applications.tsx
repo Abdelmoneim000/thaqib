@@ -3,96 +3,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Calendar, 
+import { useQuery } from "@tanstack/react-query";
+import type { Application } from "@shared/schema";
+import {
+  Calendar,
   DollarSign,
   Building2,
   Clock,
   CheckCircle2,
   XCircle,
   HourglassIcon,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from "lucide-react";
 
-type ApplicationStatus = "pending" | "accepted" | "rejected" | "withdrawn";
-
-interface Application {
-  id: string;
-  projectId: string;
+interface EnrichedApplication extends Application {
   projectTitle: string;
-  client: string;
-  proposedRate: number;
-  clientBudget: number;
-  appliedDate: string;
-  status: ApplicationStatus;
-  deadline: string;
-  coverLetterPreview: string;
+  projectBudget: number;
+  projectDeadline?: string;
+  clientName: string;
 }
 
-const applications: Application[] = [
-  {
-    id: "app1",
-    projectId: "101",
-    projectTitle: "Financial Forecasting Model",
-    client: "FinanceFirst Corp",
-    proposedRate: 3200,
-    clientBudget: 3500,
-    appliedDate: "Jan 12, 2026",
-    status: "pending",
-    deadline: "Feb 15, 2026",
-    coverLetterPreview: "I have extensive experience in financial modeling with Python...",
-  },
-  {
-    id: "app2",
-    projectId: "102",
-    projectTitle: "E-commerce Analytics Suite",
-    client: "ShopNow Inc",
-    proposedRate: 2800,
-    clientBudget: 2800,
-    appliedDate: "Jan 11, 2026",
-    status: "pending",
-    deadline: "Feb 20, 2026",
-    coverLetterPreview: "With 5+ years of e-commerce analytics experience...",
-  },
-  {
-    id: "app3",
-    projectId: "103",
-    projectTitle: "Customer Segmentation Analysis",
-    client: "MarketPro",
-    proposedRate: 2000,
-    clientBudget: 2200,
-    appliedDate: "Jan 10, 2026",
-    status: "accepted",
-    deadline: "Feb 10, 2026",
-    coverLetterPreview: "I specialize in customer analytics and have worked on...",
-  },
-  {
-    id: "app4",
-    projectId: "104",
-    projectTitle: "Supply Chain Optimization",
-    client: "LogiTech Solutions",
-    proposedRate: 4000,
-    clientBudget: 4000,
-    appliedDate: "Jan 8, 2026",
-    status: "rejected",
-    deadline: "Mar 1, 2026",
-    coverLetterPreview: "Having worked with Fortune 500 supply chain teams...",
-  },
-  {
-    id: "app5",
-    projectId: "105",
-    projectTitle: "Healthcare Data Analysis",
-    client: "MedData Health",
-    proposedRate: 4800,
-    clientBudget: 5000,
-    appliedDate: "Jan 5, 2026",
-    status: "accepted",
-    deadline: "Mar 15, 2026",
-    coverLetterPreview: "As a certified data analyst with healthcare background...",
-  },
-];
-
-function getStatusBadge(status: ApplicationStatus) {
+function getStatusBadge(status: string) {
   switch (status) {
     case "pending":
       return (
@@ -126,7 +58,7 @@ function getStatusBadge(status: ApplicationStatus) {
   }
 }
 
-function ApplicationCard({ application }: { application: Application }) {
+function ApplicationCard({ application }: { application: EnrichedApplication }) {
   return (
     <Card data-testid={`card-application-${application.id}`}>
       <CardHeader>
@@ -135,7 +67,7 @@ function ApplicationCard({ application }: { application: Application }) {
             <CardTitle className="text-lg">{application.projectTitle}</CardTitle>
             <CardDescription className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              {application.client}
+              {application.clientName}
             </CardDescription>
           </div>
           {getStatusBadge(application.status)}
@@ -147,45 +79,51 @@ function ApplicationCard({ application }: { application: Application }) {
             <p className="text-sm text-muted-foreground">Your Proposal</p>
             <div className="flex items-center gap-1 font-medium">
               <DollarSign className="h-4 w-4" />
-              {application.proposedRate.toLocaleString()}
+              {(application.proposedBudget || 0).toLocaleString()}
             </div>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Client Budget</p>
             <div className="flex items-center gap-1 font-medium">
               <DollarSign className="h-4 w-4" />
-              {application.clientBudget.toLocaleString()}
+              {(application.projectBudget || 0).toLocaleString()}
             </div>
           </div>
         </div>
 
-        <div className="p-3 rounded-md bg-muted/50">
-          <p className="text-sm text-muted-foreground italic">
-            "{application.coverLetterPreview}"
-          </p>
-        </div>
+        {application.coverLetter && (
+          <div className="p-3 rounded-md bg-muted/50">
+            <p className="text-sm text-muted-foreground italic line-clamp-2">
+              "{application.coverLetter}"
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Clock className="h-4 w-4" />
-            Applied: {application.appliedDate}
+            Applied: {application.createdAt ? new Date(application.createdAt).toLocaleDateString() : 'Unknown'}
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            Deadline: {application.deadline}
+            Deadline: {application.projectDeadline ? new Date(application.projectDeadline).toLocaleDateString() : 'N/A'}
           </div>
         </div>
 
         <div className="flex justify-end gap-2">
           {application.status === "pending" && (
             <>
+              {/* Withdraw functionality requires backend support, placeholder for now 
               <Button variant="outline" size="sm" data-testid={`button-withdraw-${application.id}`}>
                 Withdraw
               </Button>
+              */}
+              {/* Message Client functionality would link to chat/messages 
               <Button variant="outline" size="sm" data-testid={`button-message-${application.id}`}>
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Message Client
               </Button>
+              */}
             </>
           )}
           {application.status === "accepted" && (
@@ -193,6 +131,7 @@ function ApplicationCard({ application }: { application: Application }) {
               Start Project
             </Button>
           )}
+          {/* View Project would link to project details */}
           <Button variant="ghost" size="sm" data-testid={`button-view-project-${application.id}`}>
             View Project
           </Button>
@@ -203,9 +142,23 @@ function ApplicationCard({ application }: { application: Application }) {
 }
 
 export default function ApplicationsPage() {
-  const pendingApps = applications.filter(a => a.status === "pending");
-  const acceptedApps = applications.filter(a => a.status === "accepted");
-  const rejectedApps = applications.filter(a => a.status === "rejected");
+  const { data: applications, isLoading } = useQuery<EnrichedApplication[]>({
+    queryKey: ["/api/applications"],
+  });
+
+  const pendingApps = applications?.filter(a => a.status === "pending") || [];
+  const acceptedApps = applications?.filter(a => a.status === "accepted") || [];
+  const rejectedApps = applications?.filter(a => a.status === "rejected") || [];
+
+  if (isLoading) {
+    return (
+      <AnalystLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AnalystLayout>
+    );
+  }
 
   return (
     <AnalystLayout>
@@ -256,7 +209,7 @@ export default function ApplicationsPage() {
         <Tabs defaultValue="all" className="w-full">
           <TabsList>
             <TabsTrigger value="all" data-testid="tab-all">
-              All ({applications.length})
+              All ({(applications || []).length})
             </TabsTrigger>
             <TabsTrigger value="pending" data-testid="tab-pending">
               Pending ({pendingApps.length})
@@ -268,11 +221,19 @@ export default function ApplicationsPage() {
               Rejected ({rejectedApps.length})
             </TabsTrigger>
           </TabsList>
+
           <TabsContent value="all" className="space-y-4 mt-4">
-            {applications.map((app) => (
-              <ApplicationCard key={app.id} application={app} />
-            ))}
+            {(applications || []).length > 0 ? (
+              applications?.map((app) => (
+                <ApplicationCard key={app.id} application={app} />
+              ))
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                No applications found.
+              </div>
+            )}
           </TabsContent>
+
           <TabsContent value="pending" className="space-y-4 mt-4">
             {pendingApps.length > 0 ? (
               pendingApps.map((app) => (
@@ -287,6 +248,7 @@ export default function ApplicationsPage() {
               </Card>
             )}
           </TabsContent>
+
           <TabsContent value="accepted" className="space-y-4 mt-4">
             {acceptedApps.length > 0 ? (
               acceptedApps.map((app) => (
@@ -301,6 +263,7 @@ export default function ApplicationsPage() {
               </Card>
             )}
           </TabsContent>
+
           <TabsContent value="rejected" className="space-y-4 mt-4">
             {rejectedApps.length > 0 ? (
               rejectedApps.map((app) => (

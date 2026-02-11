@@ -5,6 +5,24 @@ import { z } from "zod";
 
 export * from "./models/auth";
 
+// Applications table — analyst applies to projects
+export const applications = pgTable("applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  analystId: varchar("analyst_id").notNull(),
+  coverLetter: text("cover_letter"),
+  proposedBudget: integer("proposed_budget"),
+  status: text("status").notNull().default("pending"), // pending | accepted | rejected
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertApplicationSchema = createInsertSchema(applications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertApplication = z.infer<typeof insertApplicationSchema>;
+export type Application = typeof applications.$inferSelect;
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
@@ -14,6 +32,7 @@ export const projects = pgTable("projects", {
   status: text("status").notNull().default("open"),
   budget: integer("budget"),
   platformFee: integer("platform_fee").default(0),
+  deadline: timestamp("deadline"),
   submittedAt: timestamp("submitted_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });

@@ -1,13 +1,14 @@
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import AnalystLayout from "@/components/analyst-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
-  Calendar, 
+import {
+  ArrowLeft,
+  Calendar,
   DollarSign,
   Building2,
   FileSpreadsheet,
@@ -18,10 +19,17 @@ import {
 import { ProjectChat } from "@/components/chat/project-chat";
 import type { Project } from "@shared/schema";
 
+interface EnrichedProject extends Project {
+  clientName: string;
+  datasetsCount: number;
+  dashboardsCount: number;
+}
+
 export default function AnalystProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
 
-  const { data: project, isLoading } = useQuery<Project>({
+  const { data: project, isLoading } = useQuery<EnrichedProject>({
     queryKey: ["/api/projects", id],
     queryFn: async () => {
       const res = await fetch(`/api/projects/${id}`);
@@ -33,12 +41,14 @@ export default function AnalystProjectDetailPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active":
-        return <Badge>Active</Badge>;
-      case "open":
-        return <Badge variant="secondary">Open</Badge>;
+      case "in_progress":
+        return <Badge variant="default">In Progress</Badge>;
+      case "review":
+        return <Badge variant="secondary">Review</Badge>;
       case "completed":
         return <Badge className="bg-green-600">Completed</Badge>;
+      case "open":
+        return <Badge variant="outline">Open</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -76,7 +86,7 @@ export default function AnalystProjectDetailPage() {
       <div className="p-6 space-y-6">
         <div>
           <Link href="/analyst/projects">
-            <button 
+            <button
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
               data-testid="button-back-projects"
             >
@@ -106,7 +116,7 @@ export default function AnalystProjectDetailPage() {
             )}
             <div className="flex items-center gap-1.5">
               <Building2 className="h-4 w-4" />
-              <span>Client: {project.clientId}</span>
+              <span>Client: {project.clientName}</span>
             </div>
             {project.createdAt && (
               <div className="flex items-center gap-1.5">
@@ -125,19 +135,19 @@ export default function AnalystProjectDetailPage() {
             </TabsTrigger>
             <TabsTrigger value="datasets" data-testid="tab-datasets">
               <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Datasets
+              Datasets ({project.datasetsCount || 0})
             </TabsTrigger>
             <TabsTrigger value="dashboards" data-testid="tab-dashboards">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Dashboards
+              Dashboards ({project.dashboardsCount || 0})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="chat" className="h-[500px]">
             <ProjectChat
               projectId={project.id}
-              currentUserId="analyst-1"
-              currentUserRole="analyst"
+              currentUserId={user?.id || ""}
+              currentUserRole={(user?.role as "client" | "analyst" | "admin") || "analyst"}
             />
           </TabsContent>
 
@@ -149,7 +159,7 @@ export default function AnalystProjectDetailPage() {
               <CardContent>
                 <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                   <FileSpreadsheet className="h-10 w-10 mb-2 opacity-50" />
-                  <p className="text-sm">Datasets uploaded by the client will appear here</p>
+                  <p className="text-sm">Datasets available: {project.datasetsCount}</p>
                 </div>
               </CardContent>
             </Card>
@@ -163,7 +173,7 @@ export default function AnalystProjectDetailPage() {
               <CardContent>
                 <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                   <BarChart3 className="h-10 w-10 mb-2 opacity-50" />
-                  <p className="text-sm">Dashboards you create will appear here</p>
+                  <p className="text-sm">Dashboards created: {project.dashboardsCount}</p>
                   <Link href="/analyst/visualization-builder">
                     <Button className="mt-4" size="sm" data-testid="button-create-visualization">
                       Create Visualization

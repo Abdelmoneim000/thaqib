@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useParams, useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import ClientLayout from "@/components/client-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,138 +10,56 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { 
   ArrowLeft,
-  Calendar, 
+  Calendar,
   DollarSign,
   Users,
   FileSpreadsheet,
   CheckCircle2,
   XCircle,
-  Clock,
   BarChart3,
   Upload,
   Eye,
   Download,
   Star,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from "lucide-react";
 import { ProjectChat } from "@/components/chat/project-chat";
+import type { Project, Application, Dataset, Dashboard } from "@shared/schema";
 
-interface Applicant {
-  id: string;
-  name: string;
-  avatar: string;
-  skills: string[];
-  proposedRate: number;
-  status: "applied" | "accepted" | "rejected";
-  rating: number;
-  projectsCompleted: number;
+// Extended Application type with enriched data from API
+interface EnrichedApplication extends Application {
+  analystName: string;
+  analystEmail: string;
+  analystSkills: string; // comma separated
 }
 
-interface Dataset {
-  id: string;
-  fileName: string;
-  fileSize: string;
-  uploadedAt: string;
-  uploadedBy: string;
-}
-
-interface Dashboard {
-  id: string;
-  title: string;
-  createdAt: string;
-  analyst: string;
-}
-
-const mockApplicants: Applicant[] = [
-  {
-    id: "1",
-    name: "Sarah Chen",
-    avatar: "SC",
-    skills: ["Python", "SQL", "Tableau", "Machine Learning"],
-    proposedRate: 2200,
-    status: "applied",
-    rating: 4.9,
-    projectsCompleted: 24,
-  },
-  {
-    id: "2",
-    name: "Marcus Johnson",
-    avatar: "MJ",
-    skills: ["R", "Power BI", "Statistical Analysis"],
-    proposedRate: 2500,
-    status: "applied",
-    rating: 4.7,
-    projectsCompleted: 18,
-  },
-  {
-    id: "3",
-    name: "Elena Rodriguez",
-    avatar: "ER",
-    skills: ["Python", "Pandas", "Data Visualization"],
-    proposedRate: 2000,
-    status: "accepted",
-    rating: 4.8,
-    projectsCompleted: 31,
-  },
-];
-
-const mockDatasets: Dataset[] = [
-  {
-    id: "1",
-    fileName: "customer_data_2024.csv",
-    fileSize: "2.4 MB",
-    uploadedAt: "2025-01-10",
-    uploadedBy: "John Doe",
-  },
-  {
-    id: "2",
-    fileName: "transactions_q4.xlsx",
-    fileSize: "5.1 MB",
-    uploadedAt: "2025-01-12",
-    uploadedBy: "John Doe",
-  },
-];
-
-const mockDashboards: Dashboard[] = [
-  {
-    id: "1",
-    title: "Churn Risk Analysis",
-    createdAt: "2025-01-14",
-    analyst: "Elena Rodriguez",
-  },
-];
-
-function ApplicantCard({ 
-  applicant, 
-  onAccept, 
+function ApplicantCard({
+  applicant,
+  onAccept,
   onReject,
   onChat
-}: { 
-  applicant: Applicant; 
+}: {
+  applicant: EnrichedApplication;
   onAccept: () => void;
   onReject: () => void;
   onChat: () => void;
 }) {
+  const skills = applicant.analystSkills ? applicant.analystSkills.split(',').map(s => s.trim()) : [];
+
   return (
     <Card className="border-card-border bg-card">
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <Avatar className="h-12 w-12">
             <AvatarFallback className="bg-primary/10 text-primary">
-              {applicant.avatar}
+              {applicant.analystName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="font-medium truncate">{applicant.name}</h3>
+              <h3 className="font-medium truncate">{applicant.analystName}</h3>
               {applicant.status === "accepted" && (
                 <Badge className="bg-chart-2/10 text-chart-2 border-0">Accepted</Badge>
               )}
@@ -149,31 +68,32 @@ function ApplicantCard({
               )}
             </div>
             <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+              {/* Rating mock for now as it's not in schema yet */}
               <span className="flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 text-chart-4 fill-chart-4" />
-                {applicant.rating}
+                4.8
               </span>
-              <span>{applicant.projectsCompleted} projects</span>
+              <span>{skills.length} skills</span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {applicant.skills.slice(0, 3).map((skill) => (
+              {skills.slice(0, 3).map((skill) => (
                 <Badge key={skill} variant="secondary" className="text-xs">
                   {skill}
                 </Badge>
               ))}
-              {applicant.skills.length > 3 && (
+              {skills.length > 3 && (
                 <Badge variant="secondary" className="text-xs">
-                  +{applicant.skills.length - 3}
+                  +{skills.length - 3}
                 </Badge>
               )}
             </div>
             <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
               <span className="text-sm font-medium">
-                ${applicant.proposedRate.toLocaleString()}
+                ${applicant.proposedBudget?.toLocaleString() ?? 0}
               </span>
               <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="ghost"
                   onClick={onChat}
                   data-testid={`button-chat-${applicant.id}`}
@@ -181,10 +101,10 @@ function ApplicantCard({
                   <MessageSquare className="h-4 w-4 mr-1" />
                   Chat
                 </Button>
-                {applicant.status === "applied" && (
+                {applicant.status === "pending" && (
                   <>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={onReject}
                       data-testid={`button-reject-${applicant.id}`}
@@ -192,7 +112,7 @@ function ApplicantCard({
                       <XCircle className="h-4 w-4 mr-1" />
                       Reject
                     </Button>
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={onAccept}
                       data-testid={`button-accept-${applicant.id}`}
@@ -223,20 +143,20 @@ function DatasetCard({ dataset }: { dataset: Dataset }) {
             <div className="min-w-0">
               <p className="font-medium truncate">{dataset.fileName}</p>
               <p className="text-sm text-muted-foreground">
-                {dataset.fileSize} • Uploaded {new Date(dataset.uploadedAt).toLocaleDateString()}
+                {dataset.fileSize ? `${(dataset.fileSize / 1024).toFixed(1)} KB` : 'Unknown size'} • Uploaded {dataset.createdAt ? new Date(dataset.createdAt).toLocaleDateString() : 'Unknown date'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              size="icon" 
+            <Button
+              size="icon"
               variant="ghost"
               data-testid={`button-preview-${dataset.id}`}
             >
               <Eye className="h-4 w-4" />
             </Button>
-            <Button 
-              size="icon" 
+            <Button
+              size="icon"
               variant="ghost"
               data-testid={`button-download-${dataset.id}`}
             >
@@ -258,9 +178,9 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
             <BarChart3 className="h-5 w-5 text-chart-3" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{dashboard.title}</p>
+            <p className="font-medium truncate">{dashboard.name}</p>
             <p className="text-sm text-muted-foreground">
-              By {dashboard.analyst} • {new Date(dashboard.createdAt).toLocaleDateString()}
+              {dashboard.description || "No description"} • {dashboard.createdAt ? new Date(dashboard.createdAt).toLocaleDateString() : 'Unknown date'}
             </p>
           </div>
           <Button variant="outline" size="sm" data-testid={`button-view-dashboard-${dashboard.id}`}>
@@ -275,13 +195,35 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
 export default function ClientProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
-  const [applicants, setApplicants] = useState(mockApplicants);
+
+  // Fetch Project
+  const { data: project, isLoading: isProjectLoading } = useQuery<Project>({
+    queryKey: [`/api/projects/${id}`],
+    enabled: !!id,
+  });
+
+  // Fetch Applicants
+  const { data: applicants, isLoading: isApplicantsLoading } = useQuery<EnrichedApplication[]>({
+    queryKey: [`/api/applications`, { projectId: id }],
+    enabled: !!id,
+  });
+
+  // Fetch Datasets
+  const { data: datasets, isLoading: isDatasetsLoading } = useQuery<Dataset[]>({
+    queryKey: [`/api/datasets`, { projectId: id }],
+    enabled: !!id,
+  });
+
+  // Fetch Dashboards
+  const { data: dashboards, isLoading: isDashboardsLoading } = useQuery<Dashboard[]>({
+    queryKey: [`/api/dashboards`, { projectId: id }],
+    enabled: !!id,
+  });
 
   const startChatMutation = useMutation({
     mutationFn: async ({ analystId, analystName }: { analystId: string; analystName: string }) => {
       return apiRequest("POST", "/api/conversations", {
-        clientId: "client-1",
-        analystId,
+        otherUserId: analystId, // Updated to use otherUserId as per API
         analystName,
       });
     },
@@ -291,40 +233,30 @@ export default function ClientProjectDetailPage() {
     },
   });
 
-  const handleChat = (applicant: Applicant) => {
+  const updateApplicationStatusMutation = useMutation({
+    mutationFn: async ({ appId, status }: { appId: string; status: "accepted" | "rejected" }) => {
+      const res = await apiRequest("PATCH", `/api/applications/${appId}`, { status });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/applications`, { projectId: id }] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}`] });
+    },
+  });
+
+  const handleChat = (applicant: EnrichedApplication) => {
     startChatMutation.mutate({
-      analystId: `analyst-${applicant.id}`,
-      analystName: applicant.name,
+      analystId: applicant.analystId,
+      analystName: applicant.analystName,
     });
   };
 
-  const project = {
-    id: id || "1",
-    title: "Customer Churn Analysis",
-    description: "Analyze customer data to identify patterns leading to churn and provide actionable insights. We need to understand which customer segments are most at risk and what factors contribute to churn.",
-    budget: 2500,
-    status: "in_progress" as const,
-    deadline: "2025-02-15",
-  };
-
   const handleAccept = (applicantId: string) => {
-    setApplicants(prev => 
-      prev.map(a => 
-        a.id === applicantId 
-          ? { ...a, status: "accepted" as const }
-          : a.status === "applied" 
-            ? { ...a, status: "rejected" as const }
-            : a
-      )
-    );
+    updateApplicationStatusMutation.mutate({ appId: applicantId, status: "accepted" });
   };
 
   const handleReject = (applicantId: string) => {
-    setApplicants(prev => 
-      prev.map(a => 
-        a.id === applicantId ? { ...a, status: "rejected" as const } : a
-      )
-    );
+    updateApplicationStatusMutation.mutate({ appId: applicantId, status: "rejected" });
   };
 
   const getStatusBadge = (status: string) => {
@@ -339,12 +271,25 @@ export default function ClientProjectDetailPage() {
     return <Badge variant="outline" className={className}>{label}</Badge>;
   };
 
+  // Fetch user for chat
+  const { user } = useAuth();
+
+  if (isProjectLoading || !project) {
+    return (
+      <ClientLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </ClientLayout>
+    );
+  }
+
   return (
     <ClientLayout>
       <div className="p-6">
         <div className="mb-6">
           <Link href="/client/projects">
-            <button 
+            <button
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
               data-testid="button-back-projects"
             >
@@ -352,7 +297,7 @@ export default function ClientProjectDetailPage() {
               Back to Projects
             </button>
           </Link>
-          
+
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -374,19 +319,21 @@ export default function ClientProjectDetailPage() {
           <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <DollarSign className="h-4 w-4" />
-              <span>${project.budget.toLocaleString()} budget</span>
+              <span>${project.budget?.toLocaleString()} budget</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" />
-              <span>Due {new Date(project.deadline).toLocaleDateString()}</span>
-            </div>
+            {project.deadline && (
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" />
+                <span>Due {new Date(project.deadline).toLocaleDateString()}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
-              <span>{applicants.length} applicants</span>
+              <span>{applicants?.length || 0} applicants</span>
             </div>
             <div className="flex items-center gap-1.5">
               <FileSpreadsheet className="h-4 w-4" />
-              <span>{mockDatasets.length} datasets</span>
+              <span>{datasets?.length || 0} datasets</span>
             </div>
           </div>
         </div>
@@ -412,7 +359,9 @@ export default function ClientProjectDetailPage() {
           </TabsList>
 
           <TabsContent value="applicants">
-            {applicants.length === 0 ? (
+            {isApplicantsLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : (!applicants || applicants.length === 0) ? (
               <Card className="border-card-border bg-card">
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Users className="h-12 w-12 text-muted-foreground mb-4" />
@@ -425,8 +374,8 @@ export default function ClientProjectDetailPage() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {applicants.map((applicant) => (
-                  <ApplicantCard 
-                    key={applicant.id} 
+                  <ApplicantCard
+                    key={applicant.id}
                     applicant={applicant}
                     onAccept={() => handleAccept(applicant.id)}
                     onReject={() => handleReject(applicant.id)}
@@ -438,53 +387,61 @@ export default function ClientProjectDetailPage() {
           </TabsContent>
 
           <TabsContent value="datasets">
-            <div className="space-y-3">
-              {mockDatasets.map((dataset) => (
-                <DatasetCard key={dataset.id} dataset={dataset} />
-              ))}
-              {mockDatasets.length === 0 && (
-                <Card className="border-card-border bg-card">
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <FileSpreadsheet className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-1">No datasets uploaded</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Upload your data files to get started.
-                    </p>
-                    <Link href={`/client/projects/${project.id}/upload`}>
-                      <Button data-testid="button-upload-empty">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Dataset
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            {isDatasetsLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : (
+              <div className="space-y-3">
+                {datasets?.map((dataset) => (
+                  <DatasetCard key={dataset.id} dataset={dataset} />
+                ))}
+                {(!datasets || datasets.length === 0) && (
+                  <Card className="border-card-border bg-card">
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <FileSpreadsheet className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="font-medium mb-1">No datasets uploaded</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Upload your data files to get started.
+                      </p>
+                      <Link href={`/client/projects/${project.id}/upload`}>
+                        <Button data-testid="button-upload-empty">
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Dataset
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="dashboards">
-            <div className="space-y-3">
-              {mockDashboards.map((dashboard) => (
-                <DashboardCard key={dashboard.id} dashboard={dashboard} />
-              ))}
-              {mockDashboards.length === 0 && (
-                <Card className="border-card-border bg-card">
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-1">No dashboards yet</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Dashboards will appear here when your analyst delivers them.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            {isDashboardsLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : (
+              <div className="space-y-3">
+                {dashboards?.map((dashboard) => (
+                  <DashboardCard key={dashboard.id} dashboard={dashboard} />
+                ))}
+                {(!dashboards || dashboards.length === 0) && (
+                  <Card className="border-card-border bg-card">
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="font-medium mb-1">No dashboards yet</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Dashboards will appear here when your analyst delivers them.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="chat" className="h-[500px]">
             <ProjectChat
               projectId={project.id}
-              currentUserId="client-1"
+              currentUserId={user?.id || ""}
               currentUserRole="client"
             />
           </TabsContent>

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import AnalystLayout from "@/components/analyst-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,149 +25,98 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { 
-  Search, 
-  Calendar, 
+import { useToast } from "@/hooks/use-toast";
+import type { Project } from "@shared/schema";
+import {
+  Search,
+  Calendar,
   DollarSign,
   Users,
   Building2,
   Clock,
   Filter,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Loader2
 } from "lucide-react";
 
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  client: string;
-  budget: number;
-  deadline: string;
-  postedDate: string;
-  skills: string[];
-  applicants: number;
-  datasets: number;
-  category: string;
-}
-
-const allProjects: Project[] = [
-  {
-    id: "101",
-    title: "Financial Forecasting Model",
-    description: "Build a comprehensive financial forecasting model using historical data. Need predictive analytics for revenue, expenses, and cash flow projections for the next 12 months.",
-    client: "FinanceFirst Corp",
-    budget: 3500,
-    deadline: "Feb 15, 2026",
-    postedDate: "2 days ago",
-    skills: ["Python", "Machine Learning", "Pandas", "Financial Analysis"],
-    applicants: 4,
-    datasets: 3,
-    category: "Finance",
-  },
-  {
-    id: "102",
-    title: "E-commerce Analytics Suite",
-    description: "Create an analytics dashboard for our e-commerce platform. Track sales, customer behavior, inventory turnover, and marketing campaign effectiveness.",
-    client: "ShopNow Inc",
-    budget: 2800,
-    deadline: "Feb 20, 2026",
-    postedDate: "3 days ago",
-    skills: ["SQL", "Tableau", "ETL", "Power BI"],
-    applicants: 7,
-    datasets: 5,
-    category: "E-commerce",
-  },
-  {
-    id: "103",
-    title: "Customer Segmentation Analysis",
-    description: "Segment our customer base using clustering algorithms. Identify key customer personas and provide actionable insights for targeted marketing.",
-    client: "MarketPro",
-    budget: 2200,
-    deadline: "Feb 10, 2026",
-    postedDate: "1 day ago",
-    skills: ["Python", "Clustering", "Data Visualization", "Marketing Analytics"],
-    applicants: 5,
-    datasets: 2,
-    category: "Marketing",
-  },
-  {
-    id: "104",
-    title: "Supply Chain Optimization Dashboard",
-    description: "Develop a real-time dashboard to monitor and optimize supply chain operations. Include inventory levels, lead times, and supplier performance metrics.",
-    client: "LogiTech Solutions",
-    budget: 4000,
-    deadline: "Mar 1, 2026",
-    postedDate: "4 days ago",
-    skills: ["SQL", "Python", "Tableau", "Supply Chain"],
-    applicants: 3,
-    datasets: 6,
-    category: "Operations",
-  },
-  {
-    id: "105",
-    title: "Healthcare Data Analysis",
-    description: "Analyze patient outcome data to identify trends and risk factors. Create visualizations for medical staff to improve patient care decisions.",
-    client: "MedData Health",
-    budget: 5000,
-    deadline: "Mar 15, 2026",
-    postedDate: "1 week ago",
-    skills: ["R", "Statistical Analysis", "Healthcare", "Data Privacy"],
-    applicants: 2,
-    datasets: 4,
-    category: "Healthcare",
-  },
-  {
-    id: "106",
-    title: "Social Media Sentiment Analysis",
-    description: "Build a sentiment analysis pipeline for our social media channels. Track brand perception and competitor analysis across platforms.",
-    client: "BrandWatch Agency",
-    budget: 1800,
-    deadline: "Feb 5, 2026",
-    postedDate: "5 days ago",
-    skills: ["NLP", "Python", "Text Mining", "Social Media"],
-    applicants: 8,
-    datasets: 1,
-    category: "Marketing",
-  },
-];
-
-const categories = ["All Categories", "Finance", "E-commerce", "Marketing", "Operations", "Healthcare"];
 const budgetRanges = ["Any Budget", "$0 - $2,000", "$2,000 - $4,000", "$4,000+"];
 
 export default function BrowseProjectsPage() {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedBudget, setSelectedBudget] = useState("Any Budget");
   const [applyingTo, setApplyingTo] = useState<Project | null>(null);
   const [coverLetter, setCoverLetter] = useState("");
   const [proposedRate, setProposedRate] = useState("");
 
-  const filteredProjects = allProjects.filter((project) => {
-    const matchesSearch = 
-      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesCategory = 
-      selectedCategory === "All Categories" || project.category === selectedCategory;
-    
-    let matchesBudget = true;
-    if (selectedBudget === "$0 - $2,000") {
-      matchesBudget = project.budget <= 2000;
-    } else if (selectedBudget === "$2,000 - $4,000") {
-      matchesBudget = project.budget > 2000 && project.budget <= 4000;
-    } else if (selectedBudget === "$4,000+") {
-      matchesBudget = project.budget > 4000;
-    }
+  const { data: projects, isLoading } = useQuery<Project[]>({
+    queryKey: ["/api/projects", { status: "open" }],
+  });
 
-    return matchesSearch && matchesCategory && matchesBudget;
+  const createApplicationMutation = useMutation({
+    mutationFn: async (data: { projectId: string; coverLetter: string; proposedBudget: number }) => {
+      const res = await apiRequest("POST", "/api/applications", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Application submitted",
+        description: "Good luck! The client will review your application shortly."
+      });
+      setApplyingTo(null);
+      setCoverLetter("");
+      setProposedRate("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to submit application",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   });
 
   const handleApply = () => {
-    setApplyingTo(null);
-    setCoverLetter("");
-    setProposedRate("");
+    if (!applyingTo) return;
+
+    // Default to project budget if no proposed rate provided
+    const budget = proposedRate ? parseFloat(proposedRate) : (applyingTo.budget || 0);
+
+    createApplicationMutation.mutate({
+      projectId: applyingTo.id,
+      coverLetter,
+      proposedBudget: budget,
+    });
   };
+
+  const filteredProjects = projects?.filter((project) => {
+    const matchesSearch =
+      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (project.description || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+    let matchesBudget = true;
+    const projectBudget = project.budget || 0;
+
+    if (selectedBudget === "$0 - $2,000") {
+      matchesBudget = projectBudget <= 2000;
+    } else if (selectedBudget === "$2,000 - $4,000") {
+      matchesBudget = projectBudget > 2000 && projectBudget <= 4000;
+    } else if (selectedBudget === "$4,000+") {
+      matchesBudget = projectBudget > 4000;
+    }
+
+    return matchesSearch && matchesBudget;
+  }) || [];
+
+  if (isLoading) {
+    return (
+      <AnalystLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AnalystLayout>
+    );
+  }
 
   return (
     <AnalystLayout>
@@ -183,7 +134,7 @@ export default function BrowseProjectsPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by title, description, or skills..."
+                  placeholder="Search by title or description..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -191,18 +142,6 @@ export default function BrowseProjectsPage() {
                 />
               </div>
               <div className="flex gap-2">
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[180px]" data-testid="select-category">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <Select value={selectedBudget} onValueChange={setSelectedBudget}>
                   <SelectTrigger className="w-[160px]" data-testid="select-budget">
                     <SelectValue placeholder="Budget" />
@@ -234,56 +173,48 @@ export default function BrowseProjectsPage() {
                   <div className="space-y-1">
                     <CardTitle className="text-lg">{project.title}</CardTitle>
                     <CardDescription className="flex items-center gap-2">
+                      {/* Client info is not joined in simple Project return. Could fetch or assume hidden */}
                       <Building2 className="h-4 w-4" />
-                      {project.client}
+                      Client Project
                     </CardDescription>
                   </div>
                   <div className="text-right">
-                    <div className="text-xl font-bold">${project.budget.toLocaleString()}</div>
+                    <div className="text-xl font-bold">${(project.budget || 0).toLocaleString()}</div>
                     <div className="text-sm text-muted-foreground">Fixed Price</div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-muted-foreground">{project.description}</p>
-                
+
                 <div className="flex flex-wrap gap-2">
-                  {project.skills.map((skill) => (
-                    <Badge key={skill} variant="secondary">
-                      {skill}
-                    </Badge>
-                  ))}
+                  {/* Generic badge until skills are added to schema */}
+                  <Badge variant="secondary">
+                    Data Analysis
+                  </Badge>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    Due: {project.deadline}
+                    Due: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline'}
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    Posted {project.postedDate}
+                    Posted {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently'}
                   </div>
+                  {/* Applicants count would require separate fetch or enriched query 
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    {project.applicants} applicants
+                    ? applicants
                   </div>
-                  <div className="flex items-center gap-1">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    {project.datasets} datasets
-                  </div>
+                  */}
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline"
-                    data-testid={`button-view-details-${project.id}`}
-                  >
-                    View Details
-                  </Button>
                   <Dialog open={applyingTo?.id === project.id} onOpenChange={(open) => !open && setApplyingTo(null)}>
                     <DialogTrigger asChild>
-                      <Button 
+                      <Button
                         onClick={() => setApplyingTo(project)}
                         data-testid={`button-apply-${project.id}`}
                       >
@@ -304,7 +235,7 @@ export default function BrowseProjectsPage() {
                             <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                               id="rate"
-                              placeholder={project.budget.toString()}
+                              placeholder={(project.budget || 0).toString()}
                               value={proposedRate}
                               onChange={(e) => setProposedRate(e.target.value)}
                               className="pl-10"
@@ -312,7 +243,7 @@ export default function BrowseProjectsPage() {
                             />
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Client's budget: ${project.budget.toLocaleString()}
+                            Client's budget: ${(project.budget || 0).toLocaleString()}
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -331,7 +262,8 @@ export default function BrowseProjectsPage() {
                         <Button variant="outline" onClick={() => setApplyingTo(null)} data-testid="button-cancel-application">
                           Cancel
                         </Button>
-                        <Button onClick={handleApply} data-testid="button-submit-application">
+                        <Button onClick={handleApply} disabled={createApplicationMutation.isPending} data-testid="button-submit-application">
+                          {createApplicationMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Submit Application
                         </Button>
                       </DialogFooter>

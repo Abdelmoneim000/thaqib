@@ -12,12 +12,12 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { 
+import {
   LayoutDashboard,
-  Search, 
-  FileText, 
+  Search,
+  FileText,
   FolderKanban,
-  Settings, 
+  Settings,
   LogOut,
   BarChart3,
   User,
@@ -73,12 +73,12 @@ function AnalystSidebar() {
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <Link href="/">
-          <span 
+          <span
             className="flex items-center gap-2 text-lg font-semibold cursor-pointer"
             data-testid="link-logo"
           >
             <BarChart3 className="h-5 w-5 text-primary" />
-            DataWork
+            Thaqib
           </span>
         </Link>
       </SidebarHeader>
@@ -94,11 +94,11 @@ function AnalystSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     isActive={location === item.url || location.startsWith(item.url + "/")}
                   >
-                    <Link 
+                    <Link
                       href={item.url}
                       data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                     >
@@ -128,10 +128,10 @@ function AnalystSidebar() {
 
 export default function AnalystLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const initials = user?.firstName && user?.lastName 
+  const initials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : user?.email?.[0]?.toUpperCase() || "A";
-  
+
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",

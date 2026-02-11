@@ -1,4 +1,4 @@
-// BI Data Types for DataWork Analytics
+// BI Data Types for Thaqib Analytics
 
 export type ColumnType = "string" | "number" | "date" | "boolean";
 

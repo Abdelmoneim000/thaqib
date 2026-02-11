@@ -7,7 +7,11 @@ export function executeVisualQuery(
   const dataset = datasets.find(d => d.id === query.datasetId);
   if (!dataset) return [];
 
-  let data = [...dataset.data];
+  // Normalize columns to ensure they are QueryColumn objects
+  const columns: { column: string; aggregation: AggregationType; alias?: string }[] =
+    query.columns.map(c => typeof c === 'string' ? { column: c, aggregation: "none" as AggregationType } : c);
+
+  let data = [...(dataset.data || [])];
 
   // Apply filters
   if (query.filters.length > 0) {
@@ -17,13 +21,13 @@ export function executeVisualQuery(
   }
 
   // Apply grouping and aggregation
-  if (query.groupBy.length > 0 && query.columns.some(c => c.aggregation !== "none")) {
-    data = aggregateData(data, query.columns, query.groupBy);
-  } else if (query.columns.length > 0) {
+  if (query.groupBy.length > 0 && columns.some(c => c.aggregation !== "none")) {
+    data = aggregateData(data, columns, query.groupBy);
+  } else if (columns.length > 0) {
     // Just select columns
     data = data.map(row => {
       const newRow: Record<string, unknown> = {};
-      query.columns.forEach(col => {
+      columns.forEach(col => {
         const key = col.alias || col.column;
         newRow[key] = row[col.column];
       });
@@ -34,8 +38,8 @@ export function executeVisualQuery(
   // Apply ordering
   if (query.orderBy) {
     data.sort((a, b) => {
-      const aVal = a[query.orderBy!.column];
-      const bVal = b[query.orderBy!.column];
+      const aVal = a[query.orderBy!.column] as string | number;
+      const bVal = b[query.orderBy!.column] as string | number;
       const direction = query.orderBy!.direction === "asc" ? 1 : -1;
       if (typeof aVal === "number" && typeof bVal === "number") {
         return (aVal - bVal) * direction;
@@ -87,7 +91,7 @@ function aggregateData(
 ): Record<string, unknown>[] {
   // Group data
   const groups = new Map<string, Record<string, unknown>[]>();
-  
+
   data.forEach(row => {
     const key = groupBy.map(col => String(row[col])).join("|");
     if (!groups.has(key)) {
@@ -98,10 +102,10 @@ function aggregateData(
 
   // Aggregate each group
   const result: Record<string, unknown>[] = [];
-  
+
   groups.forEach((rows) => {
     const aggregatedRow: Record<string, unknown> = {};
-    
+
     // Add group by columns
     groupBy.forEach(col => {
       aggregatedRow[col] = rows[0][col];
@@ -125,7 +129,7 @@ function aggregateData(
 
 function applyAggregation(values: number[], aggregation: AggregationType): number {
   if (values.length === 0) return 0;
-  
+
   switch (aggregation) {
     case "sum":
       return values.reduce((a, b) => a + b, 0);
@@ -148,16 +152,16 @@ export function executeSqlQuery(
 ): Record<string, unknown>[] {
   // Simple SQL parser for demo - handles basic SELECT statements
   const upperSql = sql.toUpperCase();
-  
+
   // Extract table name
   const fromMatch = sql.match(/FROM\s+"?([^"\s]+)"?/i);
   if (!fromMatch) return [];
-  
+
   const tableName = fromMatch[1];
   const dataset = datasets.find(d => d.id === tableName);
   if (!dataset) return [];
 
-  let data = [...dataset.data];
+  let data = [...(dataset.data || [])];
 
   // Check for LIMIT
   const limitMatch = sql.match(/LIMIT\s+(\d+)/i);
@@ -190,7 +194,7 @@ export function executeSqlQuery(
   if (groupMatch) {
     const groupCol = groupMatch[1];
     const groups = new Map<string, Record<string, unknown>[]>();
-    
+
     data.forEach(row => {
       const key = String(row[groupCol]);
       if (!groups.has(key)) groups.set(key, []);
@@ -201,24 +205,24 @@ export function executeSqlQuery(
     const selectMatch = sql.match(/SELECT\s+(.+?)\s+FROM/i);
     if (selectMatch) {
       const selectParts = selectMatch[1].split(",").map(s => s.trim());
-      
+
       data = [];
       groups.forEach((rows) => {
         const newRow: Record<string, unknown> = {};
         newRow[groupCol] = rows[0][groupCol];
-        
+
         selectParts.forEach(part => {
           const aggMatch = part.match(/(SUM|COUNT|AVG|MIN|MAX)\s*\(\s*(\w+)\s*\)/i);
           if (aggMatch) {
             const [, agg, col] = aggMatch;
             const values = rows.map(r => Number(r[col])).filter(v => !isNaN(v));
-            const alias = part.includes(" AS ") 
+            const alias = part.includes(" AS ")
               ? part.split(/\s+AS\s+/i)[1].trim()
               : `${agg.toLowerCase()}_${col}`;
             newRow[alias] = applyAggregation(values, agg.toLowerCase() as AggregationType);
           }
         });
-        
+
         data.push(newRow);
       });
     }

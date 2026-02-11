@@ -4,20 +4,19 @@ import { storage } from "./storage";
 import { parseCSV, inferColumnTypes } from "./csv-parser";
 import { nanoid } from "nanoid";
 import type { DatasetColumn } from "@shared/schema";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
-  await setupAuth(app);
+
+  setupAuth(app);
   registerAuthRoutes(app);
 
   // Helper function to get authenticated user ID
   const getUserId = (req: Request): string | null => {
-    const user = req.user as any;
-    return user?.claims?.sub || null;
+    return req.session.userId || null;
   };
 
   // Role selection endpoint
@@ -27,17 +26,17 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
-      
+
       const { role } = req.body;
       if (!role || !["client", "analyst"].includes(role)) {
         return res.status(400).json({ error: "Invalid role. Must be 'client' or 'analyst'" });
       }
-      
+
       const user = await storage.updateUserRole(userId, role);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       res.json(user);
     } catch (error) {
       res.status(500).json({ error: "Failed to update role" });
@@ -104,7 +103,7 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const { name, projectId, fileName, csvContent } = req.body;
-      
+
       if (!csvContent || !name || !projectId) {
         return res.status(400).json({ error: "Missing required fields" });
       }
@@ -115,7 +114,7 @@ export async function registerRoutes(
       }
 
       const columns = inferColumnTypes(parsedData);
-      
+
       const dataset = await storage.createDataset({
         name,
         projectId,
@@ -156,7 +155,7 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const projectId = req.query.projectId as string | undefined;
-      
+
       let dashboards: Awaited<ReturnType<typeof storage.getDashboardsByProject>> = [];
       if (projectId) {
         dashboards = await storage.getDashboardsByProject(projectId);
@@ -380,7 +379,7 @@ export async function registerRoutes(
 
       const shareToken = nanoid(12);
       const { expiresInDays, allowExport } = req.body;
-      
+
       let expiresAt = null;
       if (expiresInDays) {
         expiresAt = new Date();
@@ -421,7 +420,7 @@ export async function registerRoutes(
       }
 
       const visualizations = await storage.getVisualizationsByDashboard(share.dashboardId);
-      
+
       const vizData: Record<string, unknown[]> = {};
       for (const viz of visualizations) {
         if (viz.datasetId) {
@@ -449,16 +448,40 @@ export async function registerRoutes(
       const userId = getUserId(req);
       const user = await storage.getUser(userId!);
       const status = req.query.status as string | undefined;
-      
+
       let projectsList: Awaited<ReturnType<typeof storage.getProjectsByClient>> = [];
       if (user?.role === "client") {
         projectsList = await storage.getProjectsByClient(userId!);
       } else if (user?.role === "analyst") {
+        let projects: any[] = [];
         if (status === "open") {
-          projectsList = await storage.getAllOpenProjects();
+          projects = await storage.getAllOpenProjects();
         } else {
-          projectsList = await storage.getProjectsByAnalyst(userId!);
+          projects = await storage.getProjectsByAnalyst(userId!);
         }
+
+        const enriched = await Promise.all(projects.map(async (p) => {
+          let clientName = "Unknown Client";
+          if (p.clientId) {
+            const client = await storage.getUser(p.clientId);
+            // Use safe access for user properties
+            if (client) clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || "Unknown Client";
+          }
+
+          // Fetch counts
+          const datasets = await storage.getDatasetsByProject(p.id);
+          const dashboards = await storage.getDashboardsByProject(p.id);
+
+          return {
+            ...p,
+            clientName,
+            datasetsCount: datasets.length,
+            dashboardsCount: dashboards.length
+          };
+        }));
+        return res.json(enriched);
+      } else if (user?.role === "admin") {
+        projectsList = await storage.getAllProjects();
       }
       res.json(projectsList);
     } catch (error) {
@@ -470,11 +493,11 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const { title, description, budget } = req.body;
-      
+
       if (!title) {
         return res.status(400).json({ error: "Title is required" });
       }
-      
+
       const project = await storage.createProject({
         title,
         description,
@@ -482,7 +505,7 @@ export async function registerRoutes(
         clientId: userId!,
         status: "open",
       });
-      
+
       res.json(project);
     } catch (error) {
       res.status(500).json({ error: "Failed to create project" });
@@ -495,9 +518,215 @@ export async function registerRoutes(
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
-      res.json(project);
+
+      // Enrich with client details
+      let clientName = "Unknown Client";
+      if (project.clientId) {
+        const client = await storage.getUser(project.clientId);
+        if (client) clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || "Unknown Client";
+      }
+
+      // Fetch counts or list
+      const datasets = await storage.getDatasetsByProject(project.id);
+      const dashboards = await storage.getDashboardsByProject(project.id);
+
+      res.json({
+        ...project,
+        clientName,
+        datasetsCount: datasets.length,
+        dashboardsCount: dashboards.length,
+        // Include full lists if needed, but for now just counts unless UI uses them
+        // UI uses tabs for datasets/dashboards which probably fetch their own data via separate API calls?
+        // Checking UI: it has tabs. Tabs usually have content.
+        // The UI currently just shows placeholders.
+        // I will let UI fetch datasets/dashboards separately or use these if implemented.
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
+  // Datasets API
+  app.get("/api/datasets", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const projectId = req.query.projectId as string | undefined;
+
+      let datasets: Awaited<ReturnType<typeof storage.getDatasetsByProject>> = [];
+      if (projectId) {
+        datasets = await storage.getDatasetsByProject(projectId);
+      } else {
+        datasets = await storage.getDatasetsByUser(userId!);
+      }
+      res.json(datasets);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch datasets" });
+    }
+  });
+
+  app.post("/api/datasets", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const dataset = req.body;
+      const newDataset = await storage.createDataset({
+        ...dataset,
+        uploadedBy: userId!,
+      });
+      res.status(201).json(newDataset);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create dataset" });
+    }
+  });
+
+  // Dashboards API
+  app.get("/api/dashboards", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const projectId = req.query.projectId as string | undefined;
+
+      let dashboards: Awaited<ReturnType<typeof storage.getDashboardsByProject>> = [];
+      if (projectId) {
+        dashboards = await storage.getDashboardsByProject(projectId);
+      } else {
+        dashboards = await storage.getDashboardsByUser(userId!);
+      }
+      res.json(dashboards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch dashboards" });
+    }
+  });
+
+  app.post("/api/dashboards", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const dashboard = req.body;
+      const newDashboard = await storage.createDashboard({
+        ...dashboard,
+        createdBy: userId!,
+      });
+      res.status(201).json(newDashboard);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create dashboard" });
+    }
+  });
+
+  // Applications API
+  app.get("/api/applications", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId!);
+      const projectId = req.query.projectId as string | undefined;
+
+      if (projectId) {
+        // Get applications for a specific project (client or admin view)
+        const apps = await storage.getApplicationsByProject(projectId);
+        // Enrich with analyst info
+        const enriched = await Promise.all(
+          apps.map(async (app) => {
+            const analyst = await storage.getUser(app.analystId);
+            return {
+              ...app,
+              analystName: analyst ? `${analyst.firstName || ''} ${analyst.lastName || ''}`.trim() : 'Unknown',
+              analystEmail: analyst?.email || '',
+              analystSkills: analyst?.skills || '',
+            };
+          })
+        );
+        return res.json(enriched);
+      }
+
+      if (user?.role === "analyst") {
+        // Get analyst's own applications
+        const apps = await storage.getApplicationsByAnalyst(userId!);
+        // Enrich with project info
+        const enriched = await Promise.all(
+          apps.map(async (app) => {
+            const project = await storage.getProject(app.projectId);
+            let clientName = "Unknown Client";
+            if (project?.clientId) {
+              const client = await storage.getUser(project.clientId);
+              if (client) clientName = `${client.firstName} ${client.lastName}`;
+            }
+
+            return {
+              ...app,
+              projectTitle: project?.title || 'Unknown Project',
+              projectBudget: project?.budget,
+              projectStatus: project?.status,
+              projectDeadline: project?.deadline,
+              clientName,
+            };
+          })
+        );
+        return res.json(enriched);
+      }
+
+      res.json([]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch applications" });
+    }
+  });
+
+  app.post("/api/applications", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { projectId, coverLetter, proposedBudget } = req.body;
+
+      if (!projectId) {
+        return res.status(400).json({ error: "projectId is required" });
+      }
+
+      // Check if already applied
+      const existing = await storage.getApplicationsByAnalyst(userId!);
+      if (existing.some(a => a.projectId === projectId)) {
+        return res.status(409).json({ error: "You have already applied to this project" });
+      }
+
+      const application = await storage.createApplication({
+        projectId,
+        analystId: userId!,
+        coverLetter: coverLetter || null,
+        proposedBudget: proposedBudget || null,
+        status: "pending",
+      });
+
+      res.status(201).json(application);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to submit application" });
+    }
+  });
+
+  app.patch("/api/applications/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      if (!status || !["accepted", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Status must be 'accepted' or 'rejected'" });
+      }
+
+      const application = await storage.updateApplication(req.params.id, { status });
+      if (!application) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+
+      // If accepted, assign analyst to project and update project status
+      if (status === "accepted") {
+        await storage.updateProject(application.projectId, {
+          analystId: application.analystId,
+          status: "in_progress",
+        });
+
+        // Reject all other pending applications for this project
+        const otherApps = await storage.getApplicationsByProject(application.projectId);
+        for (const app of otherApps) {
+          if (app.id !== application.id && app.status === "pending") {
+            await storage.updateApplication(app.id, { status: "rejected" });
+          }
+        }
+      }
+
+      res.json(application);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update application" });
     }
   });
 
@@ -506,11 +735,11 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const user = await storage.getUser(userId!);
-      
+
       if (!userId || !user) {
         return res.status(401).json({ error: "Unauthorized" });
       }
-      
+
       const conversations = await storage.getConversationsByUser(userId, user.role);
       res.json(conversations);
     } catch (error) {
@@ -523,16 +752,16 @@ export async function registerRoutes(
       const userId = getUserId(req);
       const user = await storage.getUser(userId!);
       const { otherUserId, analystName } = req.body;
-      
+
       if (!otherUserId) {
         return res.status(400).json({ error: "otherUserId is required" });
       }
-      
+
       const clientId = user?.role === "client" ? userId : otherUserId;
       const analystId = user?.role === "analyst" ? userId : otherUserId;
-      
+
       let conversation = await storage.getConversationByUsers(clientId!, analystId!);
-      
+
       if (!conversation) {
         conversation = await storage.createConversation({
           clientId: clientId!,
@@ -540,7 +769,7 @@ export async function registerRoutes(
           analystName: analystName || null,
         });
       }
-      
+
       res.json(conversation);
     } catch (error) {
       res.status(500).json({ error: "Failed to create conversation" });
@@ -550,20 +779,20 @@ export async function registerRoutes(
   app.get("/api/conversations/project/:projectId", isAuthenticated, async (req: Request, res: Response) => {
     try {
       let conversation = await storage.getConversationByProject(req.params.projectId);
-      
+
       if (!conversation) {
         const project = await storage.getProject(req.params.projectId);
         if (!project || !project.analystId) {
           return res.status(404).json({ error: "Project not found or no analyst assigned" });
         }
-        
+
         conversation = await storage.createConversation({
           projectId: project.id,
           clientId: project.clientId,
           analystId: project.analystId,
         });
       }
-      
+
       res.json(conversation);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch conversation" });
@@ -585,18 +814,18 @@ export async function registerRoutes(
       const userId = getUserId(req);
       const user = await storage.getUser(userId!);
       const { content } = req.body;
-      
+
       if (!content) {
         return res.status(400).json({ error: "content is required" });
       }
-      
+
       const message = await storage.createMessage({
         conversationId: req.params.conversationId,
         senderId: userId!,
         senderRole: user?.role || "client",
         content,
       });
-      
+
       res.json(message);
     } catch (error) {
       res.status(500).json({ error: "Failed to send message" });
@@ -606,11 +835,11 @@ export async function registerRoutes(
   app.post("/api/conversations/:conversationId/read", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
-      
+
       await storage.markMessagesAsRead(req.params.conversationId, userId);
       res.json({ success: true });
     } catch (error) {
@@ -621,11 +850,11 @@ export async function registerRoutes(
   app.get("/api/conversations/:conversationId/unread", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
-      
+
       const count = await storage.getUnreadCount(req.params.conversationId, userId);
       res.json({ count });
     } catch (error) {
@@ -762,7 +991,7 @@ export async function registerRoutes(
     }
   });
 
-  // Admin chat endpoints - conversations with users that appear as "Thaqib Help"
+  // Admin chat endpoints
   app.get("/api/admin/conversations", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {
       const conversations = await storage.getAdminConversations();
@@ -779,8 +1008,7 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(400).json({ error: "userId is required" });
       }
-      
-      // Create conversation with admin as analyst, appearing as "Thaqib Help"
+
       const conversation = await storage.createAdminConversation(adminUserId!, userId);
       res.json(conversation);
     } catch (error) {

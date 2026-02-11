@@ -1,12 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  BarChart3, 
-  Users, 
-  FileSpreadsheet, 
-  Shield, 
-  Zap, 
+import {
+  BarChart3,
+  Users,
+  FileSpreadsheet,
+  Shield,
+  Zap,
   TrendingUp,
   ArrowRight,
   CheckCircle2,
@@ -17,13 +17,13 @@ import { useEffect } from "react";
 
 function Header() {
   const { user, isLoading, logout } = useAuth();
-  
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-6 gap-4">
         <div className="flex items-center gap-8">
           <Link href="/">
-            <span 
+            <span
               className="text-xl font-semibold tracking-tight cursor-pointer"
               data-testid="link-logo"
             >
@@ -31,15 +31,15 @@ function Header() {
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="text-muted-foreground"
               data-testid="button-analysts"
             >
               Analysts
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="text-muted-foreground"
               data-testid="button-projects"
             >
@@ -57,7 +57,7 @@ function Header() {
                   Dashboard
                 </Button>
               </Link>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => logout()}
                 data-testid="button-logout"
@@ -67,16 +67,16 @@ function Header() {
             </>
           ) : (
             <>
-              <a href="/api/login">
-                <Button 
+              <a href="/auth">
+                <Button
                   variant="ghost"
                   data-testid="button-login"
                 >
                   Log in
                 </Button>
               </a>
-              <a href="/api/login">
-                <Button 
+              <a href="/auth">
+                <Button
                   data-testid="button-register"
                 >
                   Get Started
@@ -105,17 +105,17 @@ function HeroSection() {
             for your projects
           </h1>
           <p className="mb-10 text-lg text-muted-foreground md:text-xl">
-            Post your data analysis projects, find skilled analysts, and get 
+            Post your data analysis projects, find skilled analysts, and get
             actionable insights delivered as interactive dashboards.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a href="/api/login">
+            <a href="/auth">
               <Button size="lg" className="gap-2" data-testid="button-post-project">
                 Post a Project
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </a>
-            <a href="/api/login">
+            <a href="/auth">
               <Button size="lg" variant="outline" data-testid="button-find-work">
                 Find Work as Analyst
               </Button>
@@ -253,7 +253,7 @@ function SecuritySection() {
             Enterprise-grade security
           </h2>
           <p className="mb-8 text-muted-foreground">
-            Your data is protected with encryption at rest and in transit, 
+            Your data is protected with encryption at rest and in transit,
             role-based access controls, and complete audit logging.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
@@ -285,12 +285,12 @@ function CTASection() {
             Ready to unlock your data's potential?
           </h2>
           <p className="mb-8 text-primary-foreground/80">
-            Join thousands of organizations and analysts already using DataWork.
+            Join thousands of organizations and analysts already using Thaqib.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a href="/api/login">
-              <Button 
-                size="lg" 
+            <a href="/auth">
+              <Button
+                size="lg"
                 variant="secondary"
                 className="gap-2"
                 data-testid="button-cta-start"

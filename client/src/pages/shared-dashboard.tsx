@@ -3,7 +3,7 @@ import { useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Download,
   Share2,
   Loader2,
@@ -73,16 +73,16 @@ export default function SharedDashboardPage() {
 
     try {
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(dashboardEl, { 
+      const canvas = await html2canvas(dashboardEl, {
         backgroundColor: "#ffffff",
         scale: 2,
       });
-      
+
       const link = document.createElement("a");
       link.download = `${data.dashboard.name.replace(/\s+/g, "_")}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
-      
+
       toast({ title: "Exported!", description: "Dashboard saved as PNG" });
     } catch (err) {
       toast({ title: "Export failed", description: "Could not export dashboard", variant: "destructive" });
@@ -101,22 +101,22 @@ export default function SharedDashboardPage() {
     try {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
-      
-      const canvas = await html2canvas(dashboardEl, { 
+
+      const canvas = await html2canvas(dashboardEl, {
         backgroundColor: "#ffffff",
         scale: 2,
       });
-      
+
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
         orientation: canvas.width > canvas.height ? "landscape" : "portrait",
         unit: "px",
         format: [canvas.width, canvas.height],
       });
-      
+
       pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
       pdf.save(`${data.dashboard.name.replace(/\s+/g, "_")}.pdf`);
-      
+
       toast({ title: "Exported!", description: "Dashboard saved as PDF" });
     } catch (err) {
       toast({ title: "Export failed", description: "Could not export dashboard", variant: "destructive" });
@@ -247,7 +247,7 @@ export default function SharedDashboardPage() {
       </main>
 
       <footer className="border-t py-4 text-center text-sm text-muted-foreground">
-        Powered by DataWork Analytics
+        Powered by Thaqib Analytics
       </footer>
     </div>
   );

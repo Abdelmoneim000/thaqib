@@ -1,294 +1,309 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Users, 
-  Building2, 
-  BarChart3,
-  ArrowLeft,
-  CheckCircle2
-} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { BarChart3, Users, Briefcase, ArrowRight, Loader2 } from "lucide-react";
 
-type UserRole = "client" | "analyst" | null;
+export default function AuthPage() {
+  const { user, isLoading } = useAuth();
+  const [, navigate] = useLocation();
 
-function RoleSelector({ 
-  selectedRole, 
-  onSelect 
-}: { 
-  selectedRole: UserRole; 
-  onSelect: (role: UserRole) => void;
-}) {
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <button
-        type="button"
-        onClick={() => onSelect("client")}
-        className={`relative flex flex-col items-start gap-4 rounded-lg border p-6 text-left transition-colors hover-elevate ${
-          selectedRole === "client" 
-            ? "border-primary bg-primary/5" 
-            : "border-card-border bg-card"
-        }`}
-        data-testid="button-role-client"
-      >
-        {selectedRole === "client" && (
-          <CheckCircle2 className="absolute right-4 top-4 h-5 w-5 text-primary" />
-        )}
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-chart-2/10">
-          <Building2 className="h-6 w-6 text-chart-2" />
-        </div>
-        <div>
-          <h3 className="font-medium">I'm a Client</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Post projects and hire data analysts
-          </p>
-        </div>
-      </button>
-      
-      <button
-        type="button"
-        onClick={() => onSelect("analyst")}
-        className={`relative flex flex-col items-start gap-4 rounded-lg border p-6 text-left transition-colors hover-elevate ${
-          selectedRole === "analyst" 
-            ? "border-primary bg-primary/5" 
-            : "border-card-border bg-card"
-        }`}
-        data-testid="button-role-analyst"
-      >
-        {selectedRole === "analyst" && (
-          <CheckCircle2 className="absolute right-4 top-4 h-5 w-5 text-primary" />
-        )}
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-chart-3/10">
-          <BarChart3 className="h-6 w-6 text-chart-3" />
-        </div>
-        <div>
-          <h3 className="font-medium">I'm an Analyst</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Find projects and deliver insights
-          </p>
-        </div>
-      </button>
-    </div>
-  );
-}
-
-function RegisterForm() {
-  const [selectedRole, setSelectedRole] = useState<UserRole>(null);
-  const [step, setStep] = useState<"role" | "details">("role");
-
-  const handleContinue = () => {
-    if (selectedRole) {
-      setStep("details");
-    }
-  };
-
-  const handleBack = () => {
-    setStep("role");
-  };
-
-  if (step === "role") {
-    return (
-      <div className="space-y-6">
-        <div className="space-y-2 text-center">
-          <h2 className="text-lg font-medium">Choose your role</h2>
-          <p className="text-sm text-muted-foreground">
-            Select how you want to use DataWork
-          </p>
-        </div>
-        <RoleSelector selectedRole={selectedRole} onSelect={setSelectedRole} />
-        <Button 
-          className="w-full" 
-          disabled={!selectedRole}
-          onClick={handleContinue}
-          data-testid="button-continue-role"
-        >
-          Continue
-        </Button>
-      </div>
-    );
+  // If already logged in, redirect
+  if (!isLoading && user) {
+    if (user.role === "admin") navigate("/admin/dashboard");
+    else if (user.role === "client") navigate("/client/projects");
+    else navigate("/analyst/dashboard");
+    return null;
   }
 
   return (
-    <div className="space-y-6">
-      <button
-        type="button"
-        onClick={handleBack}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        data-testid="button-back"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to role selection
-      </button>
-      
-      <div className="flex items-center gap-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-          selectedRole === "client" ? "bg-chart-2/10" : "bg-chart-3/10"
-        }`}>
-          {selectedRole === "client" ? (
-            <Building2 className="h-5 w-5 text-chart-2" />
-          ) : (
-            <BarChart3 className="h-5 w-5 text-chart-3" />
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-medium">
-            {selectedRole === "client" ? "Client Account" : "Analyst Account"}
+    <div className="min-h-screen flex">
+      {/* Left: Branding Panel */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-12 flex-col justify-between relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(59,130,246,0.3) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(147,51,234,0.3) 0%, transparent 50%)' }} />
+        <div className="relative z-10">
+          {/* Logo placeholder */}
+          <div className="flex items-center gap-3 mb-16">
+            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+              {/* SVG Logo placeholder — replace with actual logo */}
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold text-white tracking-tight">Thaqib</span>
+          </div>
+
+          <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+            Data Analytics<br />
+            <span className="text-blue-400">Marketplace</span>
+          </h1>
+          <p className="text-lg text-blue-200/80 max-w-md">
+            Connect with top data analysts or find your next data project. Thaqib brings clients and analysts together.
           </p>
-          <p className="text-xs text-muted-foreground">
-            {selectedRole === "client" 
-              ? "Post projects and manage your organization" 
-              : "Apply to projects and build dashboards"}
-          </p>
+
+          <div className="mt-12 space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <Briefcase className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Post Projects</h3>
+                <p className="text-blue-200/60 text-sm">Upload datasets and find the right analyst for your business needs</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Expert Analysts</h3>
+                <p className="text-blue-200/60 text-sm">Browse and apply to data projects that match your expertise</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                <BarChart3 className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Interactive Dashboards</h3>
+                <p className="text-blue-200/60 text-sm">Build, visualize, and share data insights with powerful tools</p>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <p className="relative z-10 text-blue-200/40 text-sm">
+          © {new Date().getFullYear()} Thaqib. All rights reserved.
+        </p>
       </div>
 
-      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-        <div className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
-          <Input 
-            id="name" 
-            placeholder="John Doe" 
-            data-testid="input-name"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            placeholder="john@example.com" 
-            data-testid="input-email"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input 
-            id="password" 
-            type="password" 
-            placeholder="Create a password"
-            data-testid="input-password"
-          />
-        </div>
-        {selectedRole === "client" && (
-          <div className="space-y-2">
-            <Label htmlFor="organization">Organization Name</Label>
-            <Input 
-              id="organization" 
-              placeholder="Acme Inc." 
-              data-testid="input-organization"
-            />
+      {/* Right: Auth Forms */}
+      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
+            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">Thaqib</span>
           </div>
-        )}
-        {selectedRole === "analyst" && (
-          <div className="space-y-2">
-            <Label htmlFor="skills">Skills (comma separated)</Label>
-            <Input 
-              id="skills" 
-              placeholder="Python, SQL, Tableau, Machine Learning" 
-              data-testid="input-skills"
-            />
-          </div>
-        )}
-        <Button type="submit" className="w-full" data-testid="button-create-account">
-          Create Account
-        </Button>
-      </form>
+
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Create Account</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="login">
+              <LoginForm />
+            </TabsContent>
+
+            <TabsContent value="register">
+              <RegisterForm />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </div>
   );
 }
 
 function LoginForm() {
+  const { login, loginError, isLoggingIn } = useAuth();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login({ email, password });
+      toast({ title: "Welcome back!", description: "Successfully logged in." });
+    } catch (err: any) {
+      toast({
+        title: "Login failed",
+        description: err?.message?.includes("401") ? "Invalid email or password" : "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-      <div className="space-y-2">
-        <Label htmlFor="login-email">Email</Label>
-        <Input 
-          id="login-email" 
-          type="email" 
-          placeholder="john@example.com" 
-          data-testid="input-login-email"
-        />
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="login-password">Password</Label>
-          <button 
-            type="button"
-            className="text-xs text-primary hover:underline"
-            data-testid="button-forgot-password"
-          >
-            Forgot password?
-          </button>
-        </div>
-        <Input 
-          id="login-password" 
-          type="password" 
-          placeholder="Enter your password"
-          data-testid="input-login-password"
-        />
-      </div>
-      <Button type="submit" className="w-full" data-testid="button-login-submit">
-        Log in
-      </Button>
-    </form>
+    <Card className="border-0 shadow-lg">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl">Welcome back</CardTitle>
+        <CardDescription>Enter your credentials to access your account</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="login-email">Email</Label>
+            <Input
+              id="login-email"
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-11"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="login-password">Password</Label>
+            <Input
+              id="login-password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="h-11"
+            />
+          </div>
+          <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-700" disabled={isLoggingIn}>
+            {isLoggingIn ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing in...
+              </>
+            ) : (
+              <>
+                Sign In <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
-export default function AuthPage() {
+function RegisterForm() {
+  const { register, registerError, isRegistering } = useAuth();
+  const { toast } = useToast();
+  const [role, setRole] = useState<"client" | "analyst">("analyst");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [organization, setOrganization] = useState("");
+  const [skills, setSkills] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      toast({ title: "Password too short", description: "Password must be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    try {
+      await register({
+        email,
+        password,
+        firstName,
+        lastName,
+        role,
+        organization: role === "client" ? organization : undefined,
+        skills: role === "analyst" ? skills : undefined,
+      });
+      toast({ title: "Account created!", description: "Welcome to Thaqib." });
+    } catch (err: any) {
+      toast({
+        title: "Registration failed",
+        description: err?.message?.includes("409") ? "An account with this email already exists" : "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto flex min-h-screen items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <Link href="/">
-              <span 
-                className="inline-flex items-center gap-2 text-2xl font-semibold tracking-tight cursor-pointer"
-                data-testid="link-logo"
+    <Card className="border-0 shadow-lg">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl">Create your account</CardTitle>
+        <CardDescription>Choose your role and fill in your details</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Role Selection */}
+          <div className="space-y-2">
+            <Label>I am a</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className={`p-4 rounded-lg border-2 text-left transition-all ${role === "client"
+                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                    : "border-gray-200 hover:border-gray-300"
+                  }`}
+                onClick={() => setRole("client")}
               >
-                <Users className="h-7 w-7 text-primary" />
-                DataWork
-              </span>
-            </Link>
+                <Briefcase className="w-5 h-5 mb-2" />
+                <div className="font-semibold text-sm">Client</div>
+                <div className="text-xs text-muted-foreground">Post projects & hire analysts</div>
+              </button>
+              <button
+                type="button"
+                className={`p-4 rounded-lg border-2 text-left transition-all ${role === "analyst"
+                    ? "border-purple-500 bg-purple-50 text-purple-700"
+                    : "border-gray-200 hover:border-gray-300"
+                  }`}
+                onClick={() => setRole("analyst")}
+              >
+                <BarChart3 className="w-5 h-5 mb-2" />
+                <div className="font-semibold text-sm">Analyst</div>
+                <div className="text-xs text-muted-foreground">Find projects & build dashboards</div>
+              </button>
+            </div>
           </div>
-          
-          <Card className="border-card-border bg-card">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-xl">Welcome</CardTitle>
-              <CardDescription>
-                Sign in to your account or create a new one
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="register" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="register" data-testid="tab-register">
-                    Register
-                  </TabsTrigger>
-                  <TabsTrigger value="login" data-testid="tab-login">
-                    Log in
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="register">
-                  <RegisterForm />
-                </TabsContent>
-                <TabsContent value="login">
-                  <LoginForm />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-          
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            By continuing, you agree to our{" "}
-            <span className="text-foreground cursor-pointer hover:underline">Terms</span>
-            {" "}and{" "}
-            <span className="text-foreground cursor-pointer hover:underline">Privacy Policy</span>
-          </p>
-        </div>
-      </div>
-    </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="reg-first">First Name</Label>
+              <Input id="reg-first" value={firstName} onChange={(e) => setFirstName(e.target.value)} required className="h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-last">Last Name</Label>
+              <Input id="reg-last" value={lastName} onChange={(e) => setLastName(e.target.value)} required className="h-11" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reg-email">Email</Label>
+            <Input id="reg-email" type="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reg-password">Password</Label>
+            <Input id="reg-password" type="password" placeholder="Min. 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-11" />
+          </div>
+
+          {role === "client" && (
+            <div className="space-y-2">
+              <Label htmlFor="reg-org">Organization</Label>
+              <Input id="reg-org" placeholder="Company name" value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11" />
+            </div>
+          )}
+
+          {role === "analyst" && (
+            <div className="space-y-2">
+              <Label htmlFor="reg-skills">Skills</Label>
+              <Input id="reg-skills" placeholder="Python, SQL, Tableau, etc." value={skills} onChange={(e) => setSkills(e.target.value)} className="h-11" />
+            </div>
+          )}
+
+          <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-700" disabled={isRegistering}>
+            {isRegistering ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating account...
+              </>
+            ) : (
+              <>
+                Create Account <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
