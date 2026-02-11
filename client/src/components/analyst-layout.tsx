@@ -70,21 +70,23 @@ function AnalystSidebar() {
   const userName = user?.firstName || user?.email?.split("@")[0] || "Analyst";
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border p-4">
+    <Sidebar className="border-r-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+      <SidebarHeader className="border-b border-white/10 p-4">
         <Link href="/">
           <span
-            className="flex items-center gap-2 text-lg font-semibold cursor-pointer"
+            className="flex items-center gap-2 text-lg font-bold cursor-pointer tracking-tight"
             data-testid="link-logo"
           >
-            <BarChart3 className="h-5 w-5 text-primary" />
+            <div className="flex bg-purple-500 rounded-md p-1">
+              <BarChart3 className="h-4 w-4 text-white" />
+            </div>
             Thaqib
           </span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 py-2">
+          <SidebarGroupLabel className="px-4 py-2 text-purple-200/60 font-medium">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span>{userName}</span>
@@ -97,6 +99,7 @@ function AnalystSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={location === item.url || location.startsWith(item.url + "/")}
+                    className="text-purple-100 hover:bg-white/10 hover:text-white data-[active=true]:bg-purple-600 data-[active=true]:text-white hover:translate-x-1 transition-all duration-200"
                   >
                     <Link
                       href={item.url}
@@ -112,10 +115,14 @@ function AnalystSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <div className="mt-auto border-t border-sidebar-border p-4">
+      <div className="mt-auto border-t border-white/10 p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => logout()} data-testid="button-logout">
+            <SidebarMenuButton
+              onClick={() => logout()}
+              data-testid="button-logout"
+              className="text-purple-200 hover:bg-red-500/20 hover:text-red-200"
+            >
               <LogOut className="h-4 w-4" />
               <span>Log out</span>
             </SidebarMenuButton>
@@ -135,6 +142,8 @@ export default function AnalystLayout({ children }: { children: React.ReactNode 
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
+    "--primary": "270 76% 53%", // Purple
+    "--primary-foreground": "0 0% 100%",
   };
 
   return (
@@ -151,7 +160,7 @@ export default function AnalystLayout({ children }: { children: React.ReactNode 
               </div>
             </div>
           </header>
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
             {children}
           </main>
         </div>

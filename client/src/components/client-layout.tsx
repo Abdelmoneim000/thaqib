@@ -52,21 +52,23 @@ function ClientSidebar() {
   const userName = user?.firstName || user?.email?.split("@")[0] || "User";
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border p-4">
+    <Sidebar className="border-r-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+      <SidebarHeader className="border-b border-white/10 p-4">
         <Link href="/">
           <span
-            className="flex items-center gap-2 text-lg font-semibold cursor-pointer"
+            className="flex items-center gap-2 text-lg font-bold cursor-pointer tracking-tight"
             data-testid="link-logo"
           >
-            <Users className="h-5 w-5 text-primary" />
+            <div className="flex bg-blue-500 rounded-md p-1">
+              <Users className="h-4 w-4 text-white" />
+            </div>
             Thaqib
           </span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 py-2">
+          <SidebarGroupLabel className="px-4 py-2 text-blue-200/60 font-medium">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               <span>{userName}</span>
@@ -79,6 +81,7 @@ function ClientSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={location === item.url}
+                    className="text-blue-100 hover:bg-white/10 hover:text-white data-[active=true]:bg-blue-600 data-[active=true]:text-white hover:translate-x-1 transition-all duration-200"
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
@@ -91,10 +94,14 @@ function ClientSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <div className="mt-auto border-t border-sidebar-border p-4">
+      <div className="mt-auto border-t border-white/10 p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => logout()} data-testid="button-logout">
+            <SidebarMenuButton
+              onClick={() => logout()}
+              data-testid="button-logout"
+              className="text-blue-200 hover:bg-red-500/20 hover:text-red-200"
+            >
               <LogOut className="h-4 w-4" />
               <span>Log out</span>
             </SidebarMenuButton>
@@ -114,6 +121,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
+    "--primary": "217 91% 60%", // Blue
+    "--primary-foreground": "0 0% 100%",
   };
 
   return (
@@ -130,7 +139,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               </div>
             </div>
           </header>
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
             {children}
           </main>
         </div>

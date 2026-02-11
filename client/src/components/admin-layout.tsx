@@ -12,9 +12,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { 
+import {
   LayoutDashboard,
-  Users, 
+  Users,
   Briefcase,
   MessageSquare,
   LogOut,
@@ -51,16 +51,18 @@ function AdminSidebar() {
   const { logout } = useAuth();
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <span className="flex items-center gap-2 text-lg font-semibold">
-          <Shield className="h-5 w-5 text-primary" />
+    <Sidebar className="border-r-0 bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 text-white">
+      <SidebarHeader className="border-b border-white/10 p-4">
+        <span className="flex items-center gap-2 text-lg font-bold tracking-tight">
+          <div className="flex bg-emerald-500 rounded-md p-1">
+            <Shield className="h-4 w-4 text-white" />
+          </div>
           Admin Panel
         </span>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 py-2">
+          <SidebarGroupLabel className="px-4 py-2 text-emerald-200/60 font-medium">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               <span>Management</span>
@@ -70,11 +72,12 @@ function AdminSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     isActive={location === item.url || location.startsWith(item.url + "/")}
+                    className="text-emerald-100 hover:bg-white/10 hover:text-white data-[active=true]:bg-emerald-600 data-[active=true]:text-white hover:translate-x-1 transition-all duration-200"
                   >
-                    <Link 
+                    <Link
                       href={item.url}
                       data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                     >
@@ -88,10 +91,14 @@ function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <div className="mt-auto border-t border-sidebar-border p-4">
+      <div className="mt-auto border-t border-white/10 p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => logout()} data-testid="button-logout">
+            <SidebarMenuButton
+              onClick={() => logout()}
+              data-testid="button-logout"
+              className="text-emerald-200 hover:bg-red-500/20 hover:text-red-200"
+            >
               <LogOut className="h-4 w-4" />
               <span>Log out</span>
             </SidebarMenuButton>
@@ -104,13 +111,15 @@ function AdminSidebar() {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const initials = user?.firstName && user?.lastName 
+  const initials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : "AD";
-  
+
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
+    "--primary": "160 84% 39%", // Emerald
+    "--primary-foreground": "0 0% 100%",
   };
 
   return (
@@ -128,7 +137,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             </div>
           </header>
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
             {children}
           </main>
         </div>

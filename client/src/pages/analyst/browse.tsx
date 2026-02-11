@@ -50,7 +50,7 @@ export default function BrowseProjectsPage() {
   const [proposedRate, setProposedRate] = useState("");
 
   const { data: projects, isLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects", { status: "open" }],
+    queryKey: ["/api/projects?status=open"],
   });
 
   const createApplicationMutation = useMutation({

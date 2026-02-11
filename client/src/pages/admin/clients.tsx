@@ -12,8 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  FolderKanban, 
+import {
+  FolderKanban,
   Database,
   MessageSquare,
   ChevronRight
@@ -30,20 +30,20 @@ export default function AdminClientsPage() {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
 
   const { data: clients, isLoading: isLoadingClients } = useQuery<User[]>({
-    queryKey: ["/api/admin/users", "client"],
+    queryKey: ["/api/users", "client"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/users?role=client", { credentials: "include" });
+      const res = await fetch("/api/users?role=client");
       if (!res.ok) throw new Error("Failed to fetch clients");
       return res.json();
     },
   });
 
   const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
-    queryKey: ["/api/admin/projects"],
+    queryKey: ["/api/projects"],
   });
 
   const { data: datasets, isLoading: isLoadingDatasets } = useQuery<Dataset[]>({
-    queryKey: ["/api/admin/datasets"],
+    queryKey: ["/api/datasets"],
   });
 
   const getClientProjects = (clientId: string) => {
@@ -91,8 +91,8 @@ export default function AdminClientsPage() {
                   </TableHeader>
                   <TableBody>
                     {clients?.map((client) => (
-                      <TableRow 
-                        key={client.id} 
+                      <TableRow
+                        key={client.id}
                         className={selectedClient === client.id ? "bg-muted" : ""}
                         data-testid={`row-client-${client.id}`}
                       >
@@ -106,8 +106,8 @@ export default function AdminClientsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            size="icon" 
+                          <Button
+                            size="icon"
                             variant="ghost"
                             onClick={() => setSelectedClient(client.id)}
                             data-testid={`button-view-client-${client.id}`}
@@ -126,8 +126,8 @@ export default function AdminClientsPage() {
           <Card data-testid="card-client-details">
             <CardHeader>
               <CardTitle>
-                {selectedClientData 
-                  ? `${selectedClientData.firstName} ${selectedClientData.lastName}` 
+                {selectedClientData
+                  ? `${selectedClientData.firstName} ${selectedClientData.lastName}`
                   : "Select a Client"}
               </CardTitle>
             </CardHeader>
@@ -150,13 +150,13 @@ export default function AdminClientsPage() {
                     ) : (
                       <div className="space-y-2">
                         {getClientProjects(selectedClient).map(project => (
-                          <div 
-                            key={project.id} 
+                          <div
+                            key={project.id}
                             className="flex items-center justify-between p-2 border rounded"
                             data-testid={`project-${project.id}`}
                           >
                             <span className="font-medium">{project.title}</span>
-                            <Badge 
+                            <Badge
                               variant={project.status === "completed" ? "default" : "secondary"}
                             >
                               {project.status}
@@ -179,8 +179,8 @@ export default function AdminClientsPage() {
                     ) : (
                       <div className="space-y-2">
                         {getClientDatasets(selectedClient).map(dataset => (
-                          <div 
-                            key={dataset.id} 
+                          <div
+                            key={dataset.id}
                             className="flex items-center justify-between p-2 border rounded"
                             data-testid={`dataset-${dataset.id}`}
                           >
@@ -194,7 +194,7 @@ export default function AdminClientsPage() {
                     )}
                   </div>
 
-                  <Button 
+                  <Button
                     className="w-full"
                     data-testid="button-chat-client"
                   >

@@ -19,28 +19,33 @@ function Header() {
   const { user, isLoading, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-900/50 backdrop-blur-md supports-[backdrop-filter]:bg-slate-900/50">
       <div className="container mx-auto flex h-16 items-center justify-between px-6 gap-4">
         <div className="flex items-center gap-8">
           <Link href="/">
-            <span
-              className="text-xl font-semibold tracking-tight cursor-pointer"
+            <div
+              className="flex items-center gap-2 cursor-pointer"
               data-testid="link-logo"
             >
-              DataWork
-            </span>
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold tracking-tight text-white">
+                Thaqib
+              </span>
+            </div>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             <Button
               variant="ghost"
-              className="text-muted-foreground"
+              className="text-blue-100 hover:text-white hover:bg-white/10"
               data-testid="button-analysts"
             >
               Analysts
             </Button>
             <Button
               variant="ghost"
-              className="text-muted-foreground"
+              className="text-blue-100 hover:text-white hover:bg-white/10"
               data-testid="button-projects"
             >
               Projects
@@ -49,16 +54,17 @@ function Header() {
         </div>
         <div className="flex items-center gap-2">
           {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin text-blue-200" />
           ) : user ? (
             <>
               <Link href={user.role === "client" ? "/client/projects" : "/analyst/dashboard"}>
-                <Button variant="ghost" data-testid="button-dashboard">
+                <Button variant="ghost" className="text-blue-100 hover:text-white hover:bg-white/10" data-testid="button-dashboard">
                   Dashboard
                 </Button>
               </Link>
               <Button
                 variant="outline"
+                className="border-white/20 bg-transparent text-blue-100 hover:bg-white/10 hover:text-white"
                 onClick={() => logout()}
                 data-testid="button-logout"
               >
@@ -70,6 +76,7 @@ function Header() {
               <a href="/auth">
                 <Button
                   variant="ghost"
+                  className="text-blue-100 hover:text-white hover:bg-white/10"
                   data-testid="button-login"
                 >
                   Log in
@@ -77,6 +84,7 @@ function Header() {
               </a>
               <a href="/auth">
                 <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white border-0"
                   data-testid="button-register"
                 >
                   Get Started
@@ -92,39 +100,42 @@ function Header() {
 
 function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background">
-      <div className="container mx-auto px-6 py-24 md:py-32">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm">
-            <Zap className="h-4 w-4 text-primary" />
-            <span className="text-muted-foreground">The marketplace for data insights</span>
+    <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 pt-32 pb-24 md:pt-48 md:pb-32">
+      {/* Radial gradient overlay matching Auth page */}
+      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(59,130,246,0.3) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(147,51,234,0.3) 0%, transparent 50%)' }} />
+
+      <div className="container relative z-10 mx-auto px-6">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm backdrop-blur-sm">
+            <Zap className="h-4 w-4 text-blue-400" />
+            <span className="text-blue-200 font-medium">The marketplace for data insights</span>
           </div>
-          <h1 className="mb-6 text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-            Connect with expert{" "}
-            <span className="text-primary">data analysts</span>{" "}
-            for your projects
+          <h1 className="mb-8 text-5xl font-bold tracking-tight text-white md:text-6xl lg:text-7xl leading-tight">
+            Connect with top <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Data Analysts</span>
           </h1>
-          <p className="mb-10 text-lg text-muted-foreground md:text-xl">
-            Post your data analysis projects, find skilled analysts, and get
-            actionable insights delivered as interactive dashboards.
+          <p className="mb-12 text-xl text-blue-100/80 md:text-2xl max-w-2xl mx-auto leading-relaxed">
+            Post your data analysis projects, find expert analysts, and get actionable insights delivered through interactive dashboards.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <a href="/auth">
-              <Button size="lg" className="gap-2" data-testid="button-post-project">
+              <Button size="lg" className="h-14 px-8 text-lg bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-900/20 gap-2" data-testid="button-post-project">
                 Post a Project
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-5 w-5" />
               </Button>
             </a>
             <a href="/auth">
-              <Button size="lg" variant="outline" data-testid="button-find-work">
+              <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-white/20 bg-white/5 text-white hover:bg-white/10 backdrop-blur-sm" data-testid="button-find-work">
                 Find Work as Analyst
               </Button>
             </a>
           </div>
         </div>
       </div>
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+
+      {/* Decorative background elements */}
+      <div className="absolute top-1/2 left-1/2 -z-10 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 opacity-30">
+        <div className="absolute inset-0 rounded-full bg-blue-500/20 blur-[100px]" />
       </div>
     </section>
   );

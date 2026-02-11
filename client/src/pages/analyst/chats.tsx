@@ -10,17 +10,18 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Conversation, Message } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import AnalystLayout from "@/components/analyst-layout";
+import { useAuth } from "@/hooks/use-auth";
 
-function ChatPanel({ 
-  conversation, 
-  onBack 
-}: { 
-  conversation: Conversation; 
+function ChatPanel({
+  conversation,
+  onBack
+}: {
+  conversation: Conversation;
   onBack: () => void;
 }) {
+  const { user } = useAuth();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const currentUserId = "analyst-1";
 
   const { data: messages = [], isLoading: loadingMessages } = useQuery<Message[]>({
     queryKey: ["/api/conversations", conversation.id, "messages"],
@@ -34,8 +35,6 @@ function ChatPanel({
   const sendMutation = useMutation({
     mutationFn: async (content: string) => {
       return apiRequest("POST", `/api/conversations/${conversation.id}/messages`, {
-        senderId: currentUserId,
-        senderRole: "analyst",
         content,
       });
     },
@@ -56,8 +55,8 @@ function ChatPanel({
     }
   };
 
-  const chatName = conversation.isAdminChat 
-    ? "Thaqib Help" 
+  const chatName = conversation.isAdminChat
+    ? "Thaqib Help"
     : (conversation.clientId?.replace("client-", "Client ") || "Client");
 
   return (
@@ -96,7 +95,7 @@ function ChatPanel({
               const isOwnMessage = msg.senderRole === "analyst";
               const isAdminMessage = msg.senderRole === "admin";
               const avatarInitial = isAdminMessage ? "T" : "C";
-              
+
               return (
                 <div
                   key={msg.id}
@@ -109,11 +108,10 @@ function ChatPanel({
                     </Avatar>
                   )}
                   <div
-                    className={`max-w-[70%] rounded-lg px-3 py-2 ${
-                      isOwnMessage
+                    className={`max-w-[70%] rounded-lg px-3 py-2 ${isOwnMessage
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted"
-                    }`}
+                      }`}
                   >
                     {isAdminMessage && (
                       <p className="text-xs font-medium mb-1">Thaqib Help</p>
@@ -145,8 +143,8 @@ function ChatPanel({
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             data-testid="input-chat-message"
           />
-          <Button 
-            onClick={handleSend} 
+          <Button
+            onClick={handleSend}
             disabled={!message.trim() || sendMutation.isPending}
             data-testid="button-send-message"
           >
@@ -162,11 +160,11 @@ function ChatPanel({
   );
 }
 
-function ChatList({ 
-  conversations, 
-  onSelectChat 
-}: { 
-  conversations: Conversation[]; 
+function ChatList({
+  conversations,
+  onSelectChat
+}: {
+  conversations: Conversation[];
   onSelectChat: (conv: Conversation) => void;
 }) {
   if (conversations.length === 0) {
@@ -186,8 +184,8 @@ function ChatList({
       {conversations.map((conv) => {
         const clientName = conv.clientId?.replace("client-", "Client ") || "Client";
         return (
-          <Card 
-            key={conv.id} 
+          <Card
+            key={conv.id}
             className="cursor-pointer hover-elevate"
             onClick={() => onSelectChat(conv)}
             data-testid={`card-chat-${conv.id}`}
@@ -227,7 +225,7 @@ export default function AnalystChatsPage() {
   const { data: conversations = [], isLoading } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
     queryFn: async () => {
-      const res = await fetch(`/api/conversations?userId=analyst-1&role=analyst`);
+      const res = await fetch(`/api/conversations`);
       return res.json();
     },
   });
@@ -243,9 +241,9 @@ export default function AnalystChatsPage() {
       <div className="p-6 h-[calc(100vh-3.5rem)]">
         {selectedChat ? (
           <Card className="h-full">
-            <ChatPanel 
-              conversation={selectedChat} 
-              onBack={() => setSelectedChat(null)} 
+            <ChatPanel
+              conversation={selectedChat}
+              onBack={() => setSelectedChat(null)}
             />
           </Card>
         ) : (
@@ -260,8 +258,8 @@ export default function AnalystChatsPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <ChatList 
-                conversations={sortedConversations} 
+              <ChatList
+                conversations={sortedConversations}
                 onSelectChat={setSelectedChat}
               />
             )}

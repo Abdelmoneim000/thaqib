@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
+import {
   MessageSquare,
   Send,
   User
@@ -29,7 +29,7 @@ export default function AdminChatsPage() {
   });
 
   const { data: users } = useQuery<UserType[]>({
-    queryKey: ["/api/admin/users"],
+    queryKey: ["/api/users"],
   });
 
   const { data: messages, isLoading: isLoadingMessages } = useQuery<Message[]>({
@@ -133,8 +133,8 @@ export default function AdminChatsPage() {
                     </option>
                   ))}
                 </select>
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   size="sm"
                   onClick={handleStartConversation}
                   disabled={!selectedUserId || createConversationMutation.isPending}
@@ -160,9 +160,8 @@ export default function AdminChatsPage() {
                     {conversations?.map((conv) => (
                       <div
                         key={conv.id}
-                        className={`p-3 rounded cursor-pointer border ${
-                          selectedConversation === conv.id ? "bg-muted border-primary" : "hover:bg-muted/50"
-                        }`}
+                        className={`p-3 rounded cursor-pointer border ${selectedConversation === conv.id ? "bg-muted border-primary" : "hover:bg-muted/50"
+                          }`}
                         onClick={() => setSelectedConversation(conv.id)}
                         data-testid={`conversation-${conv.id}`}
                       >
@@ -190,7 +189,7 @@ export default function AdminChatsPage() {
           <Card className="flex-1 flex flex-col" data-testid="card-chat-messages">
             <CardHeader className="border-b">
               <CardTitle>
-                {selectedConversation 
+                {selectedConversation
                   ? `Chat with ${getUserName(conversations?.find(c => c.id === selectedConversation)?.clientId || "")}`
                   : "Select a conversation"}
               </CardTitle>
@@ -222,11 +221,10 @@ export default function AdminChatsPage() {
                             data-testid={`message-${message.id}`}
                           >
                             <div
-                              className={`max-w-[70%] rounded-lg p-3 ${
-                                message.senderRole === "admin"
+                              className={`max-w-[70%] rounded-lg p-3 ${message.senderRole === "admin"
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-muted"
-                              }`}
+                                }`}
                             >
                               <div className="flex items-center gap-2 mb-1">
                                 <User className="h-3 w-3" />
@@ -252,7 +250,7 @@ export default function AdminChatsPage() {
                         onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                         data-testid="input-message"
                       />
-                      <Button 
+                      <Button
                         onClick={handleSendMessage}
                         disabled={!newMessage.trim() || sendMessageMutation.isPending}
                         data-testid="button-send"

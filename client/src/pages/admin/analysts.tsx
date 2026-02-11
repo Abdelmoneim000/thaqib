@@ -19,8 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  FolderKanban, 
+import {
+  FolderKanban,
   MessageSquare,
   ChevronRight,
   UserPlus,
@@ -52,7 +52,7 @@ export default function AdminAnalystsPage() {
 
   const assignMutation = useMutation({
     mutationFn: async ({ projectId, analystId }: { projectId: string; analystId: string | null }) => {
-      const res = await apiRequest("PATCH", `/api/admin/projects/${projectId}`, { 
+      const res = await apiRequest("PATCH", `/api/projects/${projectId}`, {
         analystId,
         status: analystId ? "in_progress" : "open"
       });
@@ -122,8 +122,8 @@ export default function AdminAnalystsPage() {
                   </TableHeader>
                   <TableBody>
                     {analysts?.map((analyst) => (
-                      <TableRow 
-                        key={analyst.id} 
+                      <TableRow
+                        key={analyst.id}
                         className={selectedAnalyst === analyst.id ? "bg-muted" : ""}
                         data-testid={`row-analyst-${analyst.id}`}
                       >
@@ -137,8 +137,8 @@ export default function AdminAnalystsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            size="icon" 
+                          <Button
+                            size="icon"
                             variant="ghost"
                             onClick={() => setSelectedAnalyst(analyst.id)}
                             data-testid={`button-view-analyst-${analyst.id}`}
@@ -157,8 +157,8 @@ export default function AdminAnalystsPage() {
           <Card data-testid="card-analyst-details">
             <CardHeader>
               <CardTitle>
-                {selectedAnalystData 
-                  ? `${selectedAnalystData.firstName} ${selectedAnalystData.lastName}` 
+                {selectedAnalystData
+                  ? `${selectedAnalystData.firstName} ${selectedAnalystData.lastName}`
                   : "Select an Analyst"}
               </CardTitle>
             </CardHeader>
@@ -187,7 +187,7 @@ export default function AdminAnalystsPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button 
+                      <Button
                         onClick={handleAssignProject}
                         disabled={!selectedProject || assignMutation.isPending}
                         data-testid="button-assign-project"
@@ -209,22 +209,22 @@ export default function AdminAnalystsPage() {
                     ) : (
                       <div className="space-y-2">
                         {getAnalystProjects(selectedAnalyst).map(project => (
-                          <div 
-                            key={project.id} 
+                          <div
+                            key={project.id}
                             className="flex items-center justify-between p-2 border rounded"
                             data-testid={`project-${project.id}`}
                           >
                             <div>
                               <span className="font-medium">{project.title}</span>
-                              <Badge 
+                              <Badge
                                 variant={project.status === "completed" ? "default" : "secondary"}
                                 className="ml-2"
                               >
                                 {project.status}
                               </Badge>
                             </div>
-                            <Button 
-                              size="icon" 
+                            <Button
+                              size="icon"
                               variant="ghost"
                               onClick={() => handleRemoveFromProject(project.id)}
                               disabled={assignMutation.isPending}
@@ -238,7 +238,7 @@ export default function AdminAnalystsPage() {
                     )}
                   </div>
 
-                  <Button 
+                  <Button
                     className="w-full"
                     data-testid="button-chat-analyst"
                   >

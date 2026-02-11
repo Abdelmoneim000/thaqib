@@ -492,7 +492,7 @@ export async function registerRoutes(
   app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
-      const { title, description, budget } = req.body;
+      const { title, description, budget, deadline } = req.body;
 
       if (!title) {
         return res.status(400).json({ error: "Title is required" });
@@ -502,6 +502,7 @@ export async function registerRoutes(
         title,
         description,
         budget,
+        deadline: deadline ? new Date(deadline) : null,
         clientId: userId!,
         status: "open",
       });
@@ -599,14 +600,42 @@ export async function registerRoutes(
   app.post("/api/dashboards", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
-      const dashboard = req.body;
+      const { name, description, projectId } = req.body;
       const newDashboard = await storage.createDashboard({
-        ...dashboard,
+        name,
+        description,
+        projectId: projectId || null,
         createdBy: userId!,
+        layout: { items: [] }, // Initialize with empty layout
+        isPublished: false,
       });
       res.status(201).json(newDashboard);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Failed to create dashboard" });
+    }
+  });
+
+  // Visualizations API
+  app.get("/api/visualizations", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // In a real app, we might filter by user or dashboard.
+      // For now, let's fetch all dashboards for the user, then get visualizations for those dashboards.
+      // Or if we had a direct 'createdBy' on visualizations.
+      // Looking at schema, visualization has dashboardId.
+      const userId = getUserId(req);
+      const dashboards = await storage.getDashboardsByUser(userId!);
+      const dashboardIds = dashboards.map(d => d.id);
+
+      let allViz: any[] = [];
+      for (const id of dashboardIds) {
+        const vizs = await storage.getVisualizationsByDashboard(id);
+        allViz = [...allViz, ...vizs.map(v => ({ ...v, dashboardName: dashboards.find(d => d.id === id)?.name }))];
+      }
+
+      res.json(allViz);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch visualizations" });
     }
   });
 
@@ -1015,6 +1044,29 @@ export async function registerRoutes(
       res.status(500).json({ error: "Failed to create admin conversation" });
     }
   });
+
+  // Admin Stats
+  app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch admin stats" });
+    }
+  });
+
+  // Users List (Admin only)
+  app.get("/api/users", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const role = req.query.role as string | undefined;
+      const users = await storage.getAllUsers(role);
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+
 
   return httpServer;
 }

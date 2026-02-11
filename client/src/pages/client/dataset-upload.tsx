@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
 import { Link, useParams } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 import ClientLayout from "@/components/client-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { 
+import {
   ArrowLeft,
   Upload,
   FileSpreadsheet,
@@ -42,11 +43,11 @@ function getFileIcon(type: string) {
   return <File className="h-5 w-5 text-muted-foreground" />;
 }
 
-function UploadedFileCard({ 
-  file, 
-  onRemove 
-}: { 
-  file: UploadedFile; 
+function UploadedFileCard({
+  file,
+  onRemove
+}: {
+  file: UploadedFile;
   onRemove: () => void;
 }) {
   return (
@@ -59,9 +60,9 @@ function UploadedFileCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <p className="font-medium truncate">{file.name}</p>
-              <Button 
-                size="icon" 
-                variant="ghost" 
+              <Button
+                size="icon"
+                variant="ghost"
                 className="shrink-0 h-8 w-8"
                 onClick={onRemove}
                 data-testid={`button-remove-${file.id}`}
@@ -101,9 +102,10 @@ export default function DatasetUploadPage() {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const simulateUpload = (file: File) => {
-    const uploadedFile: UploadedFile = {
-      id: Math.random().toString(36).substr(2, 9),
+  const handleUpload = async (file: File) => {
+    const fileId = Math.random().toString(36).substr(2, 9);
+    const newFile: UploadedFile = {
+      id: fileId,
       name: file.name,
       size: file.size,
       type: file.type,
@@ -111,33 +113,67 @@ export default function DatasetUploadPage() {
       progress: 0,
     };
 
-    setFiles(prev => [...prev, uploadedFile]);
+    setFiles(prev => [...prev, newFile]);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setFiles(prev => 
-        prev.map(f => {
-          if (f.id === uploadedFile.id) {
-            const newProgress = Math.min(f.progress + Math.random() * 30, 100);
-            if (newProgress >= 100) {
-              clearInterval(interval);
-              return { ...f, progress: 100, status: "complete" as const };
-            }
-            return { ...f, progress: newProgress };
+    try {
+      let data: any[] = [];
+      let columns: any[] = [];
+
+      // Simple parsing logic
+      const text = await file.text();
+      if (file.type === "application/json" || file.name.endsWith(".json")) {
+        try {
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            data = parsed;
+            columns = Object.keys(parsed[0]).map(k => ({ name: k, type: typeof parsed[0][k], sampleValues: [] }));
           }
-          return f;
-        })
-      );
-    }, 200);
+        } catch (e) {
+          console.error("JSON Parse error", e);
+        }
+      } else if (file.type === "text/csv" || file.name.endsWith(".csv")) {
+        const lines = text.split('\n');
+        if (lines.length > 0) {
+          const headers = lines[0].split(',').map(h => h.trim());
+          columns = headers.map(h => ({ name: h, type: "string", sampleValues: [] }));
+          // Parse rows (limit to 100 for brevity in demo)
+          for (let i = 1; i < Math.min(lines.length, 100); i++) {
+            if (!lines[i].trim()) continue;
+            const values = lines[i].split(',');
+            const row: any = {};
+            headers.forEach((h, index) => row[h] = values[index]?.trim());
+            data.push(row);
+          }
+        }
+      }
+
+      // Simulate progress
+      setFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress: 50 } : f));
+
+      await apiRequest("POST", "/api/datasets", {
+        name: file.name,
+        projectId: id,
+        fileName: file.name,
+        fileSize: file.size,
+        rowCount: data.length,
+        columns,
+        data
+      });
+
+      setFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress: 100, status: "complete" } : f));
+    } catch (error) {
+      console.error("Upload failed", error);
+      setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "error", progress: 0 } : f));
+    }
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const droppedFiles = Array.from(e.dataTransfer.files);
-    droppedFiles.forEach(simulateUpload);
-  }, []);
+    droppedFiles.forEach(handleUpload);
+  }, [id]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -151,7 +187,7 @@ export default function DatasetUploadPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    selectedFiles.forEach(simulateUpload);
+    selectedFiles.forEach(handleUpload);
     e.target.value = "";
   };
 
@@ -163,7 +199,7 @@ export default function DatasetUploadPage() {
     <ClientLayout>
       <div className="p-6 max-w-3xl mx-auto">
         <Link href={`/client/projects/${id}`}>
-          <button 
+          <button
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
             data-testid="button-back-project"
           >
@@ -182,11 +218,10 @@ export default function DatasetUploadPage() {
         <Card className="border-card-border bg-card mb-6">
           <CardContent className="p-6">
             <div
-              className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
-                isDragging 
-                  ? "border-primary bg-primary/5" 
+              className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${isDragging
+                  ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/50"
-              }`}
+                }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -227,9 +262,9 @@ export default function DatasetUploadPage() {
             </div>
             <div className="space-y-3">
               {files.map((file) => (
-                <UploadedFileCard 
-                  key={file.id} 
-                  file={file} 
+                <UploadedFileCard
+                  key={file.id}
+                  file={file}
                   onRemove={() => handleRemoveFile(file.id)}
                 />
               ))}

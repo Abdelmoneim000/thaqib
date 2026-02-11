@@ -45,7 +45,7 @@ export default function AnalystDashboardPage() {
 
   // Fetch open projects (recommended)
   const { data: openProjects, isLoading: isLoadingOpenProjects } = useQuery<EnrichedProject[]>({
-    queryKey: ["/api/projects", { status: "open" }],
+    queryKey: ["/api/projects?status=open"],
   });
 
   // Fetch applications
