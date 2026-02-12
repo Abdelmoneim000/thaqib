@@ -26,7 +26,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Project } from "@shared/schema";
+import type { Project, Application } from "@shared/schema";
 import {
   Search,
   Calendar,
@@ -53,6 +53,10 @@ export default function BrowseProjectsPage() {
     queryKey: ["/api/projects?status=open"],
   });
 
+  const { data: myApplications } = useQuery<Application[]>({
+    queryKey: ["/api/applications"],
+  });
+
   const createApplicationMutation = useMutation({
     mutationFn: async (data: { projectId: string; coverLetter: string; proposedBudget: number }) => {
       const res = await apiRequest("POST", "/api/applications", data);
@@ -66,6 +70,7 @@ export default function BrowseProjectsPage() {
       setApplyingTo(null);
       setCoverLetter("");
       setProposedRate("");
+      queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
     },
     onError: (error: Error) => {
       toast({
@@ -166,113 +171,115 @@ export default function BrowseProjectsPage() {
         </div>
 
         <div className="space-y-4">
-          {filteredProjects.map((project) => (
-            <Card key={project.id} data-testid={`card-project-${project.id}`}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{project.title}</CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      {/* Client info is not joined in simple Project return. Could fetch or assume hidden */}
-                      <Building2 className="h-4 w-4" />
-                      Client Project
-                    </CardDescription>
+          {filteredProjects.map((project) => {
+            const isApplied = myApplications?.some(app => app.projectId === project.id);
+            return (
+              <Card key={project.id} data-testid={`card-project-${project.id}`}>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">{project.title}</CardTitle>
+                      <CardDescription className="flex items-center gap-2">
+                        {/* Client info is not joined in simple Project return. Could fetch or assume hidden */}
+                        <Building2 className="h-4 w-4" />
+                        Client Project
+                      </CardDescription>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold">${(project.budget || 0).toLocaleString()}</div>
+                      <div className="text-sm text-muted-foreground">Fixed Price</div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold">${(project.budget || 0).toLocaleString()}</div>
-                    <div className="text-sm text-muted-foreground">Fixed Price</div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-muted-foreground">{project.description}</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">{project.description}</p>
 
-                <div className="flex flex-wrap gap-2">
-                  {/* Generic badge until skills are added to schema */}
-                  <Badge variant="secondary">
-                    Data Analysis
-                  </Badge>
-                </div>
+                  <div className="flex flex-wrap gap-2">
+                    {/* Generic badge until skills are added to schema */}
+                    <Badge variant="secondary">
+                      Data Analysis
+                    </Badge>
+                  </div>
 
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    Due: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline'}
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      Due: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline'}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      Posted {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently'}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    Posted {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently'}
-                  </div>
-                  {/* Applicants count would require separate fetch or enriched query 
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    ? applicants
-                  </div>
-                  */}
-                </div>
 
-                <div className="flex justify-end gap-2">
-                  <Dialog open={applyingTo?.id === project.id} onOpenChange={(open) => !open && setApplyingTo(null)}>
-                    <DialogTrigger asChild>
-                      <Button
-                        onClick={() => setApplyingTo(project)}
-                        data-testid={`button-apply-${project.id}`}
-                      >
-                        Apply Now
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px]">
-                      <DialogHeader>
-                        <DialogTitle>Apply to Project</DialogTitle>
-                        <DialogDescription>
-                          Submit your application for "{project.title}"
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="rate">Your Proposed Rate</Label>
-                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              id="rate"
-                              placeholder={(project.budget || 0).toString()}
-                              value={proposedRate}
-                              onChange={(e) => setProposedRate(e.target.value)}
-                              className="pl-10"
-                              data-testid="input-proposed-rate"
-                            />
+                  <div className="flex justify-end gap-2">
+                    {isApplied ? (
+                      <Button disabled variant="outline">Applied</Button>
+                    ) : (
+                      <Dialog open={applyingTo?.id === project.id} onOpenChange={(open) => !open && setApplyingTo(null)}>
+                        <DialogTrigger asChild>
+                          <Button
+                            onClick={() => setApplyingTo(project)}
+                            data-testid={`button-apply-${project.id}`}
+                          >
+                            Apply Now
+                          </Button>
+                        </DialogTrigger>
+
+                        <DialogContent className="sm:max-w-[500px]">
+                          <DialogHeader>
+                            <DialogTitle>Apply to Project</DialogTitle>
+                            <DialogDescription>
+                              Submit your application for "{project.title}"
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="rate">Your Proposed Rate</Label>
+                              <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                  id="rate"
+                                  placeholder={(project.budget || 0).toString()}
+                                  value={proposedRate}
+                                  onChange={(e) => setProposedRate(e.target.value)}
+                                  className="pl-10"
+                                  data-testid="input-proposed-rate"
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Client's budget: ${(project.budget || 0).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="cover">Cover Letter</Label>
+                              <Textarea
+                                id="cover"
+                                placeholder="Explain why you're the best fit for this project..."
+                                value={coverLetter}
+                                onChange={(e) => setCoverLetter(e.target.value)}
+                                rows={6}
+                                data-testid="textarea-cover-letter"
+                              />
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Client's budget: ${(project.budget || 0).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="cover">Cover Letter</Label>
-                          <Textarea
-                            id="cover"
-                            placeholder="Explain why you're the best fit for this project..."
-                            value={coverLetter}
-                            onChange={(e) => setCoverLetter(e.target.value)}
-                            rows={6}
-                            data-testid="textarea-cover-letter"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setApplyingTo(null)} data-testid="button-cancel-application">
-                          Cancel
-                        </Button>
-                        <Button onClick={handleApply} disabled={createApplicationMutation.isPending} data-testid="button-submit-application">
-                          {createApplicationMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Submit Application
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setApplyingTo(null)} data-testid="button-cancel-application">
+                              Cancel
+                            </Button>
+                            <Button onClick={handleApply} disabled={createApplicationMutation.isPending} data-testid="button-submit-application">
+                              {createApplicationMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              Submit Application
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {filteredProjects.length === 0 && (

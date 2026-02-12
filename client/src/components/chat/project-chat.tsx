@@ -13,7 +13,7 @@ import type { Message, Conversation } from "@shared/schema";
 interface ProjectChatProps {
   projectId: string;
   currentUserId: string;
-  currentUserRole: "client" | "analyst";
+  currentUserRole: "client" | "analyst" | "admin";
 }
 
 export function ProjectChat({ projectId, currentUserId, currentUserRole }: ProjectChatProps) {
@@ -136,11 +136,13 @@ export function ProjectChat({ projectId, currentUserId, currentUserRole }: Proje
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarFallback className={cn(
                         "text-xs",
-                        message.senderRole === "client" 
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" 
-                          : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                        message.senderRole === "client"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                          : message.senderRole === "analyst"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                            : "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
                       )}>
-                        {message.senderRole === "client" ? "C" : "A"}
+                        {message.senderRole === "client" ? "C" : message.senderRole === "analyst" ? "A" : "ADM"}
                       </AvatarFallback>
                     </Avatar>
                     <div
@@ -156,9 +158,9 @@ export function ProjectChat({ projectId, currentUserId, currentUserRole }: Proje
                         "text-xs mt-1",
                         isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                       )}>
-                        {new Date(message.createdAt!).toLocaleTimeString([], { 
-                          hour: "2-digit", 
-                          minute: "2-digit" 
+                        {new Date(message.createdAt!).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit"
                         })}
                       </p>
                     </div>
@@ -168,7 +170,7 @@ export function ProjectChat({ projectId, currentUserId, currentUserRole }: Proje
             </div>
           )}
         </ScrollArea>
-        
+
         <div className="p-3 border-t">
           <div className="flex gap-2">
             <Input

@@ -150,15 +150,12 @@ export default function DatasetUploadPage() {
       // Simulate progress
       setFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress: 50 } : f));
 
-      await apiRequest("POST", "/api/datasets", {
-        name: file.name,
-        projectId: id,
-        fileName: file.name,
-        fileSize: file.size,
-        rowCount: data.length,
-        columns,
-        data
-      });
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("projectId", id!);
+      formData.append("name", file.name);
+
+      await apiRequest("POST", "/api/datasets", formData);
 
       setFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress: 100, status: "complete" } : f));
     } catch (error) {
@@ -172,7 +169,7 @@ export default function DatasetUploadPage() {
     setIsDragging(false);
 
     const droppedFiles = Array.from(e.dataTransfer.files);
-    droppedFiles.forEach(handleUpload);
+    droppedFiles.map(file => handleUpload(file));
   }, [id]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -187,7 +184,7 @@ export default function DatasetUploadPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    selectedFiles.forEach(handleUpload);
+    selectedFiles.map(file => handleUpload(file));
     e.target.value = "";
   };
 
@@ -219,8 +216,8 @@ export default function DatasetUploadPage() {
           <CardContent className="p-6">
             <div
               className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50"
+                ? "border-primary bg-primary/5"
+                : "border-border hover:border-primary/50"
                 }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}

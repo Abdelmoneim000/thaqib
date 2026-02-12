@@ -28,6 +28,9 @@ import AdminDashboardPage from "@/pages/admin/dashboard";
 import AdminClientsPage from "@/pages/admin/clients";
 import AdminAnalystsPage from "@/pages/admin/analysts";
 import AdminChatsPage from "@/pages/admin/chats";
+import ClientDatasetsPage from "@/pages/client/datasets";
+import ClientSettingsPage from "@/pages/client/settings";
+import DashboardViewPage from "@/pages/analyst/dashboard-view";
 
 function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -116,6 +119,15 @@ function Router() {
       </Route>
       <Route path="/admin/chats">
         <ProtectedRoute component={AdminChatsPage} allowedRoles={["admin"]} />
+      </Route>
+      <Route path="/client/datasets">
+        <ProtectedRoute component={ClientDatasetsPage} allowedRoles={["client"]} />
+      </Route>
+      <Route path="/client/settings">
+        <ProtectedRoute component={ClientSettingsPage} allowedRoles={["client"]} />
+      </Route>
+      <Route path="/analyst/dashboard/:id">
+        <ProtectedRoute component={DashboardViewPage} allowedRoles={["analyst"]} />
       </Route>
       <Route component={NotFound} />
     </Switch>

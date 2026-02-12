@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useRef } from "react";
 import { Link, useParams, useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -9,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
   Calendar,
@@ -222,14 +224,15 @@ export default function ClientProjectDetailPage() {
 
   const startChatMutation = useMutation({
     mutationFn: async ({ analystId, analystName }: { analystId: string; analystName: string }) => {
-      return apiRequest("POST", "/api/conversations", {
+      const res = await apiRequest("POST", "/api/conversations", {
         otherUserId: analystId, // Updated to use otherUserId as per API
         analystName,
       });
+      return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      setLocation("/client/chats");
+      setLocation(`/client/chats?conversationId=${data.id}`);
     },
   });
 
@@ -271,8 +274,42 @@ export default function ClientProjectDetailPage() {
     return <Badge variant="outline" className={className}>{label}</Badge>;
   };
 
-  // Fetch user for chat
+  // File upload ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({ title: "Invalid file type", description: "Please upload a CSV file", variant: "destructive" });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("projectId", id!);
+
+    try {
+      await apiRequest("POST", "/api/datasets", formData);
+      toast({ title: "Dataset uploaded", description: "Your dataset has been successfully uploaded and processed." });
+      queryClient.invalidateQueries({ queryKey: [`/api/datasets`, { projectId: id }] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}`] });
+    } catch (error) {
+      toast({ title: "Upload failed", description: "Failed to upload dataset", variant: "destructive" });
+    } finally {
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const onUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const { user } = useAuth();
+
 
   if (isProjectLoading || !project) {
     return (
@@ -308,12 +345,19 @@ export default function ClientProjectDetailPage() {
                 {project.description}
               </p>
             </div>
-            <Link href={`/client/projects/${project.id}/upload`}>
-              <Button className="gap-2 shrink-0" data-testid="button-upload-dataset">
+            <div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept=".csv"
+                onChange={handleFileUpload}
+              />
+              <Button className="gap-2 shrink-0" onClick={onUploadClick} data-testid="button-upload-dataset">
                 <Upload className="h-4 w-4" />
                 Upload Dataset
               </Button>
-            </Link>
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
@@ -336,7 +380,7 @@ export default function ClientProjectDetailPage() {
               <span>{datasets?.length || 0} datasets</span>
             </div>
           </div>
-        </div>
+        </div >
 
         <Tabs defaultValue="applicants" className="w-full">
           <TabsList className="mb-6">
@@ -446,7 +490,7 @@ export default function ClientProjectDetailPage() {
             />
           </TabsContent>
         </Tabs>
-      </div>
-    </ClientLayout>
+      </div >
+    </ClientLayout >
   );
 }

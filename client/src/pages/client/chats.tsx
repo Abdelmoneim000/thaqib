@@ -11,6 +11,7 @@ import type { Conversation, Message } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import ClientLayout from "@/components/client-layout";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 
 function ChatPanel({
   conversation,
@@ -69,7 +70,7 @@ function ChatPanel({
         <div>
           <p className="font-medium">{conversation.analystName || "Analyst"}</p>
           <p className="text-xs text-muted-foreground">
-            {conversation.isAdminChat ? "Support" : "Data Analyst"}
+            {conversation.isAdminChat ? "Support" : ((conversation as any).projectTitle || "Data Analyst")}
           </p>
         </div>
       </div>
@@ -177,43 +178,58 @@ function ChatList({
 
   return (
     <div className="space-y-2">
-      {conversations.map((conv) => (
-        <Card
-          key={conv.id}
-          className="cursor-pointer hover-elevate"
-          onClick={() => onSelectChat(conv)}
-          data-testid={`card-chat-${conv.id}`}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {(conv.analystName || "A")[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium truncate">{conv.analystName || "Analyst"}</p>
-                  {conv.lastMessageAt && (
-                    <span className="text-xs text-muted-foreground flex-shrink-0">
-                      {formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix: true })}
-                    </span>
+      {conversations.map((conv) => {
+        const extendedConv = conv as any;
+        const analystName = conv.analystName || "Analyst";
+        const projectTitle = extendedConv.projectTitle;
+
+        return (
+          <Card
+            key={conv.id}
+            className="cursor-pointer hover-elevate"
+            onClick={() => onSelectChat(conv)}
+            data-testid={`card-chat-${conv.id}`}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {analystName[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 overflow-hidden">
+                      <p className="font-medium truncate">{analystName}</p>
+                      {projectTitle && (
+                        <p className="text-xs text-muted-foreground truncate">{projectTitle}</p>
+                      )}
+                    </div>
+                    {conv.lastMessageAt && (
+                      <span className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap ml-2">
+                        {formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix: true })}
+                      </span>
+                    )}
+                  </div>
+                  {conv.lastMessagePreview && (
+                    <p className="text-sm text-muted-foreground truncate mt-1">{conv.lastMessagePreview}</p>
                   )}
                 </div>
-                {conv.lastMessagePreview && (
-                  <p className="text-sm text-muted-foreground truncate">{conv.lastMessagePreview}</p>
-                )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
 
 export default function ClientChatsPage() {
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
+
+  const [, params] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const autoSelectId = searchParams.get("conversationId");
 
   const { data: conversations = [], isLoading } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
@@ -222,6 +238,15 @@ export default function ClientChatsPage() {
       return res.json();
     },
   });
+
+  useEffect(() => {
+    if (autoSelectId && conversations.length > 0 && !selectedChat) {
+      const target = conversations.find(c => c.id === autoSelectId);
+      if (target) {
+        setSelectedChat(target);
+      }
+    }
+  }, [autoSelectId, conversations, selectedChat]);
 
   const sortedConversations = [...conversations].sort((a, b) => {
     const dateA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;

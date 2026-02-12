@@ -1,10 +1,13 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
 import { storage } from "./storage";
 import { parseCSV, inferColumnTypes } from "./csv-parser";
 import { nanoid } from "nanoid";
 import type { DatasetColumn } from "@shared/schema";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 export async function registerRoutes(
   httpServer: Server,
@@ -43,7 +46,71 @@ export async function registerRoutes(
     }
   });
 
+  // User Profile Update
+  app.patch("/api/user", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { firstName, lastName, organization, skills } = req.body;
+
+      // Update user 
+      const updatedUser = await storage.updateUser(userId, {
+        firstName,
+        lastName,
+        organization,
+        skills
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
   // Datasets API
+  app.post("/api/datasets", isAuthenticated, upload.single("file"), async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { projectId } = req.body;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      if (!projectId) {
+        return res.status(400).json({ error: "projectId is required" });
+      }
+
+      const csvContent = file.buffer.toString("utf-8");
+      const data = parseCSV(csvContent);
+      const columns = inferColumnTypes(data);
+
+      const dataset = await storage.createDataset({
+        name: file.originalname,
+        projectId,
+        uploadedBy: userId!,
+        fileName: file.originalname,
+        fileSize: file.size,
+        rowCount: data.length,
+        columns,
+        data,
+      });
+
+      res.status(201).json(dataset);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to upload dataset" });
+    }
+  });
+
   app.get("/api/datasets", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
@@ -52,16 +119,38 @@ export async function registerRoutes(
       if (projectId) {
         datasets = await storage.getDatasetsByProject(projectId);
       } else if (userId) {
-        datasets = await storage.getDatasetsByUser(userId);
+        // Correct logic: if analyst, get datasets for projects they are assigned to
+        const user = await storage.getUser(userId);
+        if (user?.role === "analyst") {
+          // For now, return all datasets? No, better to filter. 
+          // But storage.getDatasetsByUser gets datasets UPLOADED by user.
+          // Analyst needs to see datasets for projects they are working on.
+          // Let's rely on projectId filter from frontend for now, or implement getDatasetsForAnalyst.
+          // For "My Uploads", getDatasetsByUser is fine.
+          datasets = await storage.getDatasetsByUser(userId);
+        } else {
+          datasets = await storage.getDatasetsByUser(userId);
+        }
       }
-      const summary = datasets.map(d => ({
-        id: d.id,
-        name: d.name,
-        projectId: d.projectId,
-        fileName: d.fileName,
-        rowCount: d.rowCount,
-        columns: d.columns,
-        createdAt: d.createdAt,
+      const summary = await Promise.all(datasets.map(async d => {
+        const project = await storage.getProject(d.projectId);
+        let uploadedByName = "Unknown";
+        if (d.uploadedBy) {
+          const uploader = await storage.getUser(d.uploadedBy);
+          if (uploader) uploadedByName = `${uploader.firstName || ''} ${uploader.lastName || ''}`.trim() || uploader.email || "Unknown";
+        }
+        return {
+          id: d.id,
+          name: d.name,
+          projectId: d.projectId,
+          projectTitle: project?.title || 'Unknown Project',
+          uploadedBy: d.uploadedBy,
+          uploadedByName,
+          fileName: d.fileName,
+          rowCount: d.rowCount,
+          columns: d.columns,
+          createdAt: d.createdAt,
+        };
       }));
       res.json(summary);
     } catch (error) {
@@ -449,9 +538,20 @@ export async function registerRoutes(
       const user = await storage.getUser(userId!);
       const status = req.query.status as string | undefined;
 
-      let projectsList: Awaited<ReturnType<typeof storage.getProjectsByClient>> = [];
+      let projectsList: any[] = [];
       if (user?.role === "client") {
-        projectsList = await storage.getProjectsByClient(userId!);
+        const projects = await storage.getProjectsByClient(userId!);
+        projectsList = await Promise.all(projects.map(async (p) => {
+          const datasets = await storage.getDatasetsByProject(p.id);
+          const applications = await storage.getApplicationsByProject(p.id);
+
+          return {
+            ...p,
+            datasets: datasets.length,
+            applicants: applications.length
+          };
+        }));
+
       } else if (user?.role === "analyst") {
         let projects: any[] = [];
         if (status === "open") {
@@ -468,7 +568,7 @@ export async function registerRoutes(
             if (client) clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || "Unknown Client";
           }
 
-          // Fetch counts
+          // Fetch counts (not needed for client now)
           const datasets = await storage.getDatasetsByProject(p.id);
           const dashboards = await storage.getDashboardsByProject(p.id);
 
@@ -547,97 +647,11 @@ export async function registerRoutes(
     }
   });
 
-  // Datasets API
-  app.get("/api/datasets", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const projectId = req.query.projectId as string | undefined;
 
-      let datasets: Awaited<ReturnType<typeof storage.getDatasetsByProject>> = [];
-      if (projectId) {
-        datasets = await storage.getDatasetsByProject(projectId);
-      } else {
-        datasets = await storage.getDatasetsByUser(userId!);
-      }
-      res.json(datasets);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch datasets" });
-    }
-  });
 
-  app.post("/api/datasets", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const dataset = req.body;
-      const newDataset = await storage.createDataset({
-        ...dataset,
-        uploadedBy: userId!,
-      });
-      res.status(201).json(newDataset);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create dataset" });
-    }
-  });
 
-  // Dashboards API
-  app.get("/api/dashboards", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const projectId = req.query.projectId as string | undefined;
 
-      let dashboards: Awaited<ReturnType<typeof storage.getDashboardsByProject>> = [];
-      if (projectId) {
-        dashboards = await storage.getDashboardsByProject(projectId);
-      } else {
-        dashboards = await storage.getDashboardsByUser(userId!);
-      }
-      res.json(dashboards);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch dashboards" });
-    }
-  });
 
-  app.post("/api/dashboards", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const { name, description, projectId } = req.body;
-      const newDashboard = await storage.createDashboard({
-        name,
-        description,
-        projectId: projectId || null,
-        createdBy: userId!,
-        layout: { items: [] }, // Initialize with empty layout
-        isPublished: false,
-      });
-      res.status(201).json(newDashboard);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to create dashboard" });
-    }
-  });
-
-  // Visualizations API
-  app.get("/api/visualizations", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      // In a real app, we might filter by user or dashboard.
-      // For now, let's fetch all dashboards for the user, then get visualizations for those dashboards.
-      // Or if we had a direct 'createdBy' on visualizations.
-      // Looking at schema, visualization has dashboardId.
-      const userId = getUserId(req);
-      const dashboards = await storage.getDashboardsByUser(userId!);
-      const dashboardIds = dashboards.map(d => d.id);
-
-      let allViz: any[] = [];
-      for (const id of dashboardIds) {
-        const vizs = await storage.getVisualizationsByDashboard(id);
-        allViz = [...allViz, ...vizs.map(v => ({ ...v, dashboardName: dashboards.find(d => d.id === id)?.name }))];
-      }
-
-      res.json(allViz);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch visualizations" });
-    }
-  });
 
   // Applications API
   app.get("/api/applications", isAuthenticated, async (req: Request, res: Response) => {
@@ -662,9 +676,7 @@ export async function registerRoutes(
           })
         );
         return res.json(enriched);
-      }
-
-      if (user?.role === "analyst") {
+      } else if (user?.role === "analyst") {
         // Get analyst's own applications
         const apps = await storage.getApplicationsByAnalyst(userId!);
         // Enrich with project info
@@ -674,13 +686,13 @@ export async function registerRoutes(
             let clientName = "Unknown Client";
             if (project?.clientId) {
               const client = await storage.getUser(project.clientId);
-              if (client) clientName = `${client.firstName} ${client.lastName}`;
+              if (client) clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim() || client.email || "Unknown Client";
             }
 
             return {
               ...app,
               projectTitle: project?.title || 'Unknown Project',
-              projectBudget: project?.budget,
+              projectBudget: project?.budget || 0,
               projectStatus: project?.status,
               projectDeadline: project?.deadline,
               clientName,
@@ -689,6 +701,8 @@ export async function registerRoutes(
         );
         return res.json(enriched);
       }
+
+      res.json([]);
 
       res.json([]);
     } catch (error) {
@@ -770,7 +784,18 @@ export async function registerRoutes(
       }
 
       const conversations = await storage.getConversationsByUser(userId, user.role);
-      res.json(conversations);
+      const enriched = await Promise.all(
+        conversations.map(async (c) => {
+          const project = await storage.getProject(c.projectId!);
+          const client = await storage.getUser(c.clientId!);
+          return {
+            ...c,
+            projectTitle: project?.title || "Unknown Project",
+            clientName: client?.firstName || "Unknown Client",
+          };
+        })
+      );
+      res.json(enriched);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch conversations" });
     }

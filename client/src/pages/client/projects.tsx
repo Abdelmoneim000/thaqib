@@ -207,9 +207,7 @@ function ProjectCard({ project }: { project: UIProject }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem data-testid={`menu-edit-${project.id}`}>
-                  Edit
-                </DropdownMenuItem>
+
                 <DropdownMenuItem data-testid={`menu-view-${project.id}`}>
                   View Details
                 </DropdownMenuItem>
@@ -301,6 +299,7 @@ export default function ClientProjectsPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {projects.map((project) => (
+              console.log(project),
               <ProjectCard key={project.id} project={project} />
             ))}
           </div>

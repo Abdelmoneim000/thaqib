@@ -55,9 +55,10 @@ function ChatPanel({
     }
   };
 
+  const extendedConv = conversation as any;
   const chatName = conversation.isAdminChat
     ? "Thaqib Help"
-    : (conversation.clientId?.replace("client-", "Client ") || "Client");
+    : (extendedConv.clientName || conversation.clientId?.replace("client-", "Client ") || "Client");
 
   return (
     <div className="flex flex-col h-full">
@@ -73,7 +74,7 @@ function ChatPanel({
         <div>
           <p className="font-medium">{chatName}</p>
           <p className="text-xs text-muted-foreground">
-            {conversation.isAdminChat ? "Support" : "Project Owner"}
+            {conversation.isAdminChat ? "Support" : (extendedConv.projectTitle || "Project Owner")}
           </p>
         </div>
       </div>
@@ -109,8 +110,8 @@ function ChatPanel({
                   )}
                   <div
                     className={`max-w-[70%] rounded-lg px-3 py-2 ${isOwnMessage
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
                       }`}
                   >
                     {isAdminMessage && (
@@ -182,7 +183,10 @@ function ChatList({
   return (
     <div className="space-y-2">
       {conversations.map((conv) => {
-        const clientName = conv.clientId?.replace("client-", "Client ") || "Client";
+        const extendedConv = conv as any;
+        const clientName = extendedConv.clientName || conv.clientId?.replace("client-", "Client ") || "Client";
+        const projectTitle = extendedConv.projectTitle;
+
         return (
           <Card
             key={conv.id}
@@ -199,7 +203,12 @@ function ChatList({
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium truncate">{clientName}</p>
+                    <div className="min-w-0 overflow-hidden">
+                      <p className="font-medium truncate">{clientName}</p>
+                      {projectTitle && (
+                        <p className="text-xs text-muted-foreground truncate">{projectTitle}</p>
+                      )}
+                    </div>
                     {conv.lastMessageAt && (
                       <span className="text-xs text-muted-foreground flex-shrink-0">
                         {formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix: true })}
@@ -207,7 +216,7 @@ function ChatList({
                     )}
                   </div>
                   {conv.lastMessagePreview && (
-                    <p className="text-sm text-muted-foreground truncate">{conv.lastMessagePreview}</p>
+                    <p className="text-sm text-muted-foreground truncate mt-1">{conv.lastMessagePreview}</p>
                   )}
                 </div>
               </div>

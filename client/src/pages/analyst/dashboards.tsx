@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import AnalystLayout from "@/components/analyst-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Plus, 
+import {
+  Plus,
   LayoutDashboard,
   BarChart3,
   Search,
@@ -26,7 +28,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  Copy
+  Copy,
+  Loader2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,103 +37,56 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface SavedDashboard {
-  id: string;
-  name: string;
-  description?: string;
-  projectName?: string;
-  chartCount: number;
-  lastEdited: string;
-  status: "draft" | "published";
-}
-
-const savedDashboards: SavedDashboard[] = [
-  {
-    id: "dash1",
-    name: "Sales Performance Overview",
-    description: "Monthly sales metrics and regional breakdown",
-    projectName: "TechCorp Analytics",
-    chartCount: 4,
-    lastEdited: "2 hours ago",
-    status: "published",
-  },
-  {
-    id: "dash2",
-    name: "Customer Segmentation Analysis",
-    description: "Customer demographics and behavior patterns",
-    projectName: "RetailMax Insights",
-    chartCount: 6,
-    lastEdited: "1 day ago",
-    status: "draft",
-  },
-  {
-    id: "dash3",
-    name: "Marketing Campaign Results",
-    description: "ROI analysis for Q4 campaigns",
-    projectName: "GrowthLabs Report",
-    chartCount: 3,
-    lastEdited: "3 days ago",
-    status: "published",
-  },
-];
-
-interface SavedVisualization {
-  id: string;
-  name: string;
-  type: string;
-  datasetName: string;
-  lastEdited: string;
-}
-
-const savedVisualizations: SavedVisualization[] = [
-  {
-    id: "viz1",
-    name: "Revenue by Region",
-    type: "bar",
-    datasetName: "Sales Data 2024",
-    lastEdited: "1 hour ago",
-  },
-  {
-    id: "viz2",
-    name: "Monthly Trend",
-    type: "line",
-    datasetName: "Sales Data 2024",
-    lastEdited: "2 hours ago",
-  },
-  {
-    id: "viz3",
-    name: "Customer Distribution",
-    type: "pie",
-    datasetName: "Customer Analytics",
-    lastEdited: "1 day ago",
-  },
-  {
-    id: "viz4",
-    name: "Retention by Segment",
-    type: "bar",
-    datasetName: "Customer Analytics",
-    lastEdited: "2 days ago",
-  },
-];
+import { useToast } from "@/hooks/use-toast";
+import type { Dashboard } from "@shared/schema";
 
 export default function DashboardsPage() {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState("");
   const [newDashboardDesc, setNewDashboardDesc] = useState("");
 
-  const filteredDashboards = savedDashboards.filter(d =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const { data: dashboards, isLoading: isLoadingDashboards } = useQuery<Dashboard[]>({
+    queryKey: ["/api/dashboards"],
+  });
+
+  const { data: visualizations, isLoading: isLoadingVisualizations } = useQuery<any[]>({
+    queryKey: ["/api/visualizations"],
+  });
+
+  const createDashboardMutation = useMutation({
+    mutationFn: async (data: { name: string; description: string }) => {
+      const res = await apiRequest("POST", "/api/dashboards", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboards"] });
+      toast({ title: "Dashboard created", description: "Start adding visualizations now." });
+      setIsCreateDialogOpen(false);
+      setNewDashboardName("");
+      setNewDashboardDesc("");
+    },
+    onError: () => {
+      toast({ title: "Failed to create dashboard", variant: "destructive" });
+    }
+  });
 
   const handleCreateDashboard = () => {
-    console.log("Creating dashboard:", newDashboardName);
-    setIsCreateDialogOpen(false);
-    setNewDashboardName("");
-    setNewDashboardDesc("");
+    if (!newDashboardName) {
+      toast({ title: "Name is required", variant: "destructive" });
+      return;
+    }
+    createDashboardMutation.mutate({
+      name: newDashboardName,
+      description: newDashboardDesc,
+    });
   };
+
+  const filteredDashboards = dashboards?.filter(d =>
+    d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (d.description || "").toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   return (
     <AnalystLayout>
@@ -189,7 +145,8 @@ export default function DashboardsPage() {
                   <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateDashboard} data-testid="button-create-dashboard">
+                  <Button onClick={handleCreateDashboard} disabled={createDashboardMutation.isPending} data-testid="button-create-dashboard">
+                    {createDashboardMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Dashboard
                   </Button>
                 </DialogFooter>
@@ -212,7 +169,9 @@ export default function DashboardsPage() {
         <div className="space-y-6">
           <div>
             <h2 className="text-lg font-medium mb-4">Dashboards</h2>
-            {filteredDashboards.length === 0 ? (
+            {isLoadingDashboards ? (
+              <div className="bg-card border rounded-lg p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+            ) : filteredDashboards.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <LayoutDashboard className="h-12 w-12 text-muted-foreground mb-4" />
@@ -229,8 +188,8 @@ export default function DashboardsPage() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredDashboards.map((dashboard) => (
-                  <Link key={dashboard.id} href="/analyst/sample-dashboard">
-                    <Card 
+                  <Link key={dashboard.id} href={`/analyst/dashboard/${dashboard.id}`}>
+                    <Card
                       className="hover-elevate cursor-pointer h-full"
                       data-testid={`card-dashboard-${dashboard.id}`}
                     >
@@ -238,9 +197,7 @@ export default function DashboardsPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="space-y-1">
                             <CardTitle className="text-base">{dashboard.name}</CardTitle>
-                            {dashboard.projectName && (
-                              <CardDescription>{dashboard.projectName}</CardDescription>
-                            )}
+                            {/* Project name would need enrichment or fetch */}
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -257,10 +214,6 @@ export default function DashboardsPage() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Copy className="h-4 w-4 mr-2" />
-                                Duplicate
-                              </DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive">
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
@@ -271,24 +224,25 @@ export default function DashboardsPage() {
                       </CardHeader>
                       <CardContent>
                         {dashboard.description && (
-                          <p className="text-sm text-muted-foreground mb-3">
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                             {dashboard.description}
                           </p>
                         )}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mt-auto">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <BarChart3 className="h-4 w-4" />
-                            {dashboard.chartCount} charts
+                            {/* Layout items count */}
+                            {dashboard.layout?.items?.length || 0} charts
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant={dashboard.status === "published" ? "default" : "secondary"}>
-                              {dashboard.status}
+                            <Badge variant={dashboard.isPublished ? "default" : "secondary"}>
+                              {dashboard.isPublished ? "Published" : "Draft"}
                             </Badge>
                           </div>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
                           <Clock className="h-3 w-3" />
-                          Edited {dashboard.lastEdited}
+                          {dashboard.updatedAt ? new Date(dashboard.updatedAt).toLocaleDateString() : 'Unknown'}
                         </div>
                       </CardContent>
                     </Card>
@@ -300,31 +254,39 @@ export default function DashboardsPage() {
 
           <div>
             <h2 className="text-lg font-medium mb-4">Saved Visualizations</h2>
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-              {savedVisualizations.map((viz) => (
-                <Card 
-                  key={viz.id}
-                  className="hover-elevate cursor-pointer"
-                  data-testid={`card-viz-${viz.id}`}
-                >
-                  <CardContent className="pt-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium">{viz.name}</p>
-                        <p className="text-sm text-muted-foreground">{viz.datasetName}</p>
+            {isLoadingVisualizations ? (
+              <div className="bg-card border rounded-lg p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+            ) : (!visualizations || visualizations.length === 0) ? (
+              <div className="text-muted-foreground text-sm italic">No saved visualizations found. create one from the builder.</div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                {visualizations.map((viz) => (
+                  <Card
+                    key={viz.id}
+                    className="hover-elevate cursor-pointer"
+                    data-testid={`card-viz-${viz.id}`}
+                  >
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium truncate" title={viz.name}>{viz.name}</p>
+                          <p className="text-sm text-muted-foreground truncate" title={viz.dashboardName}>
+                            {viz.dashboardName || 'No Dashboard'}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="capitalize shrink-0">
+                          {viz.chartType}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="capitalize">
-                        {viz.type}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3">
-                      <Clock className="h-3 w-3" />
-                      {viz.lastEdited}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3">
+                        <Clock className="h-3 w-3" />
+                        {viz.createdAt ? new Date(viz.createdAt).toLocaleDateString() : ''}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
