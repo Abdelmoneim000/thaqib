@@ -19,25 +19,29 @@ RUN npm run build
 FROM node:22-alpine AS runner
 WORKDIR /app
 
-# Create a non-root user for security
-RUN addgroup -g 1000 appgroup && \
-    adduser -u 1000 -G appgroup -s /bin/sh -D appuser
+# The 'node' user with ID 1000 already exists in the base image, so we don't need to create it.
+# We will use the existing 'node' user.
 
 # Copy only the necessary files for production
-COPY package*.json ./
+# Set ownership of the working directory to the 'node' user
+RUN chown node:node /app
 
-# Install ONLY production dependencies
+# Switch to non-root user 'node' immediately
+USER node
+
+# Copy package files with correct ownership
+COPY --chown=node:node package*.json ./
+
+# Install ONLY production dependencies (as the node user)
 RUN npm install --production
 
-# Copy the build output
-# Based on your "start" script ("node dist/index.cjs"), your build output goes to /dist
-COPY --from=builder /app/dist ./dist
+# Copy the build output with correct ownership
+COPY --chown=node:node --from=builder /app/dist ./dist
 
-# Switch to non-root user
-USER appuser
+# No need for recursive chown as everything is already owned by node
 
 # Expose the port (Replit/Express usually defaults to 3000 or 5000)
-EXPOSE 3000
+EXPOSE 5000
 
 # Start the application using your defined start script
 CMD ["npm", "start"]
