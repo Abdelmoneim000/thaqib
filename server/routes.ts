@@ -4,6 +4,7 @@ import multer from "multer";
 import { storage } from "./storage";
 import { parseCSV, inferColumnTypes } from "./csv-parser";
 import { nanoid } from "nanoid";
+import alasql from "alasql";
 import type { DatasetColumn } from "@shared/schema";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
 
@@ -119,16 +120,32 @@ export async function registerRoutes(
       if (projectId) {
         datasets = await storage.getDatasetsByProject(projectId);
       } else if (userId) {
-        // Correct logic: if analyst, get datasets for projects they are assigned to
         const user = await storage.getUser(userId);
+
         if (user?.role === "analyst") {
-          // For now, return all datasets? No, better to filter. 
-          // But storage.getDatasetsByUser gets datasets UPLOADED by user.
-          // Analyst needs to see datasets for projects they are working on.
-          // Let's rely on projectId filter from frontend for now, or implement getDatasetsForAnalyst.
-          // For "My Uploads", getDatasetsByUser is fine.
-          datasets = await storage.getDatasetsByUser(userId);
+          // For analysts: get datasets from projects they are assigned to
+          // PLUS any datasets they personally uploaded (though usually those are project-linked)
+          // 1. Get projects where analyst is assigned
+          const projects = await storage.getProjectsByAnalyst(userId);
+          const projectIds = projects.map(p => p.id);
+
+          // 2. Fetch datasets for all these projects
+          // We can iterate, or ideally storage has a method. We'll simulate it for now.
+          // Since we don't have getDatasetsByProjects(ids), we'll parallel fetch.
+          const projectDatasets = await Promise.all(
+            projectIds.map(pid => storage.getDatasetsByProject(pid))
+          );
+
+          // 3. Get personal uploads (just in case they have unassigned ones, though unlikely in this model)
+          const personalDatasets = await storage.getDatasetsByUser(userId);
+
+          // Flatten and deduplicate
+          const combined = [...projectDatasets.flat(), ...personalDatasets];
+          // Remove duplicates by ID
+          datasets = Array.from(new Map(combined.map(item => [item.id, item])).values());
         } else {
+          // Clients seeing their own uploads (or project uploads? Clients likely see project uploads too)
+          // For simplicity, existing logic for others:
           datasets = await storage.getDatasetsByUser(userId);
         }
       }
@@ -247,10 +264,26 @@ export async function registerRoutes(
 
       let dashboards: Awaited<ReturnType<typeof storage.getDashboardsByProject>> = [];
       if (projectId) {
-        dashboards = await storage.getDashboardsByProject(projectId);
+        // console.log("Fetching dashboards for project:", projectId);
+        const projectDashboards = await storage.getDashboardsByProject(projectId);
+
+        // Also fetch personal dashboards (not linked to any project) for the user
+        // This covers cases where a dashboard was created without a project context
+        if (userId) {
+          const userDashboards = await storage.getDashboardsByUser(userId);
+          const personalDashboards = userDashboards.filter(d => !d.projectId);
+
+          // Combine and deduplicate
+          const combined = [...projectDashboards, ...personalDashboards];
+          dashboards = Array.from(new Map(combined.map(d => [d.id, d])).values());
+        } else {
+          dashboards = projectDashboards;
+        }
       } else if (userId) {
+        // console.log("Fetching dashboards for user:", userId);
         dashboards = await storage.getDashboardsByUser(userId);
       }
+      // console.log("Found dashboards:", dashboards.length);
       res.json(dashboards);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch dashboards" });
@@ -449,6 +482,63 @@ export async function registerRoutes(
             return filtered;
           });
         }
+      } else if (query.type === "sql") {
+        try {
+          // Use alasql to execute the query against the dataset
+          // We provide the data as a table named 'data' or simply as the source
+          // Alasql supports querying arrays.
+          // Note: query.sql should be something like "SELECT * FROM ?"
+          // We might need to sanitize or prepare the query.
+          // Since the user writes "SELECT * FROM dataset", we need to replace 'dataset' or handle it.
+
+          // Simple approach: Normalize the query to always select from the ? placeholder
+          // But users might write "SELECT * FROM my_table".
+          // We'll try to just pass the data as a source.
+
+          // Let's assume the user knows to use '?' or we replace 'dataset' with '?'
+          // Or commonly: alasql('SELECT * FROM ?', [data])
+
+          // However, standard SQL editors usually have a table name.
+          // If we want to support generic SQL, we can register the data as a table.
+
+          const tableName = `dataset_${datasetId.replace(/-/g, '_')}`;
+
+          // Create a temporary database/table context is tricky in stateless req, 
+          // but alasql can operate on in-memory objects directly.
+
+          // We will attempt to run the SQL. 
+          // If the user wrote "SELECT ... FROM dataset ...", we replace 'dataset' with '?'
+          // and run alasql with the data array.
+
+          let sql = query.sql;
+          // Simple heuristic: If it doesn't contain FROM ?, try to replace a likely table name
+          // or just assume standard SQL syntax.
+
+          // Better approach:
+          // alasql("SELECT * FROM ?", [data])
+          // If the user's SQL is "SELECT colA, colB FROM source WHERE ...", we need to map "source" to the data.
+
+          // Let's rely on a convention: The table is always called 'dataset' or '?'
+          // We'll replace 'dataset' (case insensitive) with '?'
+          // Replace 'dataset' keyword (case insensitive) with '?'
+          let executableSql = sql.replace(/\bdataset\b/gi, '?');
+
+          // Also replace the specific dataset ID (quoted or unquoted) with '?'
+          const escapedId = datasetId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+          const idRegex = new RegExp(`['"]?${escapedId}['"]?`, 'gi');
+          executableSql = executableSql.replace(idRegex, '?');
+
+          // Count how many '?' placeholders we have to provide data for each
+          // This allows queries like "SELECT * FROM ? AS a JOIN ? AS b ON ..."
+          const placeholderCount = (executableSql.match(/\?/g) || []).length;
+          const params = new Array(placeholderCount).fill(dataset.data);
+
+          result = alasql(executableSql, params);
+
+        } catch (err: any) {
+          console.error("SQL Execution Error:", err);
+          return res.status(400).json({ error: "Invalid SQL query: " + err.message });
+        }
       }
 
       res.json({ data: result, rowCount: result.length });
@@ -636,11 +726,8 @@ export async function registerRoutes(
         clientName,
         datasetsCount: datasets.length,
         dashboardsCount: dashboards.length,
-        // Include full lists if needed, but for now just counts unless UI uses them
-        // UI uses tabs for datasets/dashboards which probably fetch their own data via separate API calls?
-        // Checking UI: it has tabs. Tabs usually have content.
-        // The UI currently just shows placeholders.
-        // I will let UI fetch datasets/dashboards separately or use these if implemented.
+        datasets,
+        dashboards
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch project" });

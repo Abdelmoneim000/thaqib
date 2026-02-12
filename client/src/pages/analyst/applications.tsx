@@ -1,4 +1,5 @@
 import AnalystLayout from "@/components/analyst-layout";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -127,14 +128,18 @@ function ApplicationCard({ application }: { application: EnrichedApplication }) 
             </>
           )}
           {application.status === "accepted" && (
-            <Button size="sm" data-testid={`button-start-project-${application.id}`}>
-              Start Project
-            </Button>
+            <Link href={`/analyst/projects/${application.projectId}`}>
+              <Button size="sm" data-testid={`button-start-project-${application.id}`}>
+                Start Project
+              </Button>
+            </Link>
           )}
           {/* View Project would link to project details */}
-          <Button variant="ghost" size="sm" data-testid={`button-view-project-${application.id}`}>
-            View Project
-          </Button>
+          <Link href={`/analyst/projects/${application.projectId}`}>
+            <Button variant="ghost" size="sm" data-testid={`button-view-project-${application.id}`}>
+              View Project
+            </Button>
+          </Link>
         </div>
       </CardContent>
     </Card>

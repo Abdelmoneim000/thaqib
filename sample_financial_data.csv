@@ -1,0 +1,16 @@
+Date,Description,Category,Amount,Status,IsVerified
+2025-01-01,Opening Balance,Transfer,5000.00,Completed,TRUE
+02-Jan-25,Grocery Store,Food,"-150.50",Pending,FALSE
+2025-01-05,Gas Station,Transport,"-45.00",Completed,TRUE
+08-Jan-25,Client Payment,Income,"2,500.00",Completed,TRUE
+2025-01-10,Restaurant,Food,"-85.25",Pending,FALSE
+12-Jan-25,Utility Bill,Utilities,"-120.00",Completed,TRUE
+2025-01-15,Consulting Fee,Income,"$3,000.00",Completed,TRUE
+18-Jan-25,Office Supplies,Business,"-230.75",Pending,FALSE
+2025-01-20,Ride Share,Transport,"-25.50",Completed,TRUE
+22-Jan-25,Online Subscription,Entertainment,"-15.99",Completed,TRUE
+2025-01-25,Refund,Income,"50.00",Completed,TRUE
+28-Jan-25,Coffee Shop,Food,"-5.50",Pending,FALSE
+2025-01-31,Salary,Income,"4,500.00",Completed,TRUE
+01-Feb-25,Rent Payment,Housing,"-1,200.00",Completed,TRUE
+2025-02-03,Gym Membership,Health,"-45.00",Pending,FALSE

@@ -17,11 +17,12 @@ import {
   Loader2
 } from "lucide-react";
 import { ProjectChat } from "@/components/chat/project-chat";
-import type { Project } from "@shared/schema";
+import type { Project, Dataset } from "@shared/schema";
 
 interface EnrichedProject extends Project {
   clientName: string;
   datasetsCount: number;
+  datasets?: Dataset[];
   dashboardsCount: number;
 }
 
@@ -157,10 +158,33 @@ export default function AnalystProjectDetailPage() {
                 <CardTitle className="text-base">Project Datasets</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                  <FileSpreadsheet className="h-10 w-10 mb-2 opacity-50" />
-                  <p className="text-sm">Datasets available: {project.datasetsCount}</p>
-                </div>
+                {project.datasets && project.datasets.length > 0 ? (
+                  <div className="space-y-4">
+                    {project.datasets.map((dataset) => (
+                      <div key={dataset.id} className="flex items-center justify-between p-4 border rounded-lg bg-card text-card-foreground shadow-sm">
+                        <div className="flex items-center gap-4">
+                          <div className="bg-primary/10 p-2 rounded-full">
+                            <FileSpreadsheet className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{dataset.name}</p>
+                            <p className="text-xs text-muted-foreground">{dataset.fileName} • {dataset.rowCount ? `${dataset.rowCount.toLocaleString()} rows` : 'Unknown size'}</p>
+                          </div>
+                        </div>
+                        {dataset.createdAt && (
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(dataset.createdAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                    <FileSpreadsheet className="h-10 w-10 mb-2 opacity-50" />
+                    <p className="text-sm">No datasets available yet</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

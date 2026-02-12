@@ -11,27 +11,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { 
-  Plus, 
-  X, 
-  Play, 
+import {
+  Plus,
+  X,
+  Play,
   Database,
   Filter,
   LayoutGrid,
   ArrowUpDown
 } from "lucide-react";
-import type { 
-  Dataset, 
-  QueryColumn, 
-  QueryFilter, 
+import type {
+  Dataset,
+  QueryColumn,
+  QueryFilter,
   AggregationType,
-  VisualQuery 
+  VisualQuery
 } from "@/lib/bi-types";
 
 interface QueryBuilderProps {
   datasets: Dataset[];
   onQueryChange: (query: VisualQuery) => void;
   onRunQuery: () => void;
+  query: VisualQuery;
 }
 
 const aggregationOptions: { value: AggregationType; label: string }[] = [
@@ -53,11 +54,11 @@ const operatorOptions = [
   { value: "contains", label: "contains" },
 ];
 
-export function QueryBuilder({ datasets, onQueryChange, onRunQuery }: QueryBuilderProps) {
-  const [selectedDatasetId, setSelectedDatasetId] = useState<string>("");
-  const [columns, setColumns] = useState<QueryColumn[]>([]);
-  const [filters, setFilters] = useState<QueryFilter[]>([]);
-  const [groupBy, setGroupBy] = useState<string[]>([]);
+export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: QueryBuilderProps) {
+  const { datasetId: selectedDatasetId, columns: rawColumns, filters, groupBy } = query;
+
+  // Ensure columns is treated as QueryColumn[]
+  const columns = (rawColumns as QueryColumn[]) || [];
 
   const selectedDataset = datasets.find(d => d.id === selectedDatasetId);
 
@@ -71,14 +72,11 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery }: QueryBuild
       columns: newColumns || columns,
       filters: newFilters || filters,
       groupBy: newGroupBy || groupBy,
+      aggregation: query.aggregation,
     });
   };
 
   const handleDatasetChange = (datasetId: string) => {
-    setSelectedDatasetId(datasetId);
-    setColumns([]);
-    setFilters([]);
-    setGroupBy([]);
     onQueryChange({
       datasetId,
       columns: [],
@@ -90,7 +88,6 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery }: QueryBuild
   const addColumn = () => {
     if (!selectedDataset) return;
     const newColumns = [...columns, { column: selectedDataset.columns[0].name, aggregation: "none" as AggregationType }];
-    setColumns(newColumns);
     updateQuery(newColumns);
   };
 
@@ -101,33 +98,28 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery }: QueryBuild
     } else {
       newColumns[index] = { ...newColumns[index], [field]: value };
     }
-    setColumns(newColumns);
     updateQuery(newColumns);
   };
 
   const removeColumn = (index: number) => {
     const newColumns = columns.filter((_, i) => i !== index);
-    setColumns(newColumns);
     updateQuery(newColumns);
   };
 
   const addFilter = () => {
     if (!selectedDataset) return;
     const newFilters = [...filters, { column: selectedDataset.columns[0].name, operator: "=" as const, value: "" }];
-    setFilters(newFilters);
     updateQuery(undefined, newFilters);
   };
 
   const updateFilter = (index: number, field: keyof QueryFilter, value: string) => {
     const newFilters = [...filters];
     newFilters[index] = { ...newFilters[index], [field]: value };
-    setFilters(newFilters);
     updateQuery(undefined, newFilters);
   };
 
   const removeFilter = (index: number) => {
     const newFilters = filters.filter((_, i) => i !== index);
-    setFilters(newFilters);
     updateQuery(undefined, newFilters);
   };
 
@@ -135,7 +127,6 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery }: QueryBuild
     const newGroupBy = groupBy.includes(columnName)
       ? groupBy.filter(c => c !== columnName)
       : [...groupBy, columnName];
-    setGroupBy(newGroupBy);
     updateQuery(undefined, undefined, newGroupBy);
   };
 
@@ -154,7 +145,7 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery }: QueryBuild
               <SelectValue placeholder="Select a dataset" />
             </SelectTrigger>
             <SelectContent>
-              {datasets.map((dataset) => (
+              {datasets.filter(d => d.id).map((dataset) => (
                 <SelectItem key={dataset.id} value={dataset.id}>
                   {dataset.name}
                 </SelectItem>
@@ -198,7 +189,7 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery }: QueryBuild
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {selectedDataset.columns.map((c) => (
+                        {selectedDataset.columns.filter(c => c.name).map((c) => (
                           <SelectItem key={c.name} value={c.name}>
                             {c.displayName || c.name}
                           </SelectItem>
@@ -261,7 +252,7 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery }: QueryBuild
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {selectedDataset.columns.map((c) => (
+                        {selectedDataset.columns.filter(c => c.name).map((c) => (
                           <SelectItem key={c.name} value={c.name}>
                             {c.displayName || c.name}
                           </SelectItem>

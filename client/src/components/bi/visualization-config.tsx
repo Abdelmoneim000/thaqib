@@ -10,10 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  BarChart3, 
-  LineChart, 
-  PieChart, 
+import {
+  BarChart3,
+  LineChart,
+  PieChart,
   Table2,
   TrendingUp,
   Palette,
@@ -115,7 +115,7 @@ export function VisualizationConfig({
                   <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoricalColumns.map((col) => (
+                  {categoricalColumns.filter(col => col.name).map((col) => (
                     <SelectItem key={col.name} value={col.name}>
                       {col.displayName || col.name}
                     </SelectItem>
@@ -130,7 +130,7 @@ export function VisualizationConfig({
                   <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>
-                  {numericColumns.map((col) => (
+                  {numericColumns.filter(col => col.name).map((col) => (
                     <SelectItem key={col.name} value={col.name}>
                       {col.displayName || col.name}
                     </SelectItem>
@@ -152,8 +152,8 @@ export function VisualizationConfig({
         <CardContent className="space-y-3">
           <div className="space-y-2">
             <Label>Color Palette</Label>
-            <Select 
-              value={paletteNames.find(name => 
+            <Select
+              value={paletteNames.find(name =>
                 JSON.stringify(colorPalettes[name]) === JSON.stringify(colors.palette)
               ) || "default"}
               onValueChange={handlePaletteChange}

@@ -6,14 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   ArrowLeft,
   Save,
   Eye,
   Code,
   MousePointer,
-  Loader2
+  Loader2,
+  FolderKanban,
+  LayoutDashboard
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { QueryBuilder } from "@/components/bi/query-builder";
 import { SqlEditor } from "@/components/bi/sql-editor";
 import { VisualizationConfig } from "@/components/bi/visualization-config";
@@ -21,9 +30,9 @@ import { ChartRenderer } from "@/components/bi/chart-renderer";
 import { colorPalettes } from "@/lib/bi-types";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { 
-  ChartType, 
-  ChartColors, 
+import type {
+  ChartType,
+  ChartColors,
   ChartFormatting,
   DataColumn,
   Dataset,
@@ -35,7 +44,7 @@ export default function VisualizationBuilderPage() {
   const { toast } = useToast();
   const [vizName, setVizName] = useState("New Visualization");
   const [queryMode, setQueryMode] = useState<"visual" | "sql">("visual");
-  
+
   const [visualQuery, setVisualQuery] = useState<VisualQuery>({
     datasetId: "",
     columns: [],
@@ -43,7 +52,7 @@ export default function VisualizationBuilderPage() {
     groupBy: [],
   });
   const [sqlQuery, setSqlQuery] = useState("");
-  
+
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [colors, setColors] = useState<ChartColors>({
     primary: colorPalettes.default[0],
@@ -58,23 +67,42 @@ export default function VisualizationBuilderPage() {
   });
   const [xAxis, setXAxis] = useState<string>("");
   const [yAxis, setYAxis] = useState<string>("");
-  
+
   const [queryResults, setQueryResults] = useState<Record<string, unknown>[]>([]);
   const [hasRun, setHasRun] = useState(false);
 
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+
+  const { data: projects = [] } = useQuery<any[]>({
+    queryKey: ["/api/projects"],
+  });
+
+  const { data: dashboards = [] } = useQuery<any[]>({
+    queryKey: selectedProjectId
+      ? [`/api/dashboards?projectId=${selectedProjectId}`]
+      : ["/api/dashboards"],
+    enabled: !!selectedProjectId,
+  });
+
+  const [selectedDashboardId, setSelectedDashboardId] = useState<string>("");
+
   const { data: datasets = [], isLoading: datasetsLoading } = useQuery<Dataset[]>({
-    queryKey: ["/api/datasets"],
+    queryKey: selectedProjectId
+      ? [`/api/datasets?projectId=${selectedProjectId}`]
+      : ["/api/datasets"],
   });
 
   const convertedDatasets: Dataset[] = useMemo(() => {
     return datasets.map(d => ({
       id: d.id,
       name: d.name,
-      columns: d.columns.map(c => ({
-        name: c.name,
-        type: c.type,
-        displayName: c.name,
-      })),
+      columns: d.columns
+        .filter(c => c.name && c.name.trim() !== "")
+        .map(c => ({
+          name: c.name,
+          type: c.type,
+          displayName: c.name,
+        })),
       data: [],
     }));
   }, [datasets]);
@@ -90,7 +118,7 @@ export default function VisualizationBuilderPage() {
     onSuccess: (data) => {
       setQueryResults(data.data);
       setHasRun(true);
-      
+
       if (data.data.length > 0 && !xAxis && !yAxis) {
         const keys = Object.keys(data.data[0]);
         const numericKey = keys.find(k => typeof data.data[0][k] === "number");
@@ -110,18 +138,18 @@ export default function VisualizationBuilderPage() {
       return;
     }
 
-    const columnNames = Array.isArray(visualQuery.columns) 
+    const columnNames = Array.isArray(visualQuery.columns)
       ? visualQuery.columns.map(c => typeof c === 'string' ? c : c.column)
       : [];
-    
-    const query = queryMode === "visual" 
-      ? { 
-          type: "visual",
-          columns: columnNames,
-          filters: visualQuery.filters,
-          groupBy: visualQuery.groupBy?.[0],
-          aggregation: visualQuery.aggregation,
-        }
+
+    const query = queryMode === "visual"
+      ? {
+        type: "visual",
+        columns: columnNames,
+        filters: visualQuery.filters,
+        groupBy: visualQuery.groupBy?.[0],
+        aggregation: visualQuery.aggregation,
+      }
       : { type: "sql", sql: sqlQuery };
 
     queryMutation.mutate({ datasetId: visualQuery.datasetId, query });
@@ -148,15 +176,20 @@ export default function VisualizationBuilderPage() {
   };
 
   const handleSave = () => {
+    if (!selectedDashboardId) {
+      toast({ title: "Select a dashboard", description: "Please select a dashboard to save the visualization to", variant: "destructive" });
+      return;
+    }
+
     saveMutation.mutate({
       name: vizName,
       datasetId: visualQuery.datasetId,
       chartType,
-      query: queryMode === "visual" 
+      query: queryMode === "visual"
         ? { type: "visual", columns: visualQuery.columns, filters: visualQuery.filters, groupBy: visualQuery.groupBy?.[0], aggregation: visualQuery.aggregation }
         : { type: "sql", sql: sqlQuery },
       config: { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting },
-      createdBy: "analyst-1",
+      dashboardId: selectedDashboardId,
     });
   };
 
@@ -182,9 +215,9 @@ export default function VisualizationBuilderPage() {
 
   return (
     <AnalystLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
             <Link href="/analyst/dashboards">
               <Button variant="ghost" size="icon" data-testid="button-back">
                 <ArrowLeft className="h-4 w-4" />
@@ -194,16 +227,60 @@ export default function VisualizationBuilderPage() {
               <Input
                 value={vizName}
                 onChange={(e) => setVizName(e.target.value)}
-                className="text-xl font-semibold border-none p-0 h-auto focus-visible:ring-0"
+                className="text-xl font-semibold border-none p-0 h-auto focus-visible:ring-0 w-[300px]"
                 data-testid="input-viz-name"
               />
               <p className="text-sm text-muted-foreground">Create a new visualization</p>
             </div>
+
+            <div className="w-full md:w-[250px]">
+              <Select
+                value={selectedProjectId}
+                onValueChange={(val) => {
+                  setSelectedProjectId(val);
+                  setSelectedDashboardId("");
+                  // Reset dataset selection when project changes
+                  setVisualQuery(prev => ({ ...prev, datasetId: "" }));
+                }}
+              >
+                <SelectTrigger>
+                  <FolderKanban className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Select Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.filter(p => p.id).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full md:w-[250px]">
+              <Select
+                value={selectedDashboardId}
+                onValueChange={setSelectedDashboardId}
+                disabled={!selectedProjectId}
+              >
+                <SelectTrigger>
+                  <LayoutDashboard className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Select Dashboard" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dashboards.filter(d => d.id).map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={runQuery} 
+          <div className="flex gap-2 self-end lg:self-auto">
+            <Button
+              variant="outline"
+              onClick={runQuery}
               disabled={queryMutation.isPending}
               data-testid="button-preview"
             >
@@ -214,8 +291,8 @@ export default function VisualizationBuilderPage() {
               )}
               Preview
             </Button>
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={handleSave}
               disabled={saveMutation.isPending}
               data-testid="button-save-viz"
             >
@@ -229,8 +306,8 @@ export default function VisualizationBuilderPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-4 space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-4 space-y-4">
             <Tabs value={queryMode} onValueChange={(v) => setQueryMode(v as "visual" | "sql")}>
               <TabsList className="w-full">
                 <TabsTrigger value="visual" className="flex-1" data-testid="tab-visual-query">
@@ -245,6 +322,7 @@ export default function VisualizationBuilderPage() {
               <TabsContent value="visual" className="mt-4">
                 <QueryBuilder
                   datasets={convertedDatasets}
+                  query={visualQuery}
                   onQueryChange={setVisualQuery}
                   onRunQuery={runQuery}
                 />
@@ -255,12 +333,19 @@ export default function VisualizationBuilderPage() {
                   onQueryChange={setSqlQuery}
                   onRunQuery={runQuery}
                   initialSql={sqlQuery}
+                  selectedDatasetId={visualQuery.datasetId}
+                  onDatasetChange={(id) => setVisualQuery({
+                    datasetId: id,
+                    columns: [],
+                    filters: [],
+                    groupBy: [],
+                  })}
                 />
               </TabsContent>
             </Tabs>
           </div>
 
-          <div className="col-span-8 space-y-4">
+          <div className="lg:col-span-8 space-y-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Preview</CardTitle>

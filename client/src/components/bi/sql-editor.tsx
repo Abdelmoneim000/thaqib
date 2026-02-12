@@ -10,8 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Play, 
+import {
+  Play,
   Database,
   Code,
   Info
@@ -23,11 +23,13 @@ interface SqlEditorProps {
   onQueryChange: (sql: string) => void;
   onRunQuery: () => void;
   initialSql?: string;
+  selectedDatasetId: string;
+  onDatasetChange: (id: string) => void;
 }
 
-export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = "" }: SqlEditorProps) {
+export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = "", selectedDatasetId, onDatasetChange }: SqlEditorProps) {
   const [sql, setSql] = useState(initialSql);
-  const [selectedDatasetId, setSelectedDatasetId] = useState<string>("");
+
 
   const selectedDataset = datasets.find(d => d.id === selectedDatasetId);
 
@@ -50,7 +52,7 @@ export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = ""
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Select value={selectedDatasetId} onValueChange={setSelectedDatasetId}>
+          <Select value={selectedDatasetId} onValueChange={onDatasetChange}>
             <SelectTrigger data-testid="select-sql-dataset">
               <SelectValue placeholder="Select dataset to view schema" />
             </SelectTrigger>

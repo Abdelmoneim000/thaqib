@@ -61,12 +61,50 @@ function ProjectCard({ project, showActions = true }: { project: EnrichedProject
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{progress}%</span>
+        <div className="pt-2">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-2 px-1">
+            <span>In Progress</span>
+            <span>Submitted</span>
+            <span>Review</span>
+            <span>Complete</span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <div className="relative mx-1">
+            {/* Timeline line */}
+            <div className="absolute top-1.5 left-0 w-full h-0.5 bg-muted"></div>
+
+            {/* Active Timeline */}
+            <div className={`absolute top-1.5 left-0 h-0.5 bg-primary transition-all duration-500 ${project.status === "completed" ? "w-full" :
+                project.status === "review" ? "w-3/4" :
+                  "w-1/4"
+              }`}></div>
+
+            {/* Dots */}
+            <div className="relative flex justify-between">
+              {/* Step 1: In Progress */}
+              <div className={`w-3 h-3 rounded-full border-2 ${["in_progress", "review", "completed"].includes(project.status)
+                  ? "bg-primary border-primary"
+                  : "bg-background border-muted"
+                }`}></div>
+
+              {/* Step 2: Submitted */}
+              <div className={`w-3 h-3 rounded-full border-2 ${["review", "completed"].includes(project.status)
+                  ? "bg-primary border-primary"
+                  : "bg-background border-muted"
+                }`}></div>
+
+              {/* Step 3: Under Review */}
+              <div className={`w-3 h-3 rounded-full border-2 ${["review", "completed"].includes(project.status)
+                  ? "bg-primary border-primary"
+                  : "bg-background border-muted"
+                }`}></div>
+
+              {/* Step 4: Complete */}
+              <div className={`w-3 h-3 rounded-full border-2 ${project.status === "completed"
+                  ? "bg-primary border-primary"
+                  : "bg-background border-muted"
+                }`}></div>
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
