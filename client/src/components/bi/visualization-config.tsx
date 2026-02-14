@@ -69,7 +69,8 @@ export function VisualizationConfig({
   };
 
   const numericColumns = columns.filter(c => c.type === "number");
-  const categoricalColumns = columns.filter(c => c.type === "string" || c.type === "date");
+  // Allow numbers to be used as categories (e.g. Years, IDs, Ratings)
+  const categoricalColumns = columns.filter(c => c.type === "string" || c.type === "date" || c.type === "number");
 
   return (
     <div className="space-y-4">

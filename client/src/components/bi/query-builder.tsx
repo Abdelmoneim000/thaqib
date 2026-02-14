@@ -305,7 +305,7 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: Que
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {selectedDataset.columns
-                  .filter(c => c.type === "string")
+                  .filter(c => c.type === "string" || c.type === "number" || c.type === "date")
                   .map((col) => (
                     <Badge
                       key={col.name}

@@ -33,9 +33,9 @@ interface ChartRendererProps {
 
 function formatValue(value: number, formatting?: ChartFormatting): string {
   if (!formatting) return value.toLocaleString();
-  
+
   const decimals = formatting.decimals ?? 0;
-  
+
   switch (formatting.numberFormat) {
     case "currency":
       return `${formatting.currencySymbol || "$"}${value.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
@@ -44,6 +44,30 @@ function formatValue(value: number, formatting?: ChartFormatting): string {
     default:
       return value.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   }
+}
+
+function formatLabel(value: string | number): string {
+  if (typeof value === 'number') return value.toLocaleString();
+  if (!value) return '';
+
+  // Simple check for ISO date string YYYY-MM-DD...
+  // Or just try parsing it.
+  const dateStr = String(value);
+
+  // Regex for ISO date start YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      // Format as MMM DD, YYYY
+      return date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+  }
+
+  return dateStr;
 }
 
 export function ChartRenderer({
@@ -70,20 +94,22 @@ export function ChartRenderer({
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
-              <XAxis 
-                dataKey={xAxis || categoryField} 
+              <XAxis
+                dataKey={xAxis || categoryField}
                 className="text-xs fill-muted-foreground"
                 tick={{ fill: 'currentColor' }}
+                tickFormatter={formatLabel}
               />
-              <YAxis 
+              <YAxis
                 className="text-xs fill-muted-foreground"
                 tick={{ fill: 'currentColor' }}
                 tickFormatter={(value) => formatValue(value, formatting)}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => formatValue(value, formatting)}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--popover))', 
+                labelFormatter={formatLabel}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--popover))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
                   color: 'hsl(var(--popover-foreground))'
@@ -104,29 +130,31 @@ export function ChartRenderer({
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
-              <XAxis 
-                dataKey={xAxis || categoryField} 
+              <XAxis
+                dataKey={xAxis || categoryField}
                 className="text-xs fill-muted-foreground"
                 tick={{ fill: 'currentColor' }}
+                tickFormatter={formatLabel}
               />
-              <YAxis 
+              <YAxis
                 className="text-xs fill-muted-foreground"
                 tick={{ fill: 'currentColor' }}
                 tickFormatter={(value) => formatValue(value, formatting)}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => formatValue(value, formatting)}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--popover))', 
+                labelFormatter={formatLabel}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--popover))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
                   color: 'hsl(var(--popover-foreground))'
                 }}
               />
               {showLegend && <Legend />}
-              <Line 
-                type="monotone" 
-                dataKey={yAxis || valueField || "value"} 
+              <Line
+                type="monotone"
+                dataKey={yAxis || valueField || "value"}
                 stroke={primaryColor}
                 strokeWidth={2}
                 dot={{ fill: primaryColor, strokeWidth: 2 }}
@@ -140,29 +168,31 @@ export function ChartRenderer({
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
-              <XAxis 
-                dataKey={xAxis || categoryField} 
+              <XAxis
+                dataKey={xAxis || categoryField}
                 className="text-xs fill-muted-foreground"
                 tick={{ fill: 'currentColor' }}
+                tickFormatter={formatLabel}
               />
-              <YAxis 
+              <YAxis
                 className="text-xs fill-muted-foreground"
                 tick={{ fill: 'currentColor' }}
                 tickFormatter={(value) => formatValue(value, formatting)}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => formatValue(value, formatting)}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--popover))', 
+                labelFormatter={formatLabel}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--popover))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
                   color: 'hsl(var(--popover-foreground))'
                 }}
               />
               {showLegend && <Legend />}
-              <Area 
-                type="monotone" 
-                dataKey={yAxis || valueField || "value"} 
+              <Area
+                type="monotone"
+                dataKey={yAxis || valueField || "value"}
                 stroke={primaryColor}
                 fill={primaryColor}
                 fillOpacity={0.3}
@@ -191,10 +221,10 @@ export function ChartRenderer({
                   <Cell key={`cell-${index}`} fill={palette[index % palette.length]} />
                 ))}
               </Pie>
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => formatValue(value, formatting)}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--popover))', 
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--popover))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
                   color: 'hsl(var(--popover-foreground))'
@@ -237,9 +267,9 @@ export function ChartRenderer({
                   <tr key={i} className="border-b hover:bg-muted/50">
                     {columns.map((col) => (
                       <td key={col} className="p-2">
-                        {typeof row[col] === "number" 
+                        {typeof row[col] === "number"
                           ? formatValue(row[col] as number, formatting)
-                          : String(row[col])}
+                          : formatLabel(String(row[col]))}
                       </td>
                     ))}
                   </tr>
@@ -268,16 +298,16 @@ export function ChartRenderer({
   return renderChart();
 }
 
-export function MetricCard({ 
-  title, 
-  value, 
+export function MetricCard({
+  title,
+  value,
   subtitle,
   trend,
   color = "#0f62fe",
   formatting,
-}: { 
-  title: string; 
-  value: number; 
+}: {
+  title: string;
+  value: number;
   subtitle?: string;
   trend?: { value: number; label: string };
   color?: string;
