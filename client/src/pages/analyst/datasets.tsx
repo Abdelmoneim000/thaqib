@@ -1,7 +1,8 @@
+
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import ClientLayout from "@/components/client-layout";
+import AnalystLayout from "@/components/analyst-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,21 +58,23 @@ interface EnrichedDataset extends Dataset {
     uploadedByName: string;
 }
 
-export default function ClientDatasetsPage() {
+export default function AnalystDatasetsPage() {
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [datasetToDelete, setDatasetToDelete] = useState<string | null>(null);
-    const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+    const [selectedProjectId, setSelectedProjectId] = useState<string>("personal");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Fetch Datasets
+    // Fetch Datasets (Analyst view logic handles permissions)
     const { data: datasets, isLoading } = useQuery<EnrichedDataset[]>({
         queryKey: ["/api/datasets"],
     });
 
-    // Fetch Projects for Upload Dropdown
+    // Fetch Projects for Upload Dropdown (Ideally filter by assigned only, but API returns all? If so, we might list all open projects)
+    // Assuming analyst can only upload to assigned projects or personal. 
+    // If /api/projects return all, we might want to filter, but let's stick to simple for now.
     const { data: projects } = useQuery<Project[]>({
         queryKey: ["/api/projects"],
     });
@@ -93,7 +96,6 @@ export default function ClientDatasetsPage() {
 
     const uploadMutation = useMutation({
         mutationFn: async (formData: FormData) => {
-            // Need to send to /api/datasets
             const res = await fetch("/api/datasets", {
                 method: "POST",
                 body: formData,
@@ -106,10 +108,9 @@ export default function ClientDatasetsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/datasets"] });
-            // Also invalidate project-specific queries if possible, but global is enough for this page
             toast({ title: "Dataset uploaded", description: "Your dataset has been processed successfully." });
             setIsUploadOpen(false);
-            setSelectedProjectId("");
+            setSelectedProjectId("personal");
             if (fileInputRef.current) fileInputRef.current.value = "";
         },
         onError: (error: Error) => {
@@ -119,10 +120,6 @@ export default function ClientDatasetsPage() {
 
     const handleUpload = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedProjectId) {
-            toast({ title: "Project required", description: "Please select a project", variant: "destructive" });
-            return;
-        }
         const file = fileInputRef.current?.files?.[0];
         if (!file) {
             toast({ title: "File required", description: "Please select a CSV file", variant: "destructive" });
@@ -131,7 +128,9 @@ export default function ClientDatasetsPage() {
 
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("projectId", selectedProjectId);
+        if (selectedProjectId && selectedProjectId !== "personal") {
+            formData.append("projectId", selectedProjectId);
+        }
 
         uploadMutation.mutate(formData);
     };
@@ -143,22 +142,22 @@ export default function ClientDatasetsPage() {
 
     if (isLoading) {
         return (
-            <ClientLayout>
+            <AnalystLayout>
                 <div className="flex items-center justify-center min-h-[50vh]">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-            </ClientLayout>
+            </AnalystLayout>
         );
     }
 
     return (
-        <ClientLayout>
+        <AnalystLayout>
             <div className="p-6 space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight">Datasets</h1>
                         <p className="text-sm text-muted-foreground">
-                            Manage your data files across all projects
+                            Manage your personal and project datasets
                         </p>
                     </div>
 
@@ -173,17 +172,18 @@ export default function ClientDatasetsPage() {
                             <DialogHeader>
                                 <DialogTitle>Upload Dataset</DialogTitle>
                                 <DialogDescription>
-                                    Upload a CSV file to a specific project.
+                                    Upload a CSV file to your Personal Library or a Project.
                                 </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleUpload} className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <Label>Project</Label>
+                                    <Label>Target Location</Label>
                                     <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select a project" />
+                                            <SelectValue placeholder="Select target" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="personal">Personal Library (Private)</SelectItem>
                                             {projects?.map(p => (
                                                 <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
                                             ))}
@@ -216,7 +216,7 @@ export default function ClientDatasetsPage() {
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>All Datasets</CardTitle>
+                            <CardTitle>My Datasets</CardTitle>
                             <div className="relative w-64">
                                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
@@ -239,7 +239,7 @@ export default function ClientDatasetsPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Name</TableHead>
-                                        <TableHead>Project</TableHead>
+                                        <TableHead>Context</TableHead>
                                         <TableHead>Rows</TableHead>
                                         <TableHead>Size</TableHead>
                                         <TableHead>Uploaded</TableHead>
@@ -255,7 +255,13 @@ export default function ClientDatasetsPage() {
                                                     {dataset.name}
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{dataset.projectTitle}</TableCell>
+                                            <TableCell>
+                                                {dataset.projectTitle === 'Personal Library' ? (
+                                                    <span className="text-muted-foreground italic">Personal Library</span>
+                                                ) : (
+                                                    dataset.projectTitle
+                                                )}
+                                            </TableCell>
                                             <TableCell>{dataset.rowCount?.toLocaleString()}</TableCell>
                                             <TableCell>{(dataset.fileSize ? (dataset.fileSize / 1024).toFixed(1) + ' KB' : '-')}</TableCell>
                                             <TableCell>{dataset.createdAt ? new Date(dataset.createdAt).toLocaleDateString() : '-'}</TableCell>
@@ -299,7 +305,7 @@ export default function ClientDatasetsPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently delete the dataset and remove it from all projects. This action cannot be undone.
+                                This will permanently delete the dataset. This action cannot be undone.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -315,6 +321,6 @@ export default function ClientDatasetsPage() {
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
-        </ClientLayout >
+        </AnalystLayout >
     );
 }

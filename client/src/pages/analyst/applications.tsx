@@ -23,6 +23,7 @@ interface EnrichedApplication extends Application {
   projectBudget: number;
   projectDeadline?: string;
   clientName: string;
+  projectStatus?: string;
 }
 
 function getStatusBadge(status: string) {
@@ -128,11 +129,17 @@ function ApplicationCard({ application }: { application: EnrichedApplication }) 
             </>
           )}
           {application.status === "accepted" && (
-            <Link href={`/analyst/projects/${application.projectId}`}>
-              <Button size="sm" data-testid={`button-start-project-${application.id}`}>
-                Start Project
+            application.projectStatus === "completed" ? (
+              <Button size="sm" disabled title="Project is completed">
+                Project Completed
               </Button>
-            </Link>
+            ) : (
+              <Link href={`/analyst/projects/${application.projectId}`}>
+                <Button size="sm" data-testid={`button-start-project-${application.id}`}>
+                  Start Project
+                </Button>
+              </Link>
+            )
           )}
           {/* View Project would link to project details */}
           <Link href={`/analyst/projects/${application.projectId}`}>

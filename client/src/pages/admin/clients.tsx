@@ -52,7 +52,7 @@ export default function AdminClientsPage() {
 
   const getClientDatasets = (clientId: string) => {
     const clientProjectIds = getClientProjects(clientId).map(p => p.id);
-    return datasets?.filter(d => clientProjectIds.includes(d.projectId)) || [];
+    return datasets?.filter(d => clientProjectIds.includes(d.projectId as string)) || [];
   };
 
   const selectedClientData = selectedClient ? clients?.find(c => c.id === selectedClient) : null;

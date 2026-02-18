@@ -23,6 +23,7 @@ export const insertApplicationSchema = createInsertSchema(applications).omit({
 
 export type InsertApplication = z.infer<typeof insertApplicationSchema>;
 export type Application = typeof applications.$inferSelect;
+
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
@@ -48,7 +49,7 @@ export type Project = typeof projects.$inferSelect;
 export const datasets = pgTable("datasets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  projectId: varchar("project_id").notNull(),
+  projectId: varchar("project_id"), // Nullable = Personal Library
   uploadedBy: varchar("uploaded_by").notNull(),
   fileName: text("file_name").notNull(),
   fileSize: integer("file_size"),
@@ -79,6 +80,10 @@ export const dashboards = pgTable("dashboards", {
   projectId: varchar("project_id"),
   createdBy: varchar("created_by").notNull(),
   isPublished: boolean("is_published").default(false),
+  isShowcase: boolean("is_showcase").default(false), // Added field
+  status: text("status").default("draft"), // draft, submitted, approved, rejected
+  feedback: text("feedback"),
+  submittedAt: timestamp("submitted_at"),
   layout: jsonb("layout").$type<DashboardLayout>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -119,12 +124,13 @@ export const visualizations = pgTable("visualizations", {
 });
 
 export interface VisualizationQuery {
-  type: "visual" | "sql";
+  type: "visual" | "sql" | "text";
   columns?: string[];
   filters?: QueryFilter[];
   aggregation?: { column: string; function: string };
   groupBy?: string;
   sql?: string;
+  text?: string;
 }
 
 export interface QueryFilter {
@@ -213,3 +219,21 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+
+export const ratings = pgTable("ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(), // The project this rating is for
+  reviewerId: varchar("reviewer_id").notNull(), // Client
+  revieweeId: varchar("reviewee_id").notNull(), // Analyst
+  rating: integer("rating").notNull(), // 1-5
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRatingSchema = createInsertSchema(ratings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRating = z.infer<typeof insertRatingSchema>;
+export type Rating = typeof ratings.$inferSelect;

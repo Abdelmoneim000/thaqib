@@ -15,11 +15,22 @@ import {
   Clock,
   CheckCircle2,
   ArrowRight,
-  Loader2
+  Loader2,
+  Star,
+  Users
 } from "lucide-react";
 
 interface EnrichedProject extends Project {
   clientName: string;
+}
+
+interface AnalystStats {
+  totalProjects: number;
+  completedProjects: number;
+  totalEarnings: number;
+  averageRating: number;
+  ratingsCount: number;
+  totalClients: number;
 }
 
 function getStatusBadge(status: string) {
@@ -53,11 +64,19 @@ export default function AnalystDashboardPage() {
     queryKey: ["/api/applications"],
   });
 
+  // Fetch aggregated stats
+  const { data: analystStats, isLoading: isLoadingStats } = useQuery<AnalystStats>({
+    queryKey: ["/api/analyst/stats"],
+  });
+
   const activeProjects = myProjects?.filter(p => p.status === "in_progress" || p.status === "review") || [];
   const completedProjects = myProjects?.filter(p => p.status === "completed") || [];
   const pendingApps = applications?.filter(a => a.status === "pending") || [];
 
-  const totalEarnings = completedProjects.reduce((sum, p) => sum + (p.budget || 0), 0);
+  // Use stats from API or fallback to calculation
+  const totalEarnings = analystStats?.totalEarnings ?? completedProjects.reduce((sum, p) => sum + (p.budget || 0), 0);
+  const avgRating = analystStats?.averageRating ?? 0;
+  const ratingCount = analystStats?.ratingsCount ?? 0;
 
   // Recent projects to show (active ones first)
   const recentProjects = activeProjects.slice(0, 3);
@@ -74,25 +93,25 @@ export default function AnalystDashboardPage() {
       trend: myProjects ? `${myProjects.length} total assigned` : "Loading...",
     },
     {
-      title: "Pending Applications",
-      value: pendingApps.length.toString(),
-      description: "Awaiting response",
-      icon: FileText,
-      trend: applications ? `${applications.length} total applied` : "Loading...",
-    },
-    {
       title: "Earnings (Completed)",
       value: `$${totalEarnings.toLocaleString()}`,
       description: "From completed projects",
       icon: DollarSign,
-      trend: `${completedProjects.length} projects completed`,
+      trend: `${analystStats?.completedProjects ?? completedProjects.length} projects completed`,
     },
     {
-      title: "Completion Rate",
-      value: "100%", // Hardcoded for now, or calculate if we had cancelled projects
-      description: "On-time delivery",
-      icon: TrendingUp,
-      trend: "Excellent rating",
+      title: "Client Rating",
+      value: avgRating > 0 ? avgRating.toFixed(1) : "N/A",
+      description: `${ratingCount} reviews`,
+      icon: Star,
+      trend: "Average rating",
+    },
+    {
+      title: "Total Clients",
+      value: (analystStats?.totalClients ?? 0).toString(),
+      description: "Unique clients",
+      icon: Users,
+      trend: "Lifetime",
     },
   ];
 

@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartType, ChartColors, ChartFormatting } from "@/lib/bi-types";
 import { colorPalettes } from "@/lib/bi-types";
+import ReactMarkdown from "react-markdown";
 
 interface ChartRendererProps {
   type: ChartType;
@@ -29,6 +30,7 @@ interface ChartRendererProps {
   title?: string;
   colors?: ChartColors;
   formatting?: ChartFormatting;
+  textContent?: string;
 }
 
 function formatValue(value: number, formatting?: ChartFormatting): string {
@@ -80,6 +82,7 @@ export function ChartRenderer({
   title,
   colors,
   formatting,
+  textContent,
 }: ChartRendererProps) {
   const palette = colors?.palette || colorPalettes.default;
   const primaryColor = colors?.primary || palette[0];
@@ -279,10 +282,21 @@ export function ChartRenderer({
           </div>
         );
 
+      case "text":
+        // Prefer explicit textContent prop, then check data
+        const content = textContent || (data[0]?.[valueField || "text"] as string) || (data[0]?.value as string) || "";
+        return (
+          <div className="p-4 prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
+        );
+
       default:
         return <div className="text-muted-foreground p-4">Unknown chart type</div>;
     }
   };
+
+  const chart = renderChart();
 
   if (title) {
     return (
@@ -290,12 +304,36 @@ export function ChartRenderer({
         <CardHeader className="pb-2">
           <CardTitle className="text-base">{title}</CardTitle>
         </CardHeader>
-        <CardContent>{renderChart()}</CardContent>
+        <CardContent>
+          {textContent && type !== "text" ? (
+            <div className="flex flex-col gap-4">
+              <div>
+                {chart}
+              </div>
+              <div className="p-2 prose prose-sm dark:prose-invert max-w-none border-t pt-4">
+                <ReactMarkdown>{textContent}</ReactMarkdown>
+              </div>
+            </div>
+          ) : chart}
+        </CardContent>
       </Card>
     );
   }
 
-  return renderChart();
+  if (textContent && type !== "text") {
+    return (
+      <div className="flex flex-col gap-4">
+        <div>
+          {chart}
+        </div>
+        <div className="p-2 prose prose-sm dark:prose-invert max-w-none border-t pt-4">
+          <ReactMarkdown>{textContent}</ReactMarkdown>
+        </div>
+      </div>
+    );
+  }
+
+  return chart;
 }
 
 export function MetricCard({

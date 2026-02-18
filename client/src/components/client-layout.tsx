@@ -44,6 +44,11 @@ const menuItems = [
     url: "/client/settings",
     icon: Settings,
   },
+  {
+    title: "Find Analysts",
+    url: "/client/find-analysts",
+    icon: Users,
+  },
 ];
 
 function ClientSidebar() {

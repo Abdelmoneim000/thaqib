@@ -47,6 +47,34 @@ export async function registerRoutes(
     }
   });
 
+  // Public Analysts Search
+  app.get("/api/public/analysts", async (req: Request, res: Response) => {
+    try {
+      const search = req.query.search as string;
+      const analysts = await storage.searchPublicAnalysts(search);
+      res.json(analysts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to search analysts" });
+    }
+  });
+
+  // Analyst Stats
+  app.get("/api/analyst/stats", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId!);
+
+      if (user?.role !== "analyst") {
+        return res.status(403).json({ error: "Only analysts can view stats" });
+      }
+
+      const stats = await storage.getAnalystStats(userId!);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch analyst stats" });
+    }
+  });
+
   // User Profile Update
   app.patch("/api/user", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -55,14 +83,17 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const { firstName, lastName, organization, skills } = req.body;
+      const { firstName, lastName, organization, skills, isPublic, bio, title } = req.body;
 
       // Update user 
       const updatedUser = await storage.updateUser(userId, {
         firstName,
         lastName,
         organization,
-        skills
+        skills,
+        isPublic,
+        bio,
+        title
       });
 
       if (!updatedUser) {
@@ -86,9 +117,11 @@ export async function registerRoutes(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      if (!projectId) {
-        return res.status(400).json({ error: "projectId is required" });
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
       }
+
+      // projectId is optional for personal datasets
 
       const csvContent = file.buffer.toString("utf-8");
       const data = parseCSV(csvContent);
@@ -150,7 +183,11 @@ export async function registerRoutes(
         }
       }
       const summary = await Promise.all(datasets.map(async d => {
-        const project = await storage.getProject(d.projectId);
+        let project = undefined;
+        if (d.projectId) {
+          project = await storage.getProject(d.projectId);
+        }
+
         let uploadedByName = "Unknown";
         if (d.uploadedBy) {
           const uploader = await storage.getUser(d.uploadedBy);
@@ -160,10 +197,11 @@ export async function registerRoutes(
           id: d.id,
           name: d.name,
           projectId: d.projectId,
-          projectTitle: project?.title || 'Unknown Project',
+          projectTitle: project?.title || 'Personal Library', // Handle null project
           uploadedBy: d.uploadedBy,
           uploadedByName,
           fileName: d.fileName,
+          fileSize: d.fileSize,
           rowCount: d.rowCount,
           columns: d.columns,
           createdAt: d.createdAt,
@@ -205,12 +243,64 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/datasets/:id/download", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const dataset = await storage.getDataset(req.params.id);
+      if (!dataset) {
+        return res.status(404).json({ error: "Dataset not found" });
+      }
+
+      // Reconstruct CSV
+      const headers = dataset.columns.map(c => c.name);
+      const csvRows = [headers.join(",")];
+
+      dataset.data.forEach((row: any) => {
+        const values = headers.map(header => {
+          const val = row[header];
+          if (val === null || val === undefined) return "";
+          const stringVal = String(val);
+          // Escape quotes and wrap in quotes if contains comma or quote
+          if (stringVal.includes(",") || stringVal.includes('"') || stringVal.includes("\n")) {
+            return `"${stringVal.replace(/"/g, '""')}"`;
+          }
+          return stringVal;
+        });
+        csvRows.push(values.join(","));
+      });
+
+      const csvContent = csvRows.join("\n");
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="${dataset.name}"`);
+      res.send(csvContent);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to download dataset" });
+    }
+  });
+
+  app.patch("/api/datasets/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.body;
+      // Allow partial updates, specifically for unlinking project
+      const updates: any = {};
+      if (projectId !== undefined) updates.projectId = projectId;
+
+      const dataset = await storage.updateDataset(req.params.id, updates);
+      if (!dataset) {
+        return res.status(404).json({ error: "Dataset not found" });
+      }
+      res.json(dataset);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update dataset" });
+    }
+  });
+
   app.post("/api/datasets/upload", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
       const { name, projectId, fileName, csvContent } = req.body;
 
-      if (!csvContent || !name || !projectId) {
+      if (!csvContent || !name) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
@@ -256,6 +346,40 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/datasets/clone", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { datasetId, projectId } = req.body;
+
+      if (!datasetId || !projectId) {
+        return res.status(400).json({ error: "datasetId and projectId are required" });
+      }
+
+      const originalDataset = await storage.getDataset(datasetId);
+      if (!originalDataset) {
+        return res.status(404).json({ error: "Dataset not found" });
+      }
+
+      // Check permissions? (For now assume if you can see it, you can clone it)
+
+      const newDataset = await storage.createDataset({
+        name: originalDataset.name,
+        projectId, // Assign to new project
+        uploadedBy: userId!,
+        fileName: originalDataset.fileName,
+        fileSize: originalDataset.fileSize,
+        rowCount: originalDataset.rowCount,
+        columns: originalDataset.columns,
+        data: originalDataset.data,
+      });
+
+      res.status(201).json(newDataset);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to clone dataset" });
+    }
+  });
+
   // Dashboards API
   app.get("/api/dashboards", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -264,27 +388,23 @@ export async function registerRoutes(
 
       let dashboards: Awaited<ReturnType<typeof storage.getDashboardsByProject>> = [];
       if (projectId) {
-        // console.log("Fetching dashboards for project:", projectId);
-        const projectDashboards = await storage.getDashboardsByProject(projectId);
-
-        // Also fetch personal dashboards (not linked to any project) for the user
-        // This covers cases where a dashboard was created without a project context
-        if (userId) {
-          const userDashboards = await storage.getDashboardsByUser(userId);
-          const personalDashboards = userDashboards.filter(d => !d.projectId);
-
-          // Combine and deduplicate
-          const combined = [...projectDashboards, ...personalDashboards];
-          dashboards = Array.from(new Map(combined.map(d => [d.id, d])).values());
-        } else {
-          dashboards = projectDashboards;
-        }
+        // Fetch specific project dashboards
+        dashboards = await storage.getDashboardsByProject(projectId);
       } else if (userId) {
-        // console.log("Fetching dashboards for user:", userId);
+        // Fetch ALL dashboards accessible to user (personal + project based)
         dashboards = await storage.getDashboardsByUser(userId);
       }
-      // console.log("Found dashboards:", dashboards.length);
-      res.json(dashboards);
+
+      // Enrich with visualization counts
+      const enrichedDashboards = await Promise.all(dashboards.map(async (d) => {
+        const visuals = await storage.getVisualizationsByDashboard(d.id);
+        return {
+          ...d,
+          visualizationsCount: visuals.length
+        };
+      }));
+
+      res.json(enrichedDashboards);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch dashboards" });
     }
@@ -322,6 +442,16 @@ export async function registerRoutes(
 
   app.patch("/api/dashboards/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
+      const { status } = req.body;
+
+      // If attempting to submit, verify it belongs to a project
+      if (status === "submitted") {
+        const existingDashboard = await storage.getDashboard(req.params.id);
+        if (existingDashboard && !existingDashboard.projectId) {
+          return res.status(400).json({ error: "Cannot submit a personal dashboard for review" });
+        }
+      }
+
       const dashboard = await storage.updateDashboard(req.params.id, req.body);
       if (!dashboard) {
         return res.status(404).json({ error: "Dashboard not found" });
@@ -348,11 +478,29 @@ export async function registerRoutes(
   app.get("/api/visualizations", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const dashboardId = req.query.dashboardId as string;
-      if (!dashboardId) {
-        return res.status(400).json({ error: "dashboardId is required" });
+      if (dashboardId) {
+        const visualizations = await storage.getVisualizationsByDashboard(dashboardId);
+        return res.json(visualizations);
       }
-      const visualizations = await storage.getVisualizationsByDashboard(dashboardId);
-      res.json(visualizations);
+
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      // Fetch all visualizations for the user (via dashboards)
+      const dashboards = await storage.getDashboardsByUser(userId);
+      const allVisualizations = await Promise.all(
+        dashboards.map(d => storage.getVisualizationsByDashboard(d.id))
+      );
+      // Flatten list
+      const flatList = allVisualizations.flat();
+
+      // Enrich with dashboard name for the UI
+      const enriched = flatList.map(v => {
+        const dashboard = dashboards.find(d => d.id === v.dashboardId);
+        return { ...v, dashboardName: dashboard?.name };
+      });
+
+      res.json(enriched);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch visualizations" });
     }
@@ -733,7 +881,37 @@ export async function registerRoutes(
       res.status(500).json({ error: "Failed to fetch project" });
     }
   });
+  app.patch("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId!);
+      const projectId = req.params.id;
+      const updates = req.body;
 
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      // Verify ownership or role
+      if (user?.role !== "admin" && project.clientId !== userId) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      // Only allow specific updates
+      const allowedUpdates: Partial<typeof project> = {};
+      if (updates.title) allowedUpdates.title = updates.title;
+      if (updates.description) allowedUpdates.description = updates.description;
+      if (updates.status) allowedUpdates.status = updates.status;
+      if (updates.budget) allowedUpdates.budget = updates.budget;
+      if (updates.deadline) allowedUpdates.deadline = new Date(updates.deadline);
+
+      const updatedProject = await storage.updateProject(projectId, allowedUpdates);
+      res.json(updatedProject);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update project" });
+    }
+  });
 
 
 
@@ -759,6 +937,12 @@ export async function registerRoutes(
               analystName: analyst ? `${analyst.firstName || ''} ${analyst.lastName || ''}`.trim() : 'Unknown',
               analystEmail: analyst?.email || '',
               analystSkills: analyst?.skills || '',
+              analystRating: await (async () => {
+                const ratings = await storage.getRatingsByReviewee(app.analystId);
+                if (ratings.length === 0) return 0;
+                const sum = ratings.reduce((acc, r) => acc + (r.rating || 0), 0);
+                return Number((sum / ratings.length).toFixed(1));
+              })(),
             };
           })
         );
@@ -892,7 +1076,7 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const user = await storage.getUser(userId!);
-      const { otherUserId, analystName } = req.body;
+      const { otherUserId, analystName, projectId } = req.body;
 
       if (!otherUserId) {
         return res.status(400).json({ error: "otherUserId is required" });
@@ -908,6 +1092,7 @@ export async function registerRoutes(
           clientId: clientId!,
           analystId: analystId!,
           analystName: analystName || null,
+          projectId: projectId || null,
         });
       }
 
@@ -1080,6 +1265,40 @@ export async function registerRoutes(
     }
   });
 
+  // Analyst Stats
+  app.get("/api/analyst/stats", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId!);
+
+      if (user?.role !== "analyst") {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const projects = await storage.getProjectsByAnalyst(userId!);
+      const completedProjects = projects.filter(p => p.status === "completed");
+      const ratings = await storage.getRatingsByReviewee(userId!);
+
+      const totalEarnings = completedProjects.reduce((sum, p) => sum + (p.budget || 0), 0);
+      const averageRating = ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+        : 0;
+
+      const uniqueClients = new Set(projects.map(p => p.clientId)).size;
+
+      res.json({
+        totalProjects: projects.length,
+        completedProjects: completedProjects.length,
+        totalEarnings,
+        averageRating: parseFloat(averageRating.toFixed(1)),
+        ratingsCount: ratings.length,
+        totalClients: uniqueClients
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch analyst stats" });
+    }
+  });
+
   app.delete("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {
       const success = await storage.deleteUser(req.params.id);
@@ -1179,6 +1398,84 @@ export async function registerRoutes(
   });
 
 
+
+  // Ratings API
+  app.get("/api/ratings/:userId", async (req: Request, res: Response) => {
+    try {
+      const ratings = await storage.getRatingsByReviewee(req.params.userId);
+      res.json(ratings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch ratings" });
+    }
+  });
+
+  app.post("/api/ratings", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { projectId, revieweeId, rating, comment } = req.body;
+
+      if (!projectId || !revieweeId || !rating) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Verify project scope or if user is authorized to rate
+      // For now, simpler check:
+      const existing = await storage.getRatingByProject(projectId);
+      if (existing) {
+        return res.status(409).json({ error: "Project already rated" });
+      }
+
+      const newRating = await storage.createRating({
+        projectId,
+        reviewerId: userId!,
+        revieweeId,
+        rating,
+        comment,
+      });
+
+      res.status(201).json(newRating);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to submit rating" });
+    }
+  });
+
+  app.get("/api/public/analysts/:id", async (req: Request, res: Response) => {
+    try {
+      const analyst = await storage.getUser(req.params.id);
+      if (!analyst || analyst.role !== "analyst") {
+        return res.status(404).json({ error: "Analyst not found" });
+      }
+
+      // Fetch showcased dashboards including personal ones!
+      const allDashboards = await storage.getDashboardsByUser(analyst.id);
+      console.log(allDashboards);
+      // Filter for showcased ones
+      const showcasedDashboards = allDashboards.filter(d => d.isShowcase);
+      console.log(showcasedDashboards);
+
+      // Fetch completed projects
+      const projects = await storage.getProjectsByAnalyst(analyst.id);
+      const completedProjects = projects.filter(p => p.status === "completed");
+
+      // Fetch ratings
+      const ratings = await storage.getRatingsByReviewee(analyst.id);
+
+      res.json({
+        id: analyst.id,
+        firstName: analyst.firstName,
+        lastName: analyst.lastName,
+        title: analyst.title,
+        bio: analyst.bio,
+        skills: analyst.skills,
+        profileImageUrl: "/assets/avatar-placeholder.png", // Mock or from DB if added
+        dashboards: showcasedDashboards,
+        projects: completedProjects,
+        ratings: ratings,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch analyst profile" });
+    }
+  });
 
   return httpServer;
 }

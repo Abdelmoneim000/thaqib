@@ -14,8 +14,12 @@ import {
   MousePointer,
   Loader2,
   FolderKanban,
-  LayoutDashboard
+  LayoutDashboard,
+  Type,
+  Plus
 } from "lucide-react";
+import { CreateDashboardDialog } from "@/components/bi/create-dashboard-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ReactMarkdown from "react-markdown";
 import { QueryBuilder } from "@/components/bi/query-builder";
 import { SqlEditor } from "@/components/bi/sql-editor";
 import { VisualizationConfig } from "@/components/bi/visualization-config";
@@ -43,7 +48,10 @@ export default function VisualizationBuilderPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [vizName, setVizName] = useState("New Visualization");
-  const [queryMode, setQueryMode] = useState<"visual" | "sql">("visual");
+  const [queryMode, setQueryMode] = useState<"visual" | "sql" | "text">("visual"); // Added text mode
+
+  const [textContent, setTextContent] = useState(""); // For text block content
+  const [textEditMode, setTextEditMode] = useState<"write" | "preview">("write");
 
   const [visualQuery, setVisualQuery] = useState<VisualQuery>({
     datasetId: "",
@@ -71,29 +79,60 @@ export default function VisualizationBuilderPage() {
   const [queryResults, setQueryResults] = useState<Record<string, unknown>[]>([]);
   const [hasRun, setHasRun] = useState(false);
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  // Parse query params
+  const searchParams = new URLSearchParams(window.location.search);
+  const initialDashboardId = searchParams.get("dashboardId") || "";
+  const initialProjectId = searchParams.get("projectId") || "";
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(initialProjectId);
+  const [selectedDashboardId, setSelectedDashboardId] = useState<string>(initialDashboardId);
+  const [isCreateDashboardOpen, setIsCreateDashboardOpen] = useState(false);
 
   const { data: projects = [] } = useQuery<any[]>({
     queryKey: ["/api/projects"],
   });
 
   const { data: dashboards = [] } = useQuery<any[]>({
-    queryKey: selectedProjectId
+    queryKey: selectedProjectId && selectedProjectId !== "personal"
       ? [`/api/dashboards?projectId=${selectedProjectId}`]
       : ["/api/dashboards"],
-    enabled: !!selectedProjectId,
+    // Always enabled, if simple fetch we filter client side
   });
 
-  const [selectedDashboardId, setSelectedDashboardId] = useState<string>("");
+  // Filter dashboards based on selection
+  const filteredDashboards = useMemo(() => {
+    if (!dashboards) return [];
+    if (selectedProjectId === "personal") {
+      return dashboards.filter(d => !d.projectId);
+    }
+    if (selectedProjectId) {
+      return dashboards.filter(d => d.projectId === selectedProjectId);
+    }
+    return [];
+  }, [dashboards, selectedProjectId]);
+
+
 
   const { data: datasets = [], isLoading: datasetsLoading } = useQuery<Dataset[]>({
-    queryKey: selectedProjectId
+    queryKey: selectedProjectId && selectedProjectId !== "personal"
       ? [`/api/datasets?projectId=${selectedProjectId}`]
-      : ["/api/datasets"],
+      : ["/api/datasets"], // Use default endpoint which should return user datasets
   });
 
+  // Filter datasets based on selection (if API returns mixed)
+  const filteredDatasets = useMemo(() => {
+    if (!datasets) return [];
+    if (selectedProjectId === "personal") {
+      return datasets.filter(d => !d.projectId);
+    }
+    if (selectedProjectId) {
+      return datasets.filter(d => d.projectId === selectedProjectId);
+    }
+    return [];
+  }, [datasets, selectedProjectId]);
+
   const convertedDatasets: Dataset[] = useMemo(() => {
-    return datasets.map(d => ({
+    return filteredDatasets.map(d => ({
       id: d.id,
       name: d.name,
       columns: d.columns
@@ -105,7 +144,7 @@ export default function VisualizationBuilderPage() {
         })),
       data: [],
     }));
-  }, [datasets]);
+  }, [filteredDatasets]);
 
   const selectedDataset = convertedDatasets.find(d => d.id === visualQuery.datasetId);
   const columns: DataColumn[] = selectedDataset?.columns || [];
@@ -184,11 +223,11 @@ export default function VisualizationBuilderPage() {
     saveMutation.mutate({
       name: vizName,
       datasetId: visualQuery.datasetId,
-      chartType,
+      chartType: chartType,
       query: queryMode === "visual"
         ? { type: "visual", columns: visualQuery.columns, filters: visualQuery.filters, groupBy: visualQuery.groupBy?.[0], aggregation: visualQuery.aggregation }
         : { type: "sql", sql: sqlQuery },
-      config: { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting },
+      config: { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting, description: textContent },
       dashboardId: selectedDashboardId,
     });
   };
@@ -233,50 +272,74 @@ export default function VisualizationBuilderPage() {
               <p className="text-sm text-muted-foreground">Create a new visualization</p>
             </div>
 
-            <div className="w-full md:w-[250px]">
-              <Select
-                value={selectedProjectId}
-                onValueChange={(val) => {
-                  setSelectedProjectId(val);
-                  setSelectedDashboardId("");
-                  // Reset dataset selection when project changes
-                  setVisualQuery(prev => ({ ...prev, datasetId: "" }));
-                }}
-              >
-                <SelectTrigger>
-                  <FolderKanban className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Select Project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.filter(p => p.id).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="w-full md:w-[250px]">
-              <Select
-                value={selectedDashboardId}
-                onValueChange={setSelectedDashboardId}
-                disabled={!selectedProjectId}
-              >
-                <SelectTrigger>
-                  <LayoutDashboard className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Select Dashboard" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dashboards.filter(d => d.id).map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
+
+          <div className="w-full md:w-[250px]">
+            <Select
+              value={selectedProjectId}
+              onValueChange={(val) => {
+                setSelectedProjectId(val);
+                setSelectedDashboardId("");
+                // Reset dataset selection when project changes
+                setVisualQuery(prev => ({ ...prev, datasetId: "" }));
+              }}
+            >
+              <SelectTrigger>
+                <FolderKanban className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Select Context" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="personal">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Personal Library</span>
+                  </div>
+                </SelectItem>
+                {projects.filter(p => p.id).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-full md:w-[250px] flex gap-2">
+            <Select
+              value={selectedDashboardId}
+              onValueChange={setSelectedDashboardId}
+              disabled={!selectedProjectId}
+            >
+              <SelectTrigger className="flex-1">
+                <LayoutDashboard className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Select Dashboard" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredDashboards.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <CreateDashboardDialog
+              open={isCreateDashboardOpen}
+              onOpenChange={setIsCreateDashboardOpen}
+              projectId={selectedProjectId}
+              onSuccess={(id) => setSelectedDashboardId(id)}
+              trigger={
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Create New Dashboard"
+                  disabled={!selectedProjectId}
+                  onClick={() => setIsCreateDashboardOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              }
+            />
+          </div>
+
           <div className="flex gap-2 self-end lg:self-auto">
             <Button
               variant="outline"
@@ -304,11 +367,11 @@ export default function VisualizationBuilderPage() {
               Save
             </Button>
           </div>
-        </div>
+        </div >
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4 space-y-4">
-            <Tabs value={queryMode} onValueChange={(v) => setQueryMode(v as "visual" | "sql")}>
+            <Tabs value={queryMode} onValueChange={(v) => setQueryMode(v as any)}>
               <TabsList className="w-full">
                 <TabsTrigger value="visual" className="flex-1" data-testid="tab-visual-query">
                   <MousePointer className="h-4 w-4 mr-2" />
@@ -343,6 +406,25 @@ export default function VisualizationBuilderPage() {
                 />
               </TabsContent>
             </Tabs>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Description (Markdown)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Enter description, context, or guides in Markdown..."
+                    value={textContent}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTextContent(e.target.value)}
+                    className="min-h-[150px] font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Supports **bold**, *italic*, - lists, # headings
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="lg:col-span-8 space-y-4">
@@ -378,6 +460,19 @@ export default function VisualizationBuilderPage() {
               </CardContent>
             </Card>
 
+            {textContent && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Description Preview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown>{textContent}</ReactMarkdown>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {hasRun && queryResults.length > 0 && (
               <VisualizationConfig
                 chartType={chartType}
@@ -394,7 +489,7 @@ export default function VisualizationBuilderPage() {
             )}
           </div>
         </div>
-      </div>
-    </AnalystLayout>
+      </div >
+    </AnalystLayout >
   );
 }

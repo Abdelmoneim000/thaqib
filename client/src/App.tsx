@@ -12,6 +12,7 @@ import RoleSelectionPage from "@/pages/role-selection";
 import ClientProjectsPage from "@/pages/client/projects";
 import ClientProjectDetailPage from "@/pages/client/project-detail";
 import ClientChatsPage from "@/pages/client/chats";
+import FindAnalystsPage from "@/pages/client/find-analysts";
 import DatasetUploadPage from "@/pages/client/dataset-upload";
 import AnalystDashboardPage from "@/pages/analyst/dashboard";
 import BrowseProjectsPage from "@/pages/analyst/browse";
@@ -20,6 +21,7 @@ import AnalystProjectsPage from "@/pages/analyst/projects";
 import AnalystProjectDetailPage from "@/pages/analyst/project-detail";
 import AnalystSettingsPage from "@/pages/analyst/settings";
 import AnalystChatsPage from "@/pages/analyst/chats";
+import AnalystDatasetsPage from "@/pages/analyst/datasets";
 import DashboardsPage from "@/pages/analyst/dashboards";
 import VisualizationBuilderPage from "@/pages/analyst/visualization-builder";
 import SampleDashboardPage from "@/pages/analyst/sample-dashboard";
@@ -31,6 +33,7 @@ import AdminChatsPage from "@/pages/admin/chats";
 import ClientDatasetsPage from "@/pages/client/datasets";
 import ClientSettingsPage from "@/pages/client/settings";
 import DashboardViewPage from "@/pages/analyst/dashboard-view";
+import PublicProfilePage from "@/pages/public-profile";
 
 function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -69,6 +72,9 @@ function Router() {
       <Route path="/client/projects">
         <ProtectedRoute component={ClientProjectsPage} allowedRoles={["client"]} />
       </Route>
+      <Route path="/client/find-analysts">
+        <ProtectedRoute component={FindAnalystsPage} allowedRoles={["client"]} />
+      </Route>
       <Route path="/client/projects/:id">
         <ProtectedRoute component={ClientProjectDetailPage} allowedRoles={["client"]} />
       </Route>
@@ -99,6 +105,9 @@ function Router() {
       <Route path="/analyst/dashboards">
         <ProtectedRoute component={DashboardsPage} allowedRoles={["analyst"]} />
       </Route>
+      <Route path="/analyst/datasets">
+        <ProtectedRoute component={AnalystDatasetsPage} allowedRoles={["analyst"]} />
+      </Route>
       <Route path="/analyst/visualization-builder">
         <ProtectedRoute component={VisualizationBuilderPage} allowedRoles={["analyst"]} />
       </Route>
@@ -127,7 +136,10 @@ function Router() {
         <ProtectedRoute component={ClientSettingsPage} allowedRoles={["client"]} />
       </Route>
       <Route path="/analyst/dashboard/:id">
-        <ProtectedRoute component={DashboardViewPage} allowedRoles={["analyst"]} />
+        <ProtectedRoute component={DashboardViewPage} allowedRoles={["analyst", "client"]} />
+      </Route>
+      <Route path="/analyst/public/:id">
+        <ProtectedRoute component={PublicProfilePage} allowedRoles={["client", "analyst", "admin"]} />
       </Route>
       <Route component={NotFound} />
     </Switch>

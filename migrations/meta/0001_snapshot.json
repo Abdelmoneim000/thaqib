@@ -1,6 +1,6 @@
 {
-  "id": "42cf83db-0a35-436b-9642-f7e2c1dce6ec",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "260cc4cb-f836-423e-8ee8-0290f3a048ed",
+  "prevId": "42cf83db-0a35-436b-9642-f7e2c1dce6ec",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -170,6 +170,13 @@
         },
         "is_published": {
           "name": "is_published",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "is_showcase": {
+          "name": "is_showcase",
           "type": "boolean",
           "primaryKey": false,
           "notNull": false,
@@ -728,6 +735,25 @@
         },
         "skills": {
           "name": "skills",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_public": {
+          "name": "is_public",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "bio": {
+          "name": "bio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "name": "title",
           "type": "text",
           "primaryKey": false,
           "notNull": false

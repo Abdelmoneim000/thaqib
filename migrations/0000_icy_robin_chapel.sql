@@ -27,6 +27,9 @@ CREATE TABLE "dashboards" (
 	"project_id" varchar,
 	"created_by" varchar NOT NULL,
 	"is_published" boolean DEFAULT false,
+	"status" text DEFAULT 'draft',
+	"feedback" text,
+	"submitted_at" timestamp,
 	"layout" jsonb,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
@@ -35,7 +38,7 @@ CREATE TABLE "dashboards" (
 CREATE TABLE "datasets" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
-	"project_id" varchar NOT NULL,
+	"project_id" varchar,
 	"uploaded_by" varchar NOT NULL,
 	"file_name" text NOT NULL,
 	"file_size" integer,
@@ -66,6 +69,16 @@ CREATE TABLE "projects" (
 	"platform_fee" integer DEFAULT 0,
 	"deadline" timestamp,
 	"submitted_at" timestamp,
+	"created_at" timestamp DEFAULT now()
+);
+--> statement-breakpoint
+CREATE TABLE "ratings" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"project_id" varchar NOT NULL,
+	"reviewer_id" varchar NOT NULL,
+	"reviewee_id" varchar NOT NULL,
+	"rating" integer NOT NULL,
+	"comment" text,
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint

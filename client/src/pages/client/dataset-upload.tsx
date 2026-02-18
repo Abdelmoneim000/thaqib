@@ -13,16 +13,23 @@ import {
   X,
   AlertCircle,
   FileText,
-  File
+  File,
+  Copy
 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import type { Dataset } from "@shared/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 interface UploadedFile {
   id: string;
   name: string;
   size: number;
   type: string;
-  status: "uploading" | "complete" | "error";
+  status: "pending" | "uploading" | "complete" | "error";
   progress: number;
+  fileObject?: File; // Store the actual file object for upload
 }
 
 function formatFileSize(bytes: number): string {
@@ -45,10 +52,12 @@ function getFileIcon(type: string) {
 
 function UploadedFileCard({
   file,
-  onRemove
+  onRemove,
+  onUpload
 }: {
   file: UploadedFile;
   onRemove: () => void;
+  onUpload: () => void;
 }) {
   return (
     <Card className="border-card-border bg-card">
@@ -74,6 +83,12 @@ function UploadedFileCard({
               <span className="text-sm text-muted-foreground">
                 {formatFileSize(file.size)}
               </span>
+
+              {file.status === "pending" && (
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  Ready to upload
+                </span>
+              )}
               {file.status === "complete" && (
                 <span className="flex items-center gap-1 text-sm text-chart-2">
                   <CheckCircle2 className="h-3.5 w-3.5" />
@@ -93,7 +108,7 @@ function UploadedFileCard({
           </div>
         </div>
       </CardContent>
-    </Card>
+    </Card >
   );
 }
 
@@ -101,6 +116,33 @@ export default function DatasetUploadPage() {
   const { id } = useParams<{ id: string }>();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const { toast } = useToast();
+
+  const { data: existingDatasets } = useQuery<Dataset[]>({
+    queryKey: ["/api/datasets"], // Fetch all user datasets
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (datasetId: string) => {
+      const res = await apiRequest("POST", "/api/datasets/clone", {
+        datasetId,
+        projectId: id
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Dataset imported", description: "The dataset has been added to this project." });
+      queryClient.invalidateQueries({ queryKey: [`/api/datasets`, { projectId: id }] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}`] });
+    },
+    onError: () => {
+      toast({ title: "Import failed", description: "Could not import the dataset.", variant: "destructive" });
+    }
+  });
+
+  const handleImport = (datasetId: string) => {
+    importMutation.mutate(datasetId);
+  };
 
   const handleUpload = async (file: File) => {
     const fileId = Math.random().toString(36).substr(2, 9);
@@ -109,13 +151,34 @@ export default function DatasetUploadPage() {
       name: file.name,
       size: file.size,
       type: file.type,
-      status: "uploading",
+      status: "pending",
       progress: 0,
+      fileObject: file,
     };
 
     setFiles(prev => [...prev, newFile]);
+  };
+
+  const startUpload = async (fileId: string) => {
+    const fileEntry = files.find(f => f.id === fileId);
+    if (!fileEntry || !fileEntry.fileObject) return;
+
+    const file = fileEntry.fileObject;
+
+    setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "uploading", progress: 0 } : f));
+
+    let progressInterval: NodeJS.Timeout | undefined;
 
     try {
+      // Simulate progress
+      progressInterval = setInterval(() => {
+        setFiles(prev => prev.map(f => {
+          if (f.id === fileId && f.status === "uploading" && f.progress < 90) {
+            return { ...f, progress: f.progress + 10 };
+          }
+          return f;
+        }));
+      }, 200);
       let data: any[] = [];
       let columns: any[] = [];
 
@@ -157,11 +220,19 @@ export default function DatasetUploadPage() {
 
       await apiRequest("POST", "/api/datasets", formData);
 
+      clearInterval(progressInterval);
       setFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress: 100, status: "complete" } : f));
+      toast({ title: "Upload complete", description: `${file.name} uploaded successfully.` });
     } catch (error) {
       console.error("Upload failed", error);
+      clearInterval(progressInterval);
       setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: "error", progress: 0 } : f));
+      toast({ title: "Upload failed", description: "Could not upload file.", variant: "destructive" });
     }
+  };
+
+  const startAllUploads = () => {
+    files.filter(f => f.status === "pending").forEach(f => startUpload(f.id));
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -212,69 +283,131 @@ export default function DatasetUploadPage() {
           </p>
         </div>
 
-        <Card className="border-card-border bg-card mb-6">
-          <CardContent className="p-6">
-            <div
-              className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${isDragging
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50"
-                }`}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-            >
-              <input
-                type="file"
-                multiple
-                accept=".csv,.xlsx,.xls,.json,.txt,.parquet"
-                onChange={handleFileSelect}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                data-testid="input-file-upload"
-              />
-              <div className="flex flex-col items-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-                  <Upload className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-lg font-medium mb-2">
-                  Drop files here or click to upload
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Supports CSV, Excel, JSON, and Parquet files up to 50MB
-                </p>
-                <Button variant="outline" data-testid="button-browse-files">
-                  Browse Files
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="upload" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="upload">Upload New</TabsTrigger>
+            <TabsTrigger value="library">Import from Library</TabsTrigger>
+          </TabsList>
 
-        {files.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium">Uploaded Files</h2>
-              <span className="text-sm text-muted-foreground">
-                {files.filter(f => f.status === "complete").length} of {files.length} complete
-              </span>
-            </div>
-            <div className="space-y-3">
-              {files.map((file) => (
-                <UploadedFileCard
-                  key={file.id}
-                  file={file}
-                  onRemove={() => handleRemoveFile(file.id)}
-                />
-              ))}
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Link href={`/client/projects/${id}`}>
-                <Button variant="outline" data-testid="button-done-upload">
-                  Done
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
+          <TabsContent value="upload">
+            <Card className="border-card-border bg-card mb-6">
+              <CardContent className="p-6">
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${isDragging
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
+                    }`}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                >
+                  <input
+                    id="file-upload"
+                    type="file"
+                    multiple
+                    accept=".csv,.xlsx,.xls,.json,.txt,.parquet"
+                    onChange={handleFileSelect}
+                    className="hidden" // Hidden input, triggered by label/button
+                    data-testid="input-file-upload"
+                  />
+                  <div className="flex flex-col items-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                      <Upload className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">
+                      Drop files here or click to upload
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Supports CSV, Excel, JSON, and Parquet files up to 50MB
+                    </p>
+                    <label htmlFor="file-upload">
+                      <Button variant="outline" data-testid="button-browse-files" asChild>
+                        <span>Browse Files</span>
+                      </Button>
+                    </label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {files.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-medium">Uploaded Files</h2>
+                  <span className="text-sm text-muted-foreground">
+                    {files.filter(f => f.status === "complete").length} of {files.length} complete
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {files.map((file) => (
+                    <UploadedFileCard
+                      key={file.id}
+                      file={file}
+
+                      onRemove={() => handleRemoveFile(file.id)}
+                      onUpload={() => startUpload(file.id)}
+                    />
+                  ))}
+                </div>
+                {files.some(f => f.status === "pending") && (
+                  <div className="flex justify-end pt-2">
+                    <Button onClick={startAllUploads}>Upload All Pending</Button>
+                  </div>
+                )}
+                <div className="flex justify-end gap-3 pt-4">
+                  <Link href={`/client/projects/${id}`}>
+                    <Button variant="outline" data-testid="button-done-upload">
+                      Done
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="library">
+            <Card className="border-card-border bg-card">
+              <CardHeader>
+                <CardTitle>Your Dataset Library</CardTitle>
+                <CardDescription>Reuse datasets you've previously uploaded to other projects.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {existingDatasets && existingDatasets.length > 0 ? (
+                    existingDatasets.map((dataset) => (
+                      <div key={dataset.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-chart-2/10">
+                            <FileSpreadsheet className="h-5 w-5 text-chart-2" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{dataset.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {dataset.rowCount?.toLocaleString()} rows • {formatFileSize(dataset.fileSize || 0)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleImport(dataset.id)}
+                          disabled={importMutation.isPending}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Import
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No existing datasets found.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <Card className="border-card-border bg-card mt-6">
           <CardHeader>

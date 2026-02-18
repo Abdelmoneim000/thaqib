@@ -12,6 +12,7 @@ export interface Dataset {
   id: string;
   name: string;
   description?: string;
+  projectId?: string;
   columns: DataColumn[];
   data?: Record<string, unknown>[];
   rowCount?: number;
@@ -46,7 +47,7 @@ export interface VisualQuery {
   limit?: number;
 }
 
-export type ChartType = "bar" | "line" | "pie" | "donut" | "table" | "metric" | "area";
+export type ChartType = "bar" | "line" | "pie" | "donut" | "table" | "metric" | "area" | "text";
 
 export interface ChartColors {
   primary: string;
@@ -68,7 +69,7 @@ export interface Visualization {
   name: string;
   type: ChartType;
   query: VisualQuery | string;
-  queryMode: "visual" | "sql";
+  queryMode: "visual" | "sql" | "text";
   colors: ChartColors;
   formatting: ChartFormatting;
   xAxis?: string;

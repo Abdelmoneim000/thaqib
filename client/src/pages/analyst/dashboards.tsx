@@ -7,15 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { CreateDashboardDialog } from "@/components/bi/create-dashboard-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -29,7 +21,9 @@ import {
   Edit,
   Trash2,
   Copy,
-  Loader2
+  Loader2,
+  Star,
+  StarOff
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,8 +38,6 @@ export default function DashboardsPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newDashboardName, setNewDashboardName] = useState("");
-  const [newDashboardDesc, setNewDashboardDesc] = useState("");
 
   const { data: dashboards, isLoading: isLoadingDashboards } = useQuery<Dashboard[]>({
     queryKey: ["/api/dashboards"],
@@ -55,33 +47,30 @@ export default function DashboardsPage() {
     queryKey: ["/api/visualizations"],
   });
 
-  const createDashboardMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string }) => {
-      const res = await apiRequest("POST", "/api/dashboards", data);
+
+
+  const updateDashboardMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Dashboard> }) => {
+      const res = await apiRequest("PATCH", `/api/dashboards/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboards"] });
-      toast({ title: "Dashboard created", description: "Start adding visualizations now." });
-      setIsCreateDialogOpen(false);
-      setNewDashboardName("");
-      setNewDashboardDesc("");
+      toast({ title: "Dashboard updated", description: "Changes saved successfully." });
     },
     onError: () => {
-      toast({ title: "Failed to create dashboard", variant: "destructive" });
+      toast({ title: "Failed to update dashboard", variant: "destructive" });
     }
   });
 
-  const handleCreateDashboard = () => {
-    if (!newDashboardName) {
-      toast({ title: "Name is required", variant: "destructive" });
-      return;
-    }
-    createDashboardMutation.mutate({
-      name: newDashboardName,
-      description: newDashboardDesc,
+  const toggleShowcase = (dashboard: Dashboard) => {
+    updateDashboardMutation.mutate({
+      id: dashboard.id,
+      data: { isShowcase: !dashboard.isShowcase }
     });
   };
+
+
 
   const filteredDashboards = dashboards?.filter(d =>
     d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,53 +94,16 @@ export default function DashboardsPage() {
                 New Visualization
               </Button>
             </Link>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
+            <CreateDashboardDialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+              trigger={
                 <Button data-testid="button-new-dashboard">
                   <Plus className="h-4 w-4 mr-2" />
                   New Dashboard
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Dashboard</DialogTitle>
-                  <DialogDescription>
-                    Create a blank dashboard to add visualizations
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Dashboard Name</Label>
-                    <Input
-                      id="name"
-                      value={newDashboardName}
-                      onChange={(e) => setNewDashboardName(e.target.value)}
-                      placeholder="e.g., Q1 Sales Report"
-                      data-testid="input-new-dashboard-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="desc">Description (optional)</Label>
-                    <Textarea
-                      id="desc"
-                      value={newDashboardDesc}
-                      onChange={(e) => setNewDashboardDesc(e.target.value)}
-                      placeholder="Brief description of the dashboard"
-                      data-testid="textarea-new-dashboard-desc"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateDashboard} disabled={createDashboardMutation.isPending} data-testid="button-create-dashboard">
-                    {createDashboardMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Dashboard
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+              }
+            />
           </div>
         </div>
 
@@ -218,26 +170,48 @@ export default function DashboardsPage() {
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.preventDefault();
+                                toggleShowcase(dashboard);
+                              }}>
+                                {dashboard.isShowcase ? (
+                                  <>
+                                    <StarOff className="h-4 w-4 mr-2" />
+                                    Remove from Showcase
+                                  </>
+                                ) : (
+                                  <>
+                                    <Star className="h-4 w-4 mr-2" />
+                                    Add to Showcase
+                                  </>
+                                )}
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      </CardHeader>
-                      <CardContent>
                         {dashboard.description && (
-                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          <CardDescription className="text-sm line-clamp-2">
                             {dashboard.description}
-                          </p>
+                          </CardDescription>
                         )}
+                      </CardHeader>
+                      <CardContent className="flex flex-col pt-0">
                         <div className="flex items-center justify-between mt-auto">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <BarChart3 className="h-4 w-4" />
                             {/* Layout items count */}
-                            {dashboard.layout?.items?.length || 0} charts
+                            {(dashboard as any).visualizationsCount || 0} charts
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant={dashboard.isPublished ? "default" : "secondary"}>
                               {dashboard.isPublished ? "Published" : "Draft"}
                             </Badge>
+                            {dashboard.isShowcase && (
+                              <Badge variant="outline" className="border-yellow-500 text-yellow-600 bg-yellow-50">
+                                <Star className="h-3 w-3 mr-1 fill-yellow-500" />
+                                Showcase
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
@@ -290,6 +264,6 @@ export default function DashboardsPage() {
           </div>
         </div>
       </div>
-    </AnalystLayout>
+    </AnalystLayout >
   );
 }

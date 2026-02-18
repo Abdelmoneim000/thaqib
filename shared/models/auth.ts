@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp, varchar, boolean } from "drizzle-orm/pg-core";
 
 // Session storage table for express-session with connect-pg-simple
 export const sessions = pgTable(
@@ -23,6 +23,10 @@ export const users = pgTable("users", {
   role: varchar("role").notNull().default("analyst"),
   organization: varchar("organization"),  // for clients
   skills: text("skills"),  // comma-separated, for analysts
+  // Public Profile Fields
+  isPublic: boolean("is_public").default(false),
+  bio: text("bio"),
+  title: text("title"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

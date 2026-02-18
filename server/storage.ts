@@ -1,3 +1,4 @@
+
 import {
   type User, type UpsertUser,
   type Project, type InsertProject,
@@ -8,6 +9,7 @@ import {
   type Conversation, type InsertConversation,
   type Message, type InsertMessage,
   type Application, type InsertApplication,
+  type Rating, type InsertRating, // Added Rating types
   users as usersTable,
   projects as projectsTable,
   datasets as datasetsTable,
@@ -16,7 +18,8 @@ import {
   sharedDashboards as sharedDashboardsTable,
   conversations as conversationsTable,
   messages as messagesTable,
-  applications as applicationsTable
+  applications as applicationsTable,
+  ratings as ratingsTable // Added ratingsTable
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, desc, sql, gte, count } from "drizzle-orm";
@@ -30,6 +33,13 @@ export interface AdminStats {
   totalAnalysts: number;
 }
 
+export interface AnalystStats {
+  totalEarnings: number;
+  completedProjects: number;
+  activeProjects: number;
+  totalProjects: number;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   updateUserRole(id: string, role: string): Promise<User | undefined>;
@@ -37,6 +47,8 @@ export interface IStorage {
   createUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
+  getPublicAnalyst(id: string): Promise<User | undefined>;
+  searchPublicAnalysts(query?: string): Promise<User[]>;
 
   getProject(id: string): Promise<Project | undefined>;
   getProjectsByClient(clientId: string): Promise<Project[]>;
@@ -51,6 +63,7 @@ export interface IStorage {
   getAllDatasets(): Promise<Dataset[]>;
   getDatasetsByUser(userId: string): Promise<Dataset[]>;
   createDataset(dataset: InsertDataset): Promise<Dataset>;
+  updateDataset(id: string, updates: Partial<Dataset>): Promise<Dataset | undefined>;
   deleteDataset(id: string): Promise<boolean>;
 
   getDashboard(id: string): Promise<Dashboard | undefined>;
@@ -59,6 +72,7 @@ export interface IStorage {
   getAllDashboards(): Promise<Dashboard[]>;
   createDashboard(dashboard: InsertDashboard): Promise<Dashboard>;
   updateDashboard(id: string, updates: Partial<Dashboard>): Promise<Dashboard | undefined>;
+  getShowcaseDashboards(analystId: string): Promise<Dashboard[]>;
   deleteDashboard(id: string): Promise<boolean>;
 
   getVisualization(id: string): Promise<Visualization | undefined>;
@@ -92,11 +106,35 @@ export interface IStorage {
 
   // Admin-specific methods
   getAdminStats(): Promise<AdminStats>;
+  getAnalystStats(analystId: string): Promise<AnalystStats>;
   getAdminConversations(): Promise<Conversation[]>;
   createAdminConversation(adminId: string, userId: string): Promise<Conversation>;
+  createRating(rating: InsertRating): Promise<Rating>;
+  getRatingsByReviewee(revieweeId: string): Promise<Rating[]>;
+  getRatingByProject(projectId: string): Promise<Rating | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
+  // Ratings Implementation
+  async createRating(insertRating: InsertRating): Promise<Rating> {
+    const [rating] = await db.insert(ratingsTable).values(insertRating).returning();
+    return rating;
+  }
+
+  async getRatingsByReviewee(revieweeId: string): Promise<Rating[]> {
+    return db
+      .select()
+      .from(ratingsTable)
+      .where(eq(ratingsTable.revieweeId, revieweeId));
+  }
+
+  async getRatingByProject(projectId: string): Promise<Rating | undefined> {
+    const [rating] = await db
+      .select()
+      .from(ratingsTable)
+      .where(eq(ratingsTable.projectId, projectId));
+    return rating;
+  }
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
     return user;
@@ -194,6 +232,15 @@ export class DatabaseStorage implements IStorage {
     return newDataset;
   }
 
+  async updateDataset(id: string, updates: Partial<Dataset>): Promise<Dataset | undefined> {
+    const [dataset] = await db
+      .update(datasetsTable)
+      .set(updates)
+      .where(eq(datasetsTable.id, id))
+      .returning();
+    return dataset;
+  }
+
   async deleteDataset(id: string): Promise<boolean> {
     const result = await db.delete(datasetsTable).where(eq(datasetsTable.id, id)).returning();
     return result.length > 0;
@@ -231,6 +278,8 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return dashboard;
   }
+
+
 
   async deleteDashboard(id: string): Promise<boolean> {
     const result = await db.delete(dashboardsTable).where(eq(dashboardsTable.id, id)).returning();
@@ -442,6 +491,35 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async getAnalystStats(analystId: string): Promise<AnalystStats> {
+    const completedProjects = await db
+      .select({ count: count() })
+      .from(projectsTable)
+      .where(and(eq(projectsTable.analystId, analystId), eq(projectsTable.status, "completed")));
+
+    const activeProjects = await db
+      .select({ count: count() })
+      .from(projectsTable)
+      .where(and(eq(projectsTable.analystId, analystId), eq(projectsTable.status, "in_progress")));
+
+    const totalProjects = await db
+      .select({ count: count() })
+      .from(projectsTable)
+      .where(eq(projectsTable.analystId, analystId));
+
+    const totalEarnings = await db
+      .select({ total: sql<number>`COALESCE(SUM(budget), 0)` })
+      .from(projectsTable)
+      .where(and(eq(projectsTable.analystId, analystId), eq(projectsTable.status, "completed")));
+
+    return {
+      totalEarnings: totalEarnings[0]?.total || 0,
+      completedProjects: completedProjects[0]?.count || 0,
+      activeProjects: activeProjects[0]?.count || 0,
+      totalProjects: totalProjects[0]?.count || 0,
+    };
+  }
+
   async getAdminConversations(): Promise<Conversation[]> {
     return db
       .select()
@@ -478,6 +556,42 @@ export class DatabaseStorage implements IStorage {
 
     return conversation;
   }
+
+  async getPublicAnalyst(id: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(and(eq(usersTable.id, id), eq(usersTable.isPublic, true)));
+    return user;
+  }
+
+  async searchPublicAnalysts(search?: string): Promise<User[]> {
+    let conditions = [eq(usersTable.isPublic, true), eq(usersTable.role, "analyst")];
+
+    if (search) {
+      const searchLower = `%${search.toLowerCase()}%`;
+      conditions.push(or(
+        sql`lower(${usersTable.firstName}) LIKE ${searchLower}`,
+        sql`lower(${usersTable.lastName}) LIKE ${searchLower}`,
+        sql`lower(${usersTable.title}) LIKE ${searchLower}`,
+        sql`lower(${usersTable.skills}) LIKE ${searchLower}`
+      )!);
+    }
+
+    return await db
+      .select()
+      .from(usersTable)
+      .where(and(...conditions));
+  }
+
+  async getShowcaseDashboards(analystId: string): Promise<Dashboard[]> {
+    return db
+      .select()
+      .from(dashboardsTable)
+      .where(and(eq(dashboardsTable.createdBy, analystId), eq(dashboardsTable.isShowcase, true), eq(dashboardsTable.isPublished, true)))
+      .orderBy(desc(dashboardsTable.updatedAt));
+  }
+
 }
 
 export const storage = new DatabaseStorage();

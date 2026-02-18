@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import AnalystLayout from "@/components/analyst-layout";
@@ -14,10 +15,20 @@ import {
   FileSpreadsheet,
   BarChart3,
   MessageSquare,
-  Loader2
+  Loader2,
+  Send,
+  CheckCircle2,
+  Plus,
+  Eye,
+  MoreVertical,
+  Layout
 } from "lucide-react";
 import { ProjectChat } from "@/components/chat/project-chat";
-import type { Project, Dataset } from "@shared/schema";
+import type { Project, Dataset, Dashboard } from "@shared/schema";
+import { CreateDashboardDialog } from "@/components/bi/create-dashboard-dialog";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 interface EnrichedProject extends Project {
   clientName: string;
@@ -29,6 +40,8 @@ interface EnrichedProject extends Project {
 export default function AnalystProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const { data: project, isLoading } = useQuery<EnrichedProject>({
     queryKey: ["/api/projects", id],
@@ -38,6 +51,27 @@ export default function AnalystProjectDetailPage() {
       return res.json();
     },
     enabled: !!id,
+  });
+
+  const { data: dashboards } = useQuery<Dashboard[]>({
+    queryKey: [`/api/dashboards?projectId=${id}`],
+    enabled: !!id,
+  });
+
+  const submitDashboardMutation = useMutation({
+    mutationFn: async (dashboardId: string) => {
+      const res = await apiRequest("PATCH", `/api/dashboards/${dashboardId}`, {
+        status: "submitted",
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboards?projectId=${id}`] });
+      toast({ title: "Dashboard submitted", description: "The dashboard has been submitted for client review." });
+    },
+    onError: () => {
+      toast({ title: "Submission failed", description: "Could not submit dashboard.", variant: "destructive" });
+    }
   });
 
   const getStatusBadge = (status: string) => {
@@ -191,19 +225,81 @@ export default function AnalystProjectDetailPage() {
 
           <TabsContent value="dashboards">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Your Dashboards</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base">Project Dashboards</CardTitle>
+                {project.status !== "completed" && (
+                  <CreateDashboardDialog
+                    open={isCreateDialogOpen}
+                    onOpenChange={setIsCreateDialogOpen}
+                    projectId={id}
+                    trigger={
+                      <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Dashboard
+                      </Button>
+                    }
+                  />
+                )}
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                  <BarChart3 className="h-10 w-10 mb-2 opacity-50" />
-                  <p className="text-sm">Dashboards created: {project.dashboardsCount}</p>
-                  <Link href="/analyst/visualization-builder">
-                    <Button className="mt-4" size="sm" data-testid="button-create-visualization">
-                      Create Visualization
-                    </Button>
-                  </Link>
-                </div>
+                {dashboards && dashboards.length > 0 ? (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {dashboards.map((dashboard) => (
+                      <Card key={dashboard.id} className="flex flex-col">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-base truncate" title={dashboard.name}>
+                              {dashboard.name}
+                            </CardTitle>
+                            <Badge variant={
+                              dashboard.status === "approved" ? "default" :
+                                dashboard.status === "submitted" ? "secondary" :
+                                  "outline"
+                            }>
+                              {dashboard.status === "approved" ? "Approved" :
+                                dashboard.status === "submitted" ? "Under Review" :
+                                  dashboard.status === "rejected" ? "Changes Requested" : "Draft"}
+                            </Badge>
+                          </div>
+                          {dashboard.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{dashboard.description}</p>
+                          )}
+                        </CardHeader>
+                        <CardContent className="flex-1 flex flex-col justify-end pt-0">
+                          <div className="flex items-center gap-2 mt-4">
+                            <Link href={`/analyst/dashboard/${dashboard.id}`} className="flex-1">
+                              <Button variant="outline" className="w-full" size="sm">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View & Edit
+                              </Button>
+                            </Link>
+                            {(dashboard.status === "draft" || dashboard.status === "rejected") && project.status !== "completed" && (
+                              <Button
+                                size="sm"
+                                onClick={() => submitDashboardMutation.mutate(dashboard.id)}
+                                disabled={submitDashboardMutation.isPending}
+                                title="Submit for Review"
+                              >
+                                {submitDashboardMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                    <BarChart3 className="h-10 w-10 mb-2 opacity-50" />
+                    <p className="text-sm">Dashboards created: {project.dashboardsCount}</p>
+                    {project.status !== "completed" && (
+                      <Link href="/analyst/visualization-builder">
+                        <Button className="mt-4" size="sm" data-testid="button-create-visualization">
+                          Create Visualization
+                        </Button>
+                      </Link>
+                    )}
+                  </div>)}
               </CardContent>
             </Card>
           </TabsContent>

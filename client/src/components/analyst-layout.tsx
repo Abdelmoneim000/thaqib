@@ -22,52 +22,63 @@ import {
   BarChart3,
   User,
   PieChart,
-  MessageSquare
+  MessageSquare,
+  UserCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/analyst/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Browse Projects",
-    url: "/analyst/browse",
-    icon: Search,
-  },
-  {
-    title: "My Applications",
-    url: "/analyst/applications",
-    icon: FileText,
-  },
-  {
-    title: "Active Projects",
-    url: "/analyst/projects",
-    icon: FolderKanban,
-  },
-  {
-    title: "Chats",
-    url: "/analyst/chats",
-    icon: MessageSquare,
-  },
-  {
-    title: "BI Studio",
-    url: "/analyst/dashboards",
-    icon: PieChart,
-  },
-  {
-    title: "Settings",
-    url: "/analyst/settings",
-    icon: Settings,
-  },
-];
 
 function AnalystSidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const userName = user?.firstName || user?.email?.split("@")[0] || "Analyst";
+
+  const menuItems = [
+    {
+      title: "Dashboard",
+      url: "/analyst/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Browse Projects",
+      url: "/analyst/browse",
+      icon: Search,
+    },
+    {
+      title: "My Applications",
+      url: "/analyst/applications",
+      icon: FileText,
+    },
+    {
+      title: "Active Projects",
+      url: "/analyst/projects",
+      icon: FolderKanban,
+    },
+    {
+      title: "Chats",
+      url: "/analyst/chats",
+      icon: MessageSquare,
+    },
+    {
+      title: "Datasets",
+      url: "/analyst/datasets",
+      icon: FileText,
+    },
+    {
+      title: "BI Studio",
+      url: "/analyst/dashboards",
+      icon: PieChart,
+    },
+    {
+      title: "My Profile",
+      url: user ? `/analyst/public/${user.id}` : "#",
+      icon: UserCircle,
+    },
+    {
+      title: "Settings",
+      url: "/analyst/settings",
+      icon: Settings,
+    },
+  ];
 
   return (
     <Sidebar className="border-r-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
@@ -98,7 +109,7 @@ function AnalystSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={location === item.url || location.startsWith(item.url + "/")}
+                    isActive={location === item.url || (item.url !== "#" && location.startsWith(item.url + "/"))}
                     className="text-purple-100 hover:bg-white/10 hover:text-white data-[active=true]:bg-purple-600 data-[active=true]:text-white hover:translate-x-1 transition-all duration-200"
                   >
                     <Link

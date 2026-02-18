@@ -15,8 +15,22 @@ import {
   Globe,
   Bell,
   Shield,
-  X
+  X,
+  ExternalLink,
+  Loader2,
+  DollarSign
 } from "lucide-react";
+import { Link } from "wouter";
+import { Switch } from "@/components/ui/switch";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+interface AnalystStats {
+  totalEarnings: number;
+  completedProjects: number;
+  activeProjects: number;
+  totalProjects: number;
+}
 
 export default function AnalystSettingsPage() {
   const { user } = useAuth();
@@ -27,10 +41,46 @@ export default function AnalystSettingsPage() {
   const initialSkills = user?.skills ? user.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
   const [skills, setSkills] = useState<string[]>(initialSkills);
 
+  const [firstName, setFirstName] = useState(user?.firstName || "");
+  const [lastName, setLastName] = useState(user?.lastName || "");
+  const [title, setTitle] = useState(user?.title || "");
+  const [bio, setBio] = useState(user?.bio || "");
+  const [isPublic, setIsPublic] = useState(user?.isPublic || false);
+
+  const { data: stats } = useQuery<AnalystStats>({
+    queryKey: ["/api/analyst/stats"],
+    enabled: user?.role === "analyst",
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("PATCH", "/api/user", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({
+        title: "Profile updated",
+        description: "Your changes have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to update profile",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSaveProfile = () => {
-    toast({
-      title: "Profile updated",
-      description: "Your changes have been saved (simulated).",
+    updateProfileMutation.mutate({
+      firstName,
+      lastName,
+      title,
+      bio,
+      isPublic,
+      skills: skills.join(","), // Store as comma-separated string if that's the established pattern
     });
   };
 
@@ -48,12 +98,41 @@ export default function AnalystSettingsPage() {
   return (
     <AnalystLayout>
       <div className="p-6 space-y-6 max-w-4xl">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your profile and preferences
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground">
+          Manage your profile and preferences
+        </p>
+
+
+        {stats && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Earnings
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${stats.totalEarnings?.toLocaleString() || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  From {stats.completedProjects || 0} completed projects
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Active Projects
+                </CardTitle>
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.activeProjects || 0}</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -71,7 +150,8 @@ export default function AnalystSettingsPage() {
                 <Label htmlFor="firstName">First Name</Label>
                 <Input
                   id="firstName"
-                  defaultValue={user?.firstName || ""}
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                   data-testid="input-first-name"
                 />
               </div>
@@ -79,7 +159,8 @@ export default function AnalystSettingsPage() {
                 <Label htmlFor="lastName">Last Name</Label>
                 <Input
                   id="lastName"
-                  defaultValue={user?.lastName || ""}
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                   data-testid="input-last-name"
                 />
               </div>
@@ -99,7 +180,9 @@ export default function AnalystSettingsPage() {
               <Label htmlFor="title">Professional Title</Label>
               <Input
                 id="title"
-                defaultValue="Data Analyst"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Senior Data Analyst"
                 data-testid="input-title"
               />
             </div>
@@ -108,11 +191,34 @@ export default function AnalystSettingsPage() {
               <Textarea
                 id="bio"
                 rows={4}
-                defaultValue="Experienced data analyst ready to help you unlock insights from your data."
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Share your experience and expertise..."
                 data-testid="textarea-bio"
               />
             </div>
-            <Button onClick={handleSaveProfile} data-testid="button-save-profile">Save Profile</Button>
+            <div className="flex items-center space-x-2 pt-2">
+              <Switch
+                id="public-profile"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+              />
+              <Label htmlFor="public-profile">Public Profile</Label>
+              {isPublic && user && (
+                <Link href={`/analyst/public/${user.id}`} className="ml-auto text-sm text-primary flex items-center hover:underline">
+                  View Public Profile <ExternalLink className="h-3 w-3 ml-1" />
+                </Link>
+              )}
+            </div>
+            {isPublic && (
+              <p className="text-xs text-muted-foreground">
+                Your profile is visible to clients at public link.
+              </p>
+            )}
+            <Button onClick={handleSaveProfile} disabled={updateProfileMutation.isPending} data-testid="button-save-profile">
+              {updateProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Profile
+            </Button>
           </CardContent>
         </Card>
 
