@@ -24,18 +24,40 @@ import {
   MessageSquare,
   ChevronRight,
   UserPlus,
-  UserMinus
+  UserMinus,
+  UserCog,
+  Loader2,
+  Trash2
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import type { User, Project } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 export default function AdminAnalystsPage() {
   const [selectedAnalyst, setSelectedAnalyst] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+
+  const impersonateMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("POST", `/api/admin/impersonate/${userId}`);
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries();
+      toast({ title: "Impersonating", description: `Now viewing as ${data.firstName} ${data.lastName}` });
+      navigate("/analyst/browse");
+    },
+    onError: () => {
+      toast({ title: "Failed", description: "Could not impersonate this user", variant: "destructive" });
+    },
+  });
 
   const { data: analysts, isLoading: isLoadingAnalysts } = useQuery<User[]>({
     queryKey: ["/api/admin/users", "analyst"],
@@ -59,7 +81,7 @@ export default function AdminAnalystsPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/projects"] });
       toast({ title: "Project updated successfully" });
     },
     onError: () => {
@@ -241,9 +263,52 @@ export default function AdminAnalystsPage() {
                   <Button
                     className="w-full"
                     data-testid="button-chat-analyst"
+                    onClick={async () => {
+                      if (!selectedAnalyst) return;
+                      try {
+                        await apiRequest("POST", "/api/admin/conversations", { userId: selectedAnalyst });
+                        navigate("/admin/chats");
+                      } catch {
+                        toast({ title: "Failed to start chat", variant: "destructive" });
+                      }
+                    }}
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Start Chat
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => selectedAnalyst && impersonateMutation.mutate(selectedAnalyst)}
+                    disabled={impersonateMutation.isPending}
+                    data-testid="button-impersonate-analyst"
+                  >
+                    {impersonateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserCog className="h-4 w-4" />
+                    )}
+                    View as Analyst
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full gap-2"
+                    onClick={async () => {
+                      if (!selectedAnalyst) return;
+                      if (!confirm("Delete this account? This cannot be undone.")) return;
+                      try {
+                        await apiRequest("DELETE", `/api/admin/users/${selectedAnalyst}`);
+                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                        setSelectedAnalyst(null);
+                        toast({ title: "Account deleted" });
+                      } catch {
+                        toast({ title: "Failed to delete account", variant: "destructive" });
+                      }
+                    }}
+                    data-testid="button-delete-analyst"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Account
                   </Button>
                 </div>
               )}

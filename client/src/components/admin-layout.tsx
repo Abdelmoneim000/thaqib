@@ -19,36 +19,24 @@ import {
   MessageSquare,
   LogOut,
   BarChart3,
-  Shield
+  Shield,
+  FolderKanban
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/admin/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Clients",
-    url: "/admin/clients",
-    icon: Users,
-  },
-  {
-    title: "Analysts",
-    url: "/admin/analysts",
-    icon: Briefcase,
-  },
-  {
-    title: "Support Chats",
-    url: "/admin/chats",
-    icon: MessageSquare,
-  },
+const menuItemDefs = [
+  { titleKey: "nav.dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+  { titleKey: "nav.clients", url: "/admin/clients", icon: Users },
+  { titleKey: "nav.analysts", url: "/admin/analysts", icon: Briefcase },
+  { titleKey: "nav.projects", url: "/admin/projects", icon: FolderKanban },
+  { titleKey: "nav.support_chats", url: "/admin/chats", icon: MessageSquare },
 ];
 
 function AdminSidebar() {
   const [location] = useLocation();
   const { logout } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <Sidebar className="border-r-0 bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 text-white">
@@ -57,7 +45,7 @@ function AdminSidebar() {
           <div className="flex bg-emerald-500 rounded-md p-1">
             <Shield className="h-4 w-4 text-white" />
           </div>
-          Admin Panel
+          {t("admin.dashboard")}
         </span>
       </SidebarHeader>
       <SidebarContent>
@@ -65,13 +53,13 @@ function AdminSidebar() {
           <SidebarGroupLabel className="px-4 py-2 text-emerald-200/60 font-medium">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              <span>Management</span>
+              <span>{t("admin.manage_projects").split(' ')[0]}</span>
             </div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {menuItemDefs.map((item) => (
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     asChild
                     isActive={location === item.url || location.startsWith(item.url + "/")}
@@ -79,10 +67,10 @@ function AdminSidebar() {
                   >
                     <Link
                       href={item.url}
-                      data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                      data-testid={`link-${item.titleKey.split('.')[1]}`}
                     >
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

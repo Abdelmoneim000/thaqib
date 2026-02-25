@@ -33,6 +33,9 @@ export const projects = pgTable("projects", {
   status: text("status").notNull().default("open"),
   budget: integer("budget"),
   platformFee: integer("platform_fee").default(0),
+  analysisType: text("analysis_type"), // descriptive, diagnostic, predictive, prescriptive
+  analysisField: text("analysis_field"), // financial, marketing, sales, customer, hr, product, others
+  customAnalysisField: text("custom_analysis_field"), // when analysisField = "others"
   deadline: timestamp("deadline"),
   submittedAt: timestamp("submitted_at"),
   createdAt: timestamp("created_at").defaultNow(),

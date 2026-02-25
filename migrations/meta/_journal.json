@@ -15,6 +15,13 @@
       "when": 1771351043920,
       "tag": "0001_little_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771890227335,
+      "tag": "0002_absent_newton_destine",
+      "breakpoints": true
     }
   ]
 }

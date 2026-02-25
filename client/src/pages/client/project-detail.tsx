@@ -75,14 +75,8 @@ interface EnrichedApplication extends Application {
 
 function ApplicantCard({
   applicant,
-  onAccept,
-  onReject,
-  onChat
 }: {
   applicant: EnrichedApplication;
-  onAccept: () => void;
-  onReject: () => void;
-  onChat: () => void;
 }) {
   const skills = applicant.analystSkills ? applicant.analystSkills.split(',').map(s => s.trim()) : [];
 
@@ -104,9 +98,11 @@ function ApplicantCard({
               {applicant.status === "rejected" && (
                 <Badge className="bg-destructive/10 text-destructive border-0">Rejected</Badge>
               )}
+              {applicant.status === "pending" && (
+                <Badge className="bg-chart-4/10 text-chart-4 border-0">Pending Review</Badge>
+              )}
             </div>
             <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-              {/* Rating mock for now as it's not in schema yet */}
               <span className="flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 text-chart-4 fill-chart-4" />
                 {applicant.analystRating || "N/A"}
@@ -125,43 +121,7 @@ function ApplicantCard({
                 </Badge>
               )}
             </div>
-            <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-sm font-medium">
-                ${applicant.proposedBudget?.toLocaleString() ?? 0}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onChat}
-                  data-testid={`button-chat-${applicant.id}`}
-                >
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  Chat
-                </Button>
-                {applicant.status === "pending" && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onReject}
-                      data-testid={`button-reject-${applicant.id}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-1" />
-                      Reject
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={onAccept}
-                      data-testid={`button-accept-${applicant.id}`}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                      Accept
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Applicant selection is managed by platform administrators.</p>
           </div>
         </div>
       </CardContent>
@@ -288,13 +248,6 @@ function DatasetCard({ dataset, onDelete }: { dataset: Dataset; onDelete: (id: s
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <a href={`/api/datasets/${dataset.id}/download`} download>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download CSV
-                  </a>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => onDelete(dataset.id)}
@@ -678,10 +631,6 @@ export default function ClientProjectDetailPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <DollarSign className="h-4 w-4" />
-              <span>${project.budget?.toLocaleString()} budget</span>
-            </div>
             {project.deadline && (
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
@@ -738,9 +687,6 @@ export default function ClientProjectDetailPage() {
                   <ApplicantCard
                     key={applicant.id}
                     applicant={applicant}
-                    onAccept={() => handleAccept(applicant.id)}
-                    onReject={() => handleReject(applicant.id)}
-                    onChat={() => handleChat(applicant)}
                   />
                 ))}
               </div>

@@ -27,6 +27,8 @@ export const users = pgTable("users", {
   isPublic: boolean("is_public").default(false),
   bio: text("bio"),
   title: text("title"),
+  phone: varchar("phone"),
+  termsAccepted: boolean("terms_accepted").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

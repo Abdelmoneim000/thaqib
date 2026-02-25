@@ -31,7 +31,7 @@ export function useAuth() {
     onSuccess: (user: User) => {
       queryClient.setQueryData(["/api/auth/user"], user);
       if (!user.role || user.role === "analyst") {
-        navigate("/analyst/dashboard");
+        navigate("/analyst/browse");
       } else if (user.role === "client") {
         navigate("/client/projects");
       } else if (user.role === "admin") {
@@ -49,6 +49,8 @@ export function useAuth() {
       role: string;
       organization?: string;
       skills?: string;
+      phone?: string;
+      termsAccepted: boolean;
     }) => {
       const res = await apiRequest("POST", "/api/auth/register", data);
       return await res.json();
@@ -58,7 +60,7 @@ export function useAuth() {
       if (user.role === "client") {
         navigate("/client/projects");
       } else {
-        navigate("/analyst/dashboard");
+        navigate("/analyst/browse");
       }
     },
   });

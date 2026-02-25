@@ -4,10 +4,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Briefcase, BarChart3, Loader2 } from "lucide-react";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function RoleSelectionPage() {
   const { user, setRole, isSettingRole, isLoading } = useAuth();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (user?.role && user.role !== "") {
@@ -35,9 +37,9 @@ export default function RoleSelectionPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2" data-testid="text-welcome-title">Welcome to Thaqib</h1>
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-welcome-title">{t("role_selection.welcome")}</h1>
           <p className="text-muted-foreground" data-testid="text-role-prompt">
-            Choose how you want to use the platform
+            {t("role_selection.choose_role")}
           </p>
         </div>
 
@@ -51,17 +53,17 @@ export default function RoleSelectionPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                 <Briefcase className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle>I'm a Client</CardTitle>
+              <CardTitle>{t("role_selection.im_client")}</CardTitle>
               <CardDescription>
-                I want to post projects and hire data analysts
+                {t("role_selection.client_desc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <ul className="text-sm text-muted-foreground space-y-2 mb-4">
-                <li>Post data analysis projects</li>
-                <li>Upload datasets securely</li>
-                <li>Review analyst proposals</li>
-                <li>Receive interactive dashboards</li>
+                <li>{t("role_selection.client_feat1")}</li>
+                <li>{t("role_selection.client_feat2")}</li>
+                <li>{t("role_selection.client_feat3")}</li>
+                <li>{t("role_selection.client_feat4")}</li>
               </ul>
               <Button
                 className="w-full"
@@ -71,7 +73,7 @@ export default function RoleSelectionPage() {
                 {isSettingRole ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  "Continue as Client"
+                  t("role_selection.continue_client")
                 )}
               </Button>
             </CardContent>
@@ -86,17 +88,17 @@ export default function RoleSelectionPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-chart-2/10">
                 <BarChart3 className="h-8 w-8 text-chart-2" />
               </div>
-              <CardTitle>I'm an Analyst</CardTitle>
+              <CardTitle>{t("role_selection.im_analyst")}</CardTitle>
               <CardDescription>
-                I want to find projects and deliver insights
+                {t("role_selection.analyst_desc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <ul className="text-sm text-muted-foreground space-y-2 mb-4">
-                <li>Browse available projects</li>
-                <li>Submit proposals to clients</li>
-                <li>Build interactive dashboards</li>
-                <li>Manage your portfolio</li>
+                <li>{t("role_selection.analyst_feat1")}</li>
+                <li>{t("role_selection.analyst_feat2")}</li>
+                <li>{t("role_selection.analyst_feat3")}</li>
+                <li>{t("role_selection.analyst_feat4")}</li>
               </ul>
               <Button
                 className="w-full"
@@ -107,7 +109,7 @@ export default function RoleSelectionPage() {
                 {isSettingRole ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  "Continue as Analyst"
+                  t("role_selection.continue_analyst")
                 )}
               </Button>
             </CardContent>

@@ -158,6 +158,14 @@ export default function VisualizationBuilderPage() {
       setQueryResults(data.data);
       setHasRun(true);
 
+      // Warn if results were truncated
+      if (data.truncated) {
+        toast({
+          title: `Showing ${data.rowCount.toLocaleString()} of ${data.totalRowCount.toLocaleString()} rows`,
+          description: "Results were capped. Apply filters or GROUP BY to reduce data.",
+        });
+      }
+
       if (data.data.length > 0 && !xAxis && !yAxis) {
         const keys = Object.keys(data.data[0]);
         const numericKey = keys.find(k => typeof data.data[0][k] === "number");
@@ -177,9 +185,23 @@ export default function VisualizationBuilderPage() {
       return;
     }
 
-    const columnNames = Array.isArray(visualQuery.columns)
-      ? visualQuery.columns.map(c => typeof c === 'string' ? c : c.column)
-      : [];
+    const columnDefs = Array.isArray(visualQuery.columns) ? visualQuery.columns : [];
+    const columnNames = columnDefs.map(c => typeof c === 'string' ? c : c.column);
+
+    // Build aggregation from the column definitions that have a non-'none' aggregation
+    // The server expects { column, function } for a single aggregation target
+    let aggregation = visualQuery.aggregation;
+    if (!aggregation) {
+      const aggColumn = columnDefs.find(
+        c => typeof c !== 'string' && c.aggregation && c.aggregation !== 'none'
+      );
+      if (aggColumn && typeof aggColumn !== 'string') {
+        aggregation = {
+          column: aggColumn.column,
+          function: aggColumn.aggregation as "sum" | "avg" | "count" | "min" | "max",
+        };
+      }
+    }
 
     const query = queryMode === "visual"
       ? {
@@ -187,7 +209,7 @@ export default function VisualizationBuilderPage() {
         columns: columnNames,
         filters: visualQuery.filters,
         groupBy: visualQuery.groupBy?.[0],
-        aggregation: visualQuery.aggregation,
+        aggregation,
       }
       : { type: "sql", sql: sqlQuery };
 
@@ -220,13 +242,31 @@ export default function VisualizationBuilderPage() {
       return;
     }
 
+    // Build aggregation from column definitions (same logic as runQuery)
+    const columnDefs = Array.isArray(visualQuery.columns) ? visualQuery.columns : [];
+    const columnNames = columnDefs.map(c => typeof c === 'string' ? c : c.column);
+    let aggregation = visualQuery.aggregation;
+    if (!aggregation) {
+      const aggColumn = columnDefs.find(
+        c => typeof c !== 'string' && c.aggregation && c.aggregation !== 'none'
+      );
+      if (aggColumn && typeof aggColumn !== 'string') {
+        aggregation = {
+          column: aggColumn.column,
+          function: aggColumn.aggregation as "sum" | "avg" | "count" | "min" | "max",
+        };
+      }
+    }
+
     saveMutation.mutate({
       name: vizName,
       datasetId: visualQuery.datasetId,
       chartType: chartType,
       query: queryMode === "visual"
-        ? { type: "visual", columns: visualQuery.columns, filters: visualQuery.filters, groupBy: visualQuery.groupBy?.[0], aggregation: visualQuery.aggregation }
-        : { type: "sql", sql: sqlQuery },
+        ? { type: "visual", columns: columnNames, filters: visualQuery.filters, groupBy: visualQuery.groupBy?.[0], aggregation }
+        : queryMode === "sql"
+          ? { type: "sql", sql: sqlQuery }
+          : { type: "text", text: textContent },
       config: { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting, description: textContent },
       dashboardId: selectedDashboardId,
     });

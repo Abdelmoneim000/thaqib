@@ -30,24 +30,39 @@ import type { Project, Application } from "@shared/schema";
 import {
   Search,
   Calendar,
-  DollarSign,
   Users,
   Building2,
   Clock,
-  Filter,
-  FileSpreadsheet,
+  BarChart3,
   Loader2
 } from "lucide-react";
 
-const budgetRanges = ["Any Budget", "$0 - $2,000", "$2,000 - $4,000", "$4,000+"];
+const ANALYSIS_TYPES = [
+  { value: "all", label: "All Types" },
+  { value: "descriptive", label: "Descriptive" },
+  { value: "diagnostic", label: "Diagnostic" },
+  { value: "predictive", label: "Predictive" },
+  { value: "prescriptive", label: "Prescriptive" },
+];
+
+const ANALYSIS_FIELDS = [
+  { value: "all", label: "All Fields" },
+  { value: "financial", label: "Financial" },
+  { value: "marketing", label: "Marketing" },
+  { value: "sales", label: "Sales" },
+  { value: "customer", label: "Customer" },
+  { value: "hr", label: "Human Resources" },
+  { value: "product", label: "Product" },
+  { value: "others", label: "Others" },
+];
 
 export default function BrowseProjectsPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBudget, setSelectedBudget] = useState("Any Budget");
+  const [selectedType, setSelectedType] = useState("all");
+  const [selectedField, setSelectedField] = useState("all");
   const [applyingTo, setApplyingTo] = useState<Project | null>(null);
   const [coverLetter, setCoverLetter] = useState("");
-  const [proposedRate, setProposedRate] = useState("");
 
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects?status=open"],
@@ -58,18 +73,17 @@ export default function BrowseProjectsPage() {
   });
 
   const createApplicationMutation = useMutation({
-    mutationFn: async (data: { projectId: string; coverLetter: string; proposedBudget: number }) => {
+    mutationFn: async (data: { projectId: string; coverLetter: string }) => {
       const res = await apiRequest("POST", "/api/applications", data);
       return res.json();
     },
     onSuccess: () => {
       toast({
         title: "Application submitted",
-        description: "Good luck! The client will review your application shortly."
+        description: "Your application has been submitted. The admin will review it shortly."
       });
       setApplyingTo(null);
       setCoverLetter("");
-      setProposedRate("");
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
     },
     onError: (error: Error) => {
@@ -83,14 +97,9 @@ export default function BrowseProjectsPage() {
 
   const handleApply = () => {
     if (!applyingTo) return;
-
-    // Default to project budget if no proposed rate provided
-    const budget = proposedRate ? parseFloat(proposedRate) : (applyingTo.budget || 0);
-
     createApplicationMutation.mutate({
       projectId: applyingTo.id,
       coverLetter,
-      proposedBudget: budget,
     });
   };
 
@@ -99,18 +108,10 @@ export default function BrowseProjectsPage() {
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (project.description || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-    let matchesBudget = true;
-    const projectBudget = project.budget || 0;
+    const matchesType = selectedType === "all" || project.analysisType === selectedType;
+    const matchesField = selectedField === "all" || project.analysisField === selectedField;
 
-    if (selectedBudget === "$0 - $2,000") {
-      matchesBudget = projectBudget <= 2000;
-    } else if (selectedBudget === "$2,000 - $4,000") {
-      matchesBudget = projectBudget > 2000 && projectBudget <= 4000;
-    } else if (selectedBudget === "$4,000+") {
-      matchesBudget = projectBudget > 4000;
-    }
-
-    return matchesSearch && matchesBudget;
+    return matchesSearch && matchesType && matchesField;
   }) || [];
 
   if (isLoading) {
@@ -147,15 +148,23 @@ export default function BrowseProjectsPage() {
                 />
               </div>
               <div className="flex gap-2">
-                <Select value={selectedBudget} onValueChange={setSelectedBudget}>
-                  <SelectTrigger className="w-[160px]" data-testid="select-budget">
-                    <SelectValue placeholder="Budget" />
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger className="w-[160px]" data-testid="select-analysis-type">
+                    <SelectValue placeholder="Analysis Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {budgetRanges.map((range) => (
-                      <SelectItem key={range} value={range}>
-                        {range}
-                      </SelectItem>
+                    {ANALYSIS_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedField} onValueChange={setSelectedField}>
+                  <SelectTrigger className="w-[160px]" data-testid="select-analysis-field">
+                    <SelectValue placeholder="Analysis Field" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ANALYSIS_FIELDS.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -180,26 +189,28 @@ export default function BrowseProjectsPage() {
                     <div className="space-y-1">
                       <CardTitle className="text-lg">{project.title}</CardTitle>
                       <CardDescription className="flex items-center gap-2">
-                        {/* Client info is not joined in simple Project return. Could fetch or assume hidden */}
                         <Building2 className="h-4 w-4" />
                         Client Project
                       </CardDescription>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xl font-bold">${(project.budget || 0).toLocaleString()}</div>
-                      <div className="text-sm text-muted-foreground">Fixed Price</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {project.analysisType && (
+                        <Badge variant="secondary" className="capitalize">
+                          {project.analysisType}
+                        </Badge>
+                      )}
+                      {project.analysisField && (
+                        <Badge variant="outline" className="capitalize">
+                          {project.analysisField === "others" && project.customAnalysisField
+                            ? project.customAnalysisField
+                            : project.analysisField}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-muted-foreground">{project.description}</p>
-
-                  <div className="flex flex-wrap gap-2">
-                    {/* Generic badge until skills are added to schema */}
-                    <Badge variant="secondary">
-                      Data Analysis
-                    </Badge>
-                  </div>
 
                   <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
@@ -234,23 +245,6 @@ export default function BrowseProjectsPage() {
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="rate">Your Proposed Rate</Label>
-                              <div className="relative">
-                                <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                  id="rate"
-                                  placeholder={(project.budget || 0).toString()}
-                                  value={proposedRate}
-                                  onChange={(e) => setProposedRate(e.target.value)}
-                                  className="pl-10"
-                                  data-testid="input-proposed-rate"
-                                />
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Client's budget: ${(project.budget || 0).toLocaleString()}
-                              </p>
-                            </div>
                             <div className="space-y-2">
                               <Label htmlFor="cover">Cover Letter</Label>
                               <Textarea

@@ -275,13 +275,6 @@ export default function AnalystDatasetsPage() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                        <DropdownMenuItem asChild>
-                                                            <a href={`/api/datasets/${dataset.id}/download`} download>
-                                                                <Download className="mr-2 h-4 w-4" />
-                                                                Download CSV
-                                                            </a>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
                                                         <DropdownMenuItem
                                                             className="text-destructive focus:text-destructive"
                                                             onClick={() => setDatasetToDelete(dataset.id)}

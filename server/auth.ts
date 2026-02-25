@@ -10,6 +10,8 @@ import { eq } from "drizzle-orm";
 declare module "express-session" {
     interface SessionData {
         userId: string;
+        impersonatingFrom?: string; // original admin userId when impersonating
+        impersonatedUserRole?: string; // role of the impersonated user
     }
 }
 
@@ -46,10 +48,18 @@ export function registerAuthRoutes(app: Express) {
     // Register
     app.post("/api/auth/register", async (req: Request, res: Response) => {
         try {
-            const { email, password, firstName, lastName, role, organization, skills } = req.body;
+            const { email, password, firstName, lastName, role, organization, skills, phone, termsAccepted } = req.body;
 
             if (!email || !password || !role) {
                 return res.status(400).json({ error: "Email, password, and role are required" });
+            }
+
+            if (!firstName || !lastName) {
+                return res.status(400).json({ error: "First name and last name are required" });
+            }
+
+            if (!termsAccepted) {
+                return res.status(400).json({ error: "You must accept the terms and privacy policy" });
             }
 
             if (!["client", "analyst"].includes(role)) {
@@ -60,10 +70,18 @@ export function registerAuthRoutes(app: Express) {
                 return res.status(400).json({ error: "Password must be at least 6 characters" });
             }
 
-            // Check if email already exists
+            // Check if email/identifier already exists
             const [existing] = await db.select().from(users).where(eq(users.email, email));
             if (existing) {
                 return res.status(409).json({ error: "An account with this email already exists" });
+            }
+
+            // For clients registering with phone, also check phone uniqueness
+            if (phone) {
+                const [existingPhone] = await db.select().from(users).where(eq(users.phone, phone));
+                if (existingPhone) {
+                    return res.status(409).json({ error: "An account with this phone number already exists" });
+                }
             }
 
             const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -78,6 +96,8 @@ export function registerAuthRoutes(app: Express) {
                     role,
                     organization: organization || null,
                     skills: skills || null,
+                    phone: phone || null,
+                    termsAccepted: !!termsAccepted,
                 })
                 .returning();
 
@@ -99,17 +119,23 @@ export function registerAuthRoutes(app: Express) {
             const { email, password } = req.body;
 
             if (!email || !password) {
-                return res.status(400).json({ error: "Email and password are required" });
+                return res.status(400).json({ error: "Credentials are required" });
             }
 
-            const [user] = await db.select().from(users).where(eq(users.email, email));
+            // Try to find user by email first, then by phone
+            let [user] = await db.select().from(users).where(eq(users.email, email));
+            if (!user) {
+                // Try phone lookup (clients register with phone as identifier)
+                [user] = await db.select().from(users).where(eq(users.phone, email));
+            }
+
             if (!user || !user.password) {
-                return res.status(401).json({ error: "Invalid email or password" });
+                return res.status(401).json({ error: "Invalid credentials" });
             }
 
             const isValid = await bcrypt.compare(password, user.password);
             if (!isValid) {
-                return res.status(401).json({ error: "Invalid email or password" });
+                return res.status(401).json({ error: "Invalid credentials" });
             }
 
             // Set session
@@ -148,7 +174,11 @@ export function registerAuthRoutes(app: Express) {
             }
 
             const { password: _, ...userWithoutPassword } = user;
-            res.json(userWithoutPassword);
+            res.json({
+                ...userWithoutPassword,
+                isImpersonating: !!req.session.impersonatingFrom,
+                impersonatingFrom: req.session.impersonatingFrom || null,
+            });
         } catch (error) {
             console.error("Get user error:", error);
             res.status(500).json({ error: "Failed to get user" });
@@ -158,7 +188,7 @@ export function registerAuthRoutes(app: Express) {
     // Update profile
     app.patch("/api/auth/profile", isAuthenticated, async (req: Request, res: Response) => {
         try {
-            const { firstName, lastName, organization, skills } = req.body;
+            const { firstName, lastName, organization, skills, phone } = req.body;
 
             const [updated] = await db
                 .update(users)
@@ -167,6 +197,7 @@ export function registerAuthRoutes(app: Express) {
                     ...(lastName !== undefined && { lastName }),
                     ...(organization !== undefined && { organization }),
                     ...(skills !== undefined && { skills }),
+                    ...(phone !== undefined && { phone }),
                     updatedAt: new Date(),
                 })
                 .where(eq(users.id, req.session.userId!))
@@ -191,3 +222,74 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
     }
     next();
 };
+
+export function registerImpersonationRoutes(app: Express) {
+    // Impersonate a user (admin only)
+    app.post("/api/admin/impersonate/:userId", isAuthenticated, async (req: Request, res: Response) => {
+        try {
+            const adminId = req.session.userId!;
+            const admin = await db.select().from(users).where(eq(users.id, adminId)).then(r => r[0]);
+
+            if (!admin || admin.role !== "admin") {
+                return res.status(403).json({ error: "Only admins can impersonate users" });
+            }
+
+            const targetUserId = req.params.userId;
+            const [targetUser] = await db.select().from(users).where(eq(users.id, targetUserId));
+
+            if (!targetUser) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            if (targetUser.role === "admin") {
+                return res.status(403).json({ error: "Cannot impersonate other admins" });
+            }
+
+            // Set impersonation
+            req.session.impersonatingFrom = adminId;
+            req.session.impersonatedUserRole = targetUser.role;
+            req.session.userId = targetUserId;
+
+            const { password: _, ...userWithoutPassword } = targetUser;
+            res.json({ ...userWithoutPassword, impersonating: true, originalAdminId: adminId });
+        } catch (error) {
+            console.error("Impersonation error:", error);
+            res.status(500).json({ error: "Failed to impersonate user" });
+        }
+    });
+
+    // Stop impersonation (return to admin)
+    app.post("/api/admin/stop-impersonation", isAuthenticated, async (req: Request, res: Response) => {
+        try {
+            const originalAdminId = req.session.impersonatingFrom;
+
+            if (!originalAdminId) {
+                return res.status(400).json({ error: "Not currently impersonating" });
+            }
+
+            // Restore admin session
+            req.session.userId = originalAdminId;
+            delete req.session.impersonatingFrom;
+            delete req.session.impersonatedUserRole;
+
+            const [admin] = await db.select().from(users).where(eq(users.id, originalAdminId));
+            if (!admin) {
+                return res.status(404).json({ error: "Admin user not found" });
+            }
+
+            const { password: _, ...adminWithoutPassword } = admin;
+            res.json(adminWithoutPassword);
+        } catch (error) {
+            console.error("Stop impersonation error:", error);
+            res.status(500).json({ error: "Failed to stop impersonation" });
+        }
+    });
+
+    // Check impersonation status
+    app.get("/api/admin/impersonation-status", isAuthenticated, async (req: Request, res: Response) => {
+        res.json({
+            isImpersonating: !!req.session.impersonatingFrom,
+            originalAdminId: req.session.impersonatingFrom || null,
+        });
+    });
+}

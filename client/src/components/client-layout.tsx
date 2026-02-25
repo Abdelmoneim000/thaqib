@@ -22,38 +22,20 @@ import {
   MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 
-const menuItems = [
-  {
-    title: "My Projects",
-    url: "/client/projects",
-    icon: FolderKanban,
-  },
-  {
-    title: "Chats",
-    url: "/client/chats",
-    icon: MessageSquare,
-  },
-  {
-    title: "Datasets",
-    url: "/client/datasets",
-    icon: FileSpreadsheet,
-  },
-  {
-    title: "Settings",
-    url: "/client/settings",
-    icon: Settings,
-  },
-  {
-    title: "Find Analysts",
-    url: "/client/find-analysts",
-    icon: Users,
-  },
+const menuItemDefs = [
+  { titleKey: "nav.my_projects", url: "/client/projects", icon: FolderKanban },
+  { titleKey: "nav.chats", url: "/client/chats", icon: MessageSquare },
+  { titleKey: "nav.datasets", url: "/client/datasets", icon: FileSpreadsheet },
+  { titleKey: "nav.settings", url: "/client/settings", icon: Settings },
+  { titleKey: "nav.find_analysts", url: "/client/find-analysts", icon: Users },
 ];
 
 function ClientSidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const userName = user?.firstName || user?.email?.split("@")[0] || "User";
 
   return (
@@ -81,8 +63,8 @@ function ClientSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {menuItemDefs.map((item) => (
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     asChild
                     isActive={location === item.url}
@@ -90,7 +72,7 @@ function ClientSidebar() {
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -108,7 +90,7 @@ function ClientSidebar() {
               className="text-blue-200 hover:bg-red-500/20 hover:text-red-200"
             >
               <LogOut className="h-4 w-4" />
-              <span>Log out</span>
+              <span>{t("nav.logout")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

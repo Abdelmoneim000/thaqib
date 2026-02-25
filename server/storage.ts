@@ -57,6 +57,7 @@ export interface IStorage {
   getAllProjects(): Promise<Project[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
+  deleteProject(id: string): Promise<boolean>;
 
   getDataset(id: string): Promise<Dataset | undefined>;
   getDatasetsByProject(projectId: string): Promise<Dataset[]>;
@@ -208,6 +209,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projectsTable.id, id))
       .returning();
     return project;
+  }
+
+  async deleteProject(id: string): Promise<boolean> {
+    const result = await db.delete(projectsTable).where(eq(projectsTable.id, id)).returning();
+    return result.length > 0;
   }
 
   async getDataset(id: string): Promise<Dataset | undefined> {

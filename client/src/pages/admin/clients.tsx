@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +16,17 @@ import {
   FolderKanban,
   Database,
   MessageSquare,
-  ChevronRight
+  ChevronRight,
+  UserCog,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { User, Project, Dataset } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 interface ClientWithDetails extends User {
   projects?: Project[];
@@ -28,6 +35,24 @@ interface ClientWithDetails extends User {
 
 export default function AdminClientsPage() {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const { t } = useTranslation();
+
+  const impersonateMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("POST", `/api/admin/impersonate/${userId}`);
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries();
+      toast({ title: "Impersonating", description: `Now viewing as ${data.firstName} ${data.lastName}` });
+      navigate("/client/projects");
+    },
+    onError: () => {
+      toast({ title: "Failed", description: "Could not impersonate this user", variant: "destructive" });
+    },
+  });
 
   const { data: clients, isLoading: isLoadingClients } = useQuery<User[]>({
     queryKey: ["/api/users", "client"],
@@ -197,9 +222,52 @@ export default function AdminClientsPage() {
                   <Button
                     className="w-full"
                     data-testid="button-chat-client"
+                    onClick={async () => {
+                      if (!selectedClient) return;
+                      try {
+                        await apiRequest("POST", "/api/admin/conversations", { userId: selectedClient });
+                        navigate("/admin/chats");
+                      } catch {
+                        toast({ title: "Failed to start chat", variant: "destructive" });
+                      }
+                    }}
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Start Chat
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => selectedClient && impersonateMutation.mutate(selectedClient)}
+                    disabled={impersonateMutation.isPending}
+                    data-testid="button-impersonate-client"
+                  >
+                    {impersonateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserCog className="h-4 w-4" />
+                    )}
+                    View as Client
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full gap-2"
+                    onClick={async () => {
+                      if (!selectedClient) return;
+                      if (!confirm("Delete this account? This cannot be undone.")) return;
+                      try {
+                        await apiRequest("DELETE", `/api/admin/users/${selectedClient}`);
+                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                        setSelectedClient(null);
+                        toast({ title: "Account deleted" });
+                      } catch {
+                        toast({ title: "Failed to delete account", variant: "destructive" });
+                      }
+                    }}
+                    data-testid="button-delete-client"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Account
                   </Button>
                 </div>
               )}

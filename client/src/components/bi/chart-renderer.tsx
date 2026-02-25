@@ -51,25 +51,27 @@ function formatValue(value: number, formatting?: ChartFormatting): string {
 function formatLabel(value: string | number): string {
   if (typeof value === 'number') return value.toLocaleString();
   if (!value) return '';
+  const str = String(value);
+  // Truncate long labels for chart readability
+  if (str.length > 20) return str.slice(0, 18) + '…';
+  return str;
+}
 
-  // Simple check for ISO date string YYYY-MM-DD...
-  // Or just try parsing it.
-  const dateStr = String(value);
-
-  // Regex for ISO date start YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-    const date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
-      // Format as MMM DD, YYYY
-      return date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    }
+// Only used when the column name contains "date"
+function formatDateLabel(value: string | number): string {
+  if (typeof value === 'number') return value.toLocaleString();
+  if (!value) return '';
+  const str = String(value);
+  // Try to parse as date
+  const date = new Date(str);
+  if (!isNaN(date.getTime())) {
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   }
-
-  return dateStr;
+  return str;
 }
 
 export function ChartRenderer({
@@ -91,6 +93,10 @@ export function ChartRenderer({
   const legendPosition = formatting?.legendPosition || "bottom";
 
   const renderChart = () => {
+    // Only format as dates when the column name contains "date"
+    const xCol = (xAxis || categoryField || '').toLowerCase();
+    const labelFmt = xCol.includes('date') ? formatDateLabel : formatLabel;
+
     switch (type) {
       case "bar":
         return (
@@ -101,7 +107,7 @@ export function ChartRenderer({
                 dataKey={xAxis || categoryField}
                 className="text-xs fill-muted-foreground"
                 tick={{ fill: 'currentColor' }}
-                tickFormatter={formatLabel}
+                tickFormatter={labelFmt}
               />
               <YAxis
                 className="text-xs fill-muted-foreground"
@@ -110,7 +116,7 @@ export function ChartRenderer({
               />
               <Tooltip
                 formatter={(value: number) => formatValue(value, formatting)}
-                labelFormatter={formatLabel}
+                labelFormatter={labelFmt}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--popover))',
                   border: '1px solid hsl(var(--border))',
@@ -146,7 +152,7 @@ export function ChartRenderer({
               />
               <Tooltip
                 formatter={(value: number) => formatValue(value, formatting)}
-                labelFormatter={formatLabel}
+                labelFormatter={labelFmt}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--popover))',
                   border: '1px solid hsl(var(--border))',
@@ -184,7 +190,7 @@ export function ChartRenderer({
               />
               <Tooltip
                 formatter={(value: number) => formatValue(value, formatting)}
-                labelFormatter={formatLabel}
+                labelFormatter={labelFmt}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--popover))',
                   border: '1px solid hsl(var(--border))',
@@ -250,37 +256,53 @@ export function ChartRenderer({
           </div>
         );
 
-      case "table":
+      case "table": {
         if (!data.length) return <div className="text-muted-foreground p-4">No data</div>;
         const columns = Object.keys(data[0]);
+        const PAGE_SIZE = 100;
+        const totalPages = Math.ceil(data.length / PAGE_SIZE);
+        // Use a simple approach: slice data based on a page index stored in a data attribute
+        // Since this is a pure render function, we'll show first page and let parent handle pagination
+        // For now, just slice to PAGE_SIZE and show count
+        const displayData = data.slice(0, PAGE_SIZE);
         return (
-          <div className="overflow-auto max-h-[400px]">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted">
-                <tr>
-                  {columns.map((col) => (
-                    <th key={col} className="text-left p-2 font-medium border-b">
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((row, i) => (
-                  <tr key={i} className="border-b hover:bg-muted/50">
+          <div>
+            {data.length > PAGE_SIZE && (
+              <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground border-b bg-muted/30">
+                <span>Showing 1–{Math.min(PAGE_SIZE, data.length)} of {data.length.toLocaleString()} rows</span>
+              </div>
+            )}
+            <div className="overflow-auto max-h-[400px]">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-muted">
+                  <tr>
                     {columns.map((col) => (
-                      <td key={col} className="p-2">
-                        {typeof row[col] === "number"
-                          ? formatValue(row[col] as number, formatting)
-                          : formatLabel(String(row[col]))}
-                      </td>
+                      <th key={col} className="text-left p-2 font-medium border-b">
+                        {col}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {displayData.map((row, i) => (
+                    <tr key={i} className="border-b hover:bg-muted/50">
+                      {columns.map((col) => (
+                        <td key={col} className="p-2">
+                          {typeof row[col] === "number"
+                            ? formatValue(row[col] as number, formatting)
+                            : col.toLowerCase().includes('date')
+                              ? formatDateLabel(String(row[col]))
+                              : formatLabel(String(row[col]))}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         );
+      }
 
       case "text":
         // Prefer explicit textContent prop, then check data

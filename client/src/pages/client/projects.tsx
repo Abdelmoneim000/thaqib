@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -14,6 +14,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,11 +28,12 @@ import {
   Plus,
   FolderKanban,
   Calendar,
-  DollarSign,
   Users,
   MoreVertical,
   FileSpreadsheet,
-  Loader2
+  Loader2,
+  Upload,
+  BarChart3,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,7 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import type { Project } from "@shared/schema";
+import type { Project, Dataset } from "@shared/schema";
 
 type ProjectStatus = "draft" | "open" | "in_progress" | "completed" | "cancelled";
 
@@ -43,6 +51,23 @@ interface UIProject extends Project {
   applicants?: number;
   datasets?: number;
 }
+
+const ANALYSIS_TYPES = [
+  { value: "descriptive", label: "Descriptive Analysis" },
+  { value: "diagnostic", label: "Diagnostic Analysis" },
+  { value: "predictive", label: "Predictive Analysis" },
+  { value: "prescriptive", label: "Prescriptive Analysis" },
+];
+
+const ANALYSIS_FIELDS = [
+  { value: "financial", label: "Financial" },
+  { value: "marketing", label: "Marketing" },
+  { value: "sales", label: "Sales" },
+  { value: "customer", label: "Customer" },
+  { value: "hr", label: "Human Resources" },
+  { value: "product", label: "Product" },
+  { value: "others", label: "Others" },
+];
 
 function getStatusBadge(status: string) {
   const variants: Record<string, { label: string; className: string }> = {
@@ -61,58 +86,104 @@ function CreateProjectDialog() {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [budget, setBudget] = useState("");
+  const [analysisType, setAnalysisType] = useState("");
+  const [analysisField, setAnalysisField] = useState("");
+  const [customAnalysisField, setCustomAnalysisField] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [datasetMode, setDatasetMode] = useState<"none" | "upload" | "existing">("none");
+  const [selectedDatasetId, setSelectedDatasetId] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch existing datasets for selection
+  const { data: existingDatasets } = useQuery<Dataset[]>({
+    queryKey: ["/api/datasets"],
+    enabled: open,
+  });
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest("POST", "/api/projects", data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: async (project) => {
+      // Handle dataset attachment after project creation
+      if (datasetMode === "upload" && fileInputRef.current?.files?.[0]) {
+        const formData = new FormData();
+        formData.append("file", fileInputRef.current.files[0]);
+        formData.append("projectId", project.id);
+        try {
+          await fetch("/api/datasets", { method: "POST", body: formData });
+        } catch {
+          toast({ title: "Dataset upload failed", description: "Project created but dataset could not be uploaded.", variant: "destructive" });
+        }
+      } else if (datasetMode === "existing" && selectedDatasetId) {
+        try {
+          await apiRequest("PATCH", `/api/datasets/${selectedDatasetId}`, { projectId: project.id });
+        } catch {
+          toast({ title: "Dataset link failed", description: "Project created but dataset could not be linked.", variant: "destructive" });
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/datasets"] });
       toast({ title: "Project created", description: "Your project has been posted successfully." });
       setOpen(false);
-      // Reset form
-      setTitle("");
-      setDescription("");
-      setBudget("");
-      setDeadline("");
+      resetForm();
     },
     onError: () => {
       toast({ title: "Failed to create project", variant: "destructive" });
     }
   });
 
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setAnalysisType("");
+    setAnalysisField("");
+    setCustomAnalysisField("");
+    setDeadline("");
+    setDatasetMode("none");
+    setSelectedDatasetId("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!title.trim()) {
+      toast({ title: "Title required", variant: "destructive" });
+      return;
+    }
+
     createProjectMutation.mutate({
       title,
       description,
-      budget: parseInt(budget) || 0,
+      analysisType: analysisType || null,
+      analysisField: analysisField === "others" ? "others" : (analysisField || null),
+      customAnalysisField: analysisField === "others" ? customAnalysisField : null,
       deadline: deadline ? new Date(deadline).toISOString() : null,
       status: "open"
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         <Button className="gap-2" data-testid="button-create-project">
           <Plus className="h-4 w-4" />
           New Project
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
           <DialogDescription>
-            Post a new data analysis project for analysts to apply.
+            Define your data analysis project. Analysts will be able to apply.
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4 mt-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="title">Project Title</Label>
+            <Label htmlFor="title">Project Name <span className="text-red-500">*</span></Label>
             <Input
               id="title"
               value={title}
@@ -122,43 +193,133 @@ function CreateProjectDialog() {
               data-testid="input-project-title"
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Analysis Type</Label>
+              <Select value={analysisType} onValueChange={setAnalysisType}>
+                <SelectTrigger data-testid="select-analysis-type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ANALYSIS_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Analysis Field</Label>
+              <Select value={analysisField} onValueChange={setAnalysisField}>
+                <SelectTrigger data-testid="select-analysis-field">
+                  <SelectValue placeholder="Select field" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ANALYSIS_FIELDS.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {analysisField === "others" && (
+            <div className="space-y-2">
+              <Label htmlFor="custom-field">Custom Analysis Field</Label>
+              <Input
+                id="custom-field"
+                value={customAnalysisField}
+                onChange={(e) => setCustomAnalysisField(e.target.value)}
+                placeholder="Specify your analysis field"
+                data-testid="input-custom-field"
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what you need analyzed and the expected deliverables..."
+              placeholder="Describe what you need analyzed and expected deliverables..."
               className="min-h-[100px]"
-              required
               data-testid="input-project-description"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="budget">Budget ($)</Label>
-              <Input
-                id="budget"
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                type="number"
-                placeholder="2500"
-                required
-                data-testid="input-project-budget"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="deadline">Deadline</Label>
-              <Input
-                id="deadline"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                type="date"
-                required
-                data-testid="input-project-deadline"
-              />
-            </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="deadline">Deadline</Label>
+            <Input
+              id="deadline"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              type="date"
+              data-testid="input-project-deadline"
+            />
           </div>
+
+          {/* Dataset Attachment */}
+          <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+            <Label className="font-medium">Dataset Attachment</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant={datasetMode === "none" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDatasetMode("none")}
+                className="text-xs"
+              >
+                None
+              </Button>
+              <Button
+                type="button"
+                variant={datasetMode === "upload" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDatasetMode("upload")}
+                className="text-xs gap-1"
+              >
+                <Upload className="h-3 w-3" />
+                Upload
+              </Button>
+              <Button
+                type="button"
+                variant={datasetMode === "existing" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDatasetMode("existing")}
+                className="text-xs gap-1"
+              >
+                <FileSpreadsheet className="h-3 w-3" />
+                Existing
+              </Button>
+            </div>
+
+            {datasetMode === "upload" && (
+              <div className="space-y-2">
+                <Input
+                  type="file"
+                  accept=".csv"
+                  ref={fileInputRef}
+                  data-testid="input-dataset-file"
+                />
+                <p className="text-xs text-muted-foreground">Supported formats: .csv (Max 50MB)</p>
+              </div>
+            )}
+
+            {datasetMode === "existing" && (
+              <Select value={selectedDatasetId} onValueChange={setSelectedDatasetId}>
+                <SelectTrigger data-testid="select-existing-dataset">
+                  <SelectValue placeholder="Choose a dataset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {existingDatasets?.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
@@ -207,7 +368,6 @@ function ProjectCard({ project }: { project: UIProject }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-
                 <DropdownMenuItem data-testid={`menu-view-${project.id}`}>
                   View Details
                 </DropdownMenuItem>
@@ -223,10 +383,12 @@ function ProjectCard({ project }: { project: UIProject }) {
         </CardHeader>
         <CardContent className="pt-0 mt-auto">
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-            <div className="flex items-center gap-1.5">
-              <DollarSign className="h-4 w-4" />
-              <span>${project.budget?.toLocaleString() ?? 0}</span>
-            </div>
+            {project.analysisType && (
+              <div className="flex items-center gap-1.5">
+                <BarChart3 className="h-4 w-4" />
+                <span className="capitalize">{project.analysisType}</span>
+              </div>
+            )}
             {project.deadline && (
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
@@ -299,7 +461,6 @@ export default function ClientProjectsPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {projects.map((project) => (
-              console.log(project),
               <ProjectCard key={project.id} project={project} />
             ))}
           </div>

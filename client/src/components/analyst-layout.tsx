@@ -26,58 +26,24 @@ import {
   UserCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 
 function AnalystSidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const userName = user?.firstName || user?.email?.split("@")[0] || "Analyst";
 
   const menuItems = [
-    {
-      title: "Dashboard",
-      url: "/analyst/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      title: "Browse Projects",
-      url: "/analyst/browse",
-      icon: Search,
-    },
-    {
-      title: "My Applications",
-      url: "/analyst/applications",
-      icon: FileText,
-    },
-    {
-      title: "Active Projects",
-      url: "/analyst/projects",
-      icon: FolderKanban,
-    },
-    {
-      title: "Chats",
-      url: "/analyst/chats",
-      icon: MessageSquare,
-    },
-    {
-      title: "Datasets",
-      url: "/analyst/datasets",
-      icon: FileText,
-    },
-    {
-      title: "BI Studio",
-      url: "/analyst/dashboards",
-      icon: PieChart,
-    },
-    {
-      title: "My Profile",
-      url: user ? `/analyst/public/${user.id}` : "#",
-      icon: UserCircle,
-    },
-    {
-      title: "Settings",
-      url: "/analyst/settings",
-      icon: Settings,
-    },
+    { title: t("nav.dashboard"), url: "/analyst/dashboard", icon: LayoutDashboard },
+    { title: t("nav.browse"), url: "/analyst/browse", icon: Search },
+    { title: t("nav.applications"), url: "/analyst/applications", icon: FileText },
+    { title: t("nav.active_projects"), url: "/analyst/projects", icon: FolderKanban },
+    { title: t("nav.chats"), url: "/analyst/chats", icon: MessageSquare },
+    { title: t("nav.datasets"), url: "/analyst/datasets", icon: FileText },
+    { title: t("nav.bi_studio"), url: "/analyst/dashboards", icon: PieChart },
+    { title: t("nav.my_profile"), url: user ? `/analyst/public/${user.id}` : "#", icon: UserCircle },
+    { title: t("nav.settings"), url: "/analyst/settings", icon: Settings },
   ];
 
   return (

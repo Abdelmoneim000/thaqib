@@ -30,10 +30,14 @@ import AdminDashboardPage from "@/pages/admin/dashboard";
 import AdminClientsPage from "@/pages/admin/clients";
 import AdminAnalystsPage from "@/pages/admin/analysts";
 import AdminChatsPage from "@/pages/admin/chats";
+import AdminProjectsPage from "@/pages/admin/projects";
 import ClientDatasetsPage from "@/pages/client/datasets";
 import ClientSettingsPage from "@/pages/client/settings";
 import DashboardViewPage from "@/pages/analyst/dashboard-view";
 import PublicProfilePage from "@/pages/public-profile";
+import TermsPage from "@/pages/terms";
+import { SupportChatWidget } from "@/components/chat/support-chat";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 
 function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -54,9 +58,10 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
     return <Redirect to="/role-selection" />;
   }
 
-  // Admin can access all routes
-  if (allowedRoles && !allowedRoles.includes(user.role) && user.role !== "admin") {
-    return <Redirect to={user.role === "client" ? "/client/projects" : "/analyst/dashboard"} />;
+  // Allow access if: admin, role matches, or currently impersonating
+  const isImpersonating = (user as any)?.isImpersonating;
+  if (allowedRoles && !allowedRoles.includes(user.role) && user.role !== "admin" && !isImpersonating) {
+    return <Redirect to={user.role === "client" ? "/client/projects" : "/analyst/browse"} />;
   }
 
   return <Component />;
@@ -68,6 +73,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/role-selection" component={RoleSelectionPage} />
+      <Route path="/terms" component={TermsPage} />
       <Route path="/shared/:token" component={SharedDashboardPage} />
       <Route path="/client/projects">
         <ProtectedRoute component={ClientProjectsPage} allowedRoles={["client"]} />
@@ -129,6 +135,9 @@ function Router() {
       <Route path="/admin/chats">
         <ProtectedRoute component={AdminChatsPage} allowedRoles={["admin"]} />
       </Route>
+      <Route path="/admin/projects">
+        <ProtectedRoute component={AdminProjectsPage} allowedRoles={["admin"]} />
+      </Route>
       <Route path="/client/datasets">
         <ProtectedRoute component={ClientDatasetsPage} allowedRoles={["client"]} />
       </Route>
@@ -151,7 +160,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <ImpersonationBanner />
         <Router />
+        <SupportChatWidget />
       </TooltipProvider>
     </QueryClientProvider>
   );

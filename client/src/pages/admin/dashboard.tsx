@@ -4,10 +4,10 @@ import AdminLayout from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  FolderKanban, 
-  CheckCircle2, 
-  DollarSign, 
+import {
+  FolderKanban,
+  CheckCircle2,
+  DollarSign,
   Users,
   UserCheck,
   Briefcase,
@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   BarChart3
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface AdminStats {
   projectsToday: number;
@@ -29,19 +30,20 @@ export default function AdminDashboardPage() {
   const { data: stats, isLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
   });
+  const { t } = useTranslation();
 
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Platform overview and statistics</p>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">{t("admin.dashboard")}</h1>
+          <p className="text-muted-foreground">{t("admin.manage_projects_desc")}</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card data-testid="card-projects-today">
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Projects Today</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("admin.projects_today")}</CardTitle>
               <FolderKanban className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -58,7 +60,7 @@ export default function AdminDashboardPage() {
 
           <Card data-testid="card-projects-submitted">
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Projects Submitted</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("admin.projects_submitted")}</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -75,7 +77,7 @@ export default function AdminDashboardPage() {
 
           <Card data-testid="card-total-revenue">
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Platform Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("admin.total_revenue")}</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -92,7 +94,7 @@ export default function AdminDashboardPage() {
 
           <Card data-testid="card-total-users">
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("admin.total_users")}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -109,7 +111,7 @@ export default function AdminDashboardPage() {
 
           <Card data-testid="card-total-clients">
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Clients</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("admin.total_clients")}</CardTitle>
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -126,7 +128,7 @@ export default function AdminDashboardPage() {
 
           <Card data-testid="card-total-analysts">
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Analysts</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("admin.total_analysts")}</CardTitle>
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>

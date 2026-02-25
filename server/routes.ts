@@ -6,7 +6,7 @@ import { parseCSV, inferColumnTypes } from "./csv-parser";
 import { nanoid } from "nanoid";
 import alasql from "alasql";
 import type { DatasetColumn } from "@shared/schema";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
+import { setupAuth, registerAuthRoutes, registerImpersonationRoutes, isAuthenticated } from "./auth";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -17,6 +17,7 @@ export async function registerRoutes(
 
   setupAuth(app);
   registerAuthRoutes(app);
+  registerImpersonationRoutes(app);
 
   // Helper function to get authenticated user ID
   const getUserId = (req: Request): string | null => {
@@ -562,6 +563,9 @@ export async function registerRoutes(
   });
 
   // Query execution endpoint
+  const MAX_CHART_ROWS = 8;
+  const MAX_SQL_ROWS = 500;
+
   app.post("/api/query", async (req: Request, res: Response) => {
     try {
       const { datasetId, query } = req.body;
@@ -573,20 +577,60 @@ export async function registerRoutes(
       let result = [...dataset.data];
 
       if (query.type === "visual") {
+        // Separate filters into WHERE (pre-aggregation) and HAVING (post-aggregation)
+        // When there's a GROUP BY + aggregation, filters on the aggregation column
+        // should apply AFTER aggregation (like SQL HAVING), not before (WHERE)
+        let whereFilters: typeof query.filters = [];
+        let havingFilters: typeof query.filters = [];
+
         if (query.filters && query.filters.length > 0) {
-          for (const filter of query.filters) {
-            result = result.filter((row: Record<string, unknown>) => {
-              const value = row[filter.column];
-              const filterValue = filter.value;
-              switch (filter.operator) {
-                case "equals": return String(value) === filterValue;
-                case "contains": return String(value).includes(filterValue);
-                case "greater_than": return Number(value) > Number(filterValue);
-                case "less_than": return Number(value) < Number(filterValue);
-                default: return true;
+          if (query.groupBy && query.aggregation) {
+            for (const filter of query.filters) {
+              if (filter.column === query.aggregation.column) {
+                havingFilters.push(filter);
+              } else {
+                whereFilters.push(filter);
               }
-            });
+            }
+          } else {
+            whereFilters = query.filters;
           }
+        }
+
+        // Helper to apply a filter to a value
+        const applyFilter = (value: unknown, filter: { operator: string; value: string }) => {
+          const filterValue = filter.value;
+          switch (filter.operator) {
+            case "=":
+            case "equals":
+              return String(value) === filterValue;
+            case "!=":
+            case "not_equals":
+              return String(value) !== filterValue;
+            case ">":
+            case "greater_than":
+              return Number(value) > Number(filterValue);
+            case "<":
+            case "less_than":
+              return Number(value) < Number(filterValue);
+            case ">=":
+            case "greater_or_equal":
+              return Number(value) >= Number(filterValue);
+            case "<=":
+            case "less_or_equal":
+              return Number(value) <= Number(filterValue);
+            case "contains":
+              return String(value).toLowerCase().includes(String(filterValue).toLowerCase());
+            default:
+              return true;
+          }
+        };
+
+        // Apply WHERE filters (pre-aggregation)
+        for (const filter of whereFilters) {
+          result = result.filter((row: Record<string, unknown>) => {
+            return applyFilter(row[filter.column], filter);
+          });
         }
 
         if (query.groupBy && query.aggregation) {
@@ -619,6 +663,40 @@ export async function registerRoutes(
               [query.aggregation.column]: finalValue,
             };
           });
+
+          // Apply HAVING filters (post-aggregation)
+          for (const filter of havingFilters) {
+            result = result.filter((row: Record<string, unknown>) => {
+              return applyFilter(row[filter.column], filter);
+            });
+          }
+
+          // Top N + Others: if more than MAX_CHART_ROWS, keep top 8, merge rest into "Other"
+          const totalGroupedRows = result.length;
+          if (totalGroupedRows > MAX_CHART_ROWS) {
+            const aggCol = query.aggregation.column;
+            // Sort descending by aggregated value
+            result.sort((a, b) => (Number(b[aggCol]) || 0) - (Number(a[aggCol]) || 0));
+            const topRows = result.slice(0, MAX_CHART_ROWS);
+            const otherRows = result.slice(MAX_CHART_ROWS);
+
+            // Merge "Other" rows
+            let otherValue = 0;
+            if (query.aggregation.function === "count" || query.aggregation.function === "sum") {
+              otherValue = otherRows.reduce((sum, r) => sum + (Number(r[aggCol]) || 0), 0);
+            } else if (query.aggregation.function === "avg") {
+              otherValue = otherRows.reduce((sum, r) => sum + (Number(r[aggCol]) || 0), 0) / otherRows.length;
+            } else if (query.aggregation.function === "max") {
+              otherValue = Math.max(...otherRows.map(r => Number(r[aggCol]) || 0));
+            } else if (query.aggregation.function === "min") {
+              otherValue = Math.min(...otherRows.map(r => Number(r[aggCol]) || 0));
+            }
+
+            result = [
+              ...topRows,
+              { [query.groupBy]: "Other", [aggCol]: otherValue },
+            ];
+          }
         }
 
         if (query.columns && query.columns.length > 0 && !query.groupBy) {
@@ -630,58 +708,67 @@ export async function registerRoutes(
             return filtered;
           });
         }
+
+        // Cap non-aggregated results too
+        const totalRowCount = result.length;
+        const truncated = totalRowCount > MAX_SQL_ROWS;
+        if (truncated) {
+          result = result.slice(0, MAX_SQL_ROWS);
+        }
+
+        res.json({ data: result, rowCount: result.length, totalRowCount, truncated });
+        return;
+
       } else if (query.type === "sql") {
         try {
-          // Use alasql to execute the query against the dataset
-          // We provide the data as a table named 'data' or simply as the source
-          // Alasql supports querying arrays.
-          // Note: query.sql should be something like "SELECT * FROM ?"
-          // We might need to sanitize or prepare the query.
-          // Since the user writes "SELECT * FROM dataset", we need to replace 'dataset' or handle it.
-
-          // Simple approach: Normalize the query to always select from the ? placeholder
-          // But users might write "SELECT * FROM my_table".
-          // We'll try to just pass the data as a source.
-
-          // Let's assume the user knows to use '?' or we replace 'dataset' with '?'
-          // Or commonly: alasql('SELECT * FROM ?', [data])
-
-          // However, standard SQL editors usually have a table name.
-          // If we want to support generic SQL, we can register the data as a table.
-
-          const tableName = `dataset_${datasetId.replace(/-/g, '_')}`;
-
-          // Create a temporary database/table context is tricky in stateless req, 
-          // but alasql can operate on in-memory objects directly.
-
-          // We will attempt to run the SQL. 
-          // If the user wrote "SELECT ... FROM dataset ...", we replace 'dataset' with '?'
-          // and run alasql with the data array.
-
           let sql = query.sql;
-          // Simple heuristic: If it doesn't contain FROM ?, try to replace a likely table name
-          // or just assume standard SQL syntax.
-
-          // Better approach:
-          // alasql("SELECT * FROM ?", [data])
-          // If the user's SQL is "SELECT colA, colB FROM source WHERE ...", we need to map "source" to the data.
-
-          // Let's rely on a convention: The table is always called 'dataset' or '?'
-          // We'll replace 'dataset' (case insensitive) with '?'
-          // Replace 'dataset' keyword (case insensitive) with '?'
           let executableSql = sql.replace(/\bdataset\b/gi, '?');
 
-          // Also replace the specific dataset ID (quoted or unquoted) with '?'
           const escapedId = datasetId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
           const idRegex = new RegExp(`['"]?${escapedId}['"]?`, 'gi');
           executableSql = executableSql.replace(idRegex, '?');
 
-          // Count how many '?' placeholders we have to provide data for each
-          // This allows queries like "SELECT * FROM ? AS a JOIN ? AS b ON ..."
           const placeholderCount = (executableSql.match(/\?/g) || []).length;
           const params = new Array(placeholderCount).fill(dataset.data);
 
           result = alasql(executableSql, params);
+
+          // Cap SQL results — apply Top N + Others for chart-sized results
+          const totalRowCount = result.length;
+          let truncated = false;
+
+          if (totalRowCount > MAX_CHART_ROWS) {
+            // Try to detect the numeric value column for sorting
+            const firstRow = result[0];
+            if (firstRow) {
+              const numericCols = Object.keys(firstRow).filter(k => typeof firstRow[k] === 'number');
+              const stringCols = Object.keys(firstRow).filter(k => typeof firstRow[k] === 'string');
+
+              if (numericCols.length > 0 && stringCols.length > 0) {
+                const valueCol = numericCols[0];
+                const labelCol = stringCols[0];
+
+                // Sort descending by value
+                result.sort((a: any, b: any) => (Number(b[valueCol]) || 0) - (Number(a[valueCol]) || 0));
+                const topRows = result.slice(0, MAX_CHART_ROWS);
+                const otherRows = result.slice(MAX_CHART_ROWS);
+
+                const otherValue = otherRows.reduce((sum: number, r: any) => sum + (Number(r[valueCol]) || 0), 0);
+                result = [
+                  ...topRows,
+                  { [labelCol]: "Other", [valueCol]: otherValue },
+                ];
+                truncated = true;
+              } else if (totalRowCount > MAX_SQL_ROWS) {
+                // No clear grouping — just truncate
+                result = result.slice(0, MAX_SQL_ROWS);
+                truncated = true;
+              }
+            }
+          }
+
+          res.json({ data: result, rowCount: result.length, totalRowCount, truncated });
+          return;
 
         } catch (err: any) {
           console.error("SQL Execution Error:", err);
@@ -689,7 +776,7 @@ export async function registerRoutes(
         }
       }
 
-      res.json({ data: result, rowCount: result.length });
+      res.json({ data: result, rowCount: result.length, totalRowCount: result.length, truncated: false });
     } catch (error) {
       console.error("Query error:", error);
       res.status(500).json({ error: "Query execution failed" });
@@ -830,7 +917,7 @@ export async function registerRoutes(
   app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
-      const { title, description, budget, deadline } = req.body;
+      const { title, description, budget, deadline, analysisType, analysisField, customAnalysisField } = req.body;
 
       if (!title) {
         return res.status(400).json({ error: "Title is required" });
@@ -839,10 +926,13 @@ export async function registerRoutes(
       const project = await storage.createProject({
         title,
         description,
-        budget,
+        budget: budget || null,
         deadline: deadline ? new Date(deadline) : null,
         clientId: userId!,
         status: "open",
+        analysisType: analysisType || null,
+        analysisField: analysisField || null,
+        customAnalysisField: customAnalysisField || null,
       });
 
       res.json(project);
@@ -898,13 +988,21 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Unauthorized" });
       }
 
+      // Lock editing once an analyst is assigned (except status changes by admin)
+      if (project.analystId && user?.role !== "admin") {
+        return res.status(403).json({ error: "Project cannot be edited after an analyst has been assigned" });
+      }
+
       // Only allow specific updates
       const allowedUpdates: Partial<typeof project> = {};
       if (updates.title) allowedUpdates.title = updates.title;
-      if (updates.description) allowedUpdates.description = updates.description;
+      if (updates.description !== undefined) allowedUpdates.description = updates.description;
       if (updates.status) allowedUpdates.status = updates.status;
-      if (updates.budget) allowedUpdates.budget = updates.budget;
+      if (updates.budget !== undefined) allowedUpdates.budget = updates.budget;
       if (updates.deadline) allowedUpdates.deadline = new Date(updates.deadline);
+      if (updates.analysisType !== undefined) allowedUpdates.analysisType = updates.analysisType;
+      if (updates.analysisField !== undefined) allowedUpdates.analysisField = updates.analysisField;
+      if (updates.customAnalysisField !== undefined) allowedUpdates.customAnalysisField = updates.customAnalysisField;
 
       const updatedProject = await storage.updateProject(projectId, allowedUpdates);
       res.json(updatedProject);
@@ -972,8 +1070,6 @@ export async function registerRoutes(
         );
         return res.json(enriched);
       }
-
-      res.json([]);
 
       res.json([]);
     } catch (error) {
@@ -1076,10 +1172,16 @@ export async function registerRoutes(
     try {
       const userId = getUserId(req);
       const user = await storage.getUser(userId!);
-      const { otherUserId, analystName, projectId } = req.body;
+      const { otherUserId, analystName, projectId, isAdminChat } = req.body;
 
       if (!otherUserId) {
         return res.status(400).json({ error: "otherUserId is required" });
+      }
+
+      // Support chat → route to admin conversation storage
+      if (isAdminChat) {
+        const conversation = await storage.createAdminConversation("admin", userId!);
+        return res.json(conversation);
       }
 
       const clientId = user?.role === "client" ? userId : otherUserId;
@@ -1099,6 +1201,26 @@ export async function registerRoutes(
       res.json(conversation);
     } catch (error) {
       res.status(500).json({ error: "Failed to create conversation" });
+    }
+  });
+
+  // Support chat: find the user's admin conversation
+  app.get("/api/conversations/support", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      // Look for an admin chat where this user is the client
+      const conversations = await storage.getAdminConversations();
+      const userConv = conversations.find(c => c.clientId === userId);
+
+      if (!userConv) {
+        return res.status(404).json({ error: "No support conversation found" });
+      }
+
+      res.json(userConv);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch support conversation" });
     }
   });
 
@@ -1397,6 +1519,83 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Delete user
+  app.delete("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.deleteUser(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "User not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  // Admin: List all projects with details
+  app.get("/api/admin/projects", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const projects = await storage.getAllProjects();
+      const enriched = await Promise.all(
+        projects.map(async (p) => {
+          const client = await storage.getUser(p.clientId);
+          const analyst = p.analystId ? await storage.getUser(p.analystId) : null;
+          const applications = await storage.getApplicationsByProject(p.id);
+          return {
+            ...p,
+            clientName: client ? `${client.firstName} ${client.lastName}` : "Unknown",
+            analystName: analyst ? `${analyst.firstName} ${analyst.lastName}` : null,
+            applicantCount: applications.length,
+            pendingApplicants: applications.filter(a => a.status === "pending").length,
+          };
+        })
+      );
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  // Admin: Get project applications with analyst details
+  app.get("/api/admin/projects/:id/applications", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const applications = await storage.getApplicationsByProject(req.params.id);
+      const enriched = await Promise.all(
+        applications.map(async (app) => {
+          const analyst = await storage.getUser(app.analystId);
+          return {
+            ...app,
+            analystName: analyst ? `${analyst.firstName} ${analyst.lastName}` : "Unknown",
+            analystEmail: analyst?.email || "",
+            analystSkills: analyst?.skills || "",
+          };
+        })
+      );
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch applications" });
+    }
+  });
+
+  // Admin: Update project (status, assignment, etc.)
+  app.patch("/api/admin/projects/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const project = await storage.updateProject(req.params.id, req.body);
+      if (!project) return res.status(404).json({ error: "Project not found" });
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update project" });
+    }
+  });
+
+  // Admin: Delete project
+  app.delete("/api/admin/projects/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.deleteProject(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Project not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
 
 
   // Ratings API

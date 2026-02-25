@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ClientSettingsPage() {
     const { user } = useAuth();
     const { toast } = useToast();
+    const { t } = useTranslation();
 
     const [firstName, setFirstName] = useState(user?.firstName || "");
     const [lastName, setLastName] = useState(user?.lastName || "");
@@ -25,7 +27,7 @@ export default function ClientSettingsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-            toast({ title: "Profile updated", description: "Your profile has been updated successfully." });
+            toast({ title: t("settings.saved") });
         },
         onError: (error: Error) => {
             toast({ title: "Update failed", description: error.message, variant: "destructive" });
@@ -45,7 +47,7 @@ export default function ClientSettingsPage() {
         <ClientLayout>
             <div className="p-6 space-y-6">
                 <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+                    <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
                     <p className="text-muted-foreground">
                         Manage your account settings and profile
                     </p>
@@ -53,7 +55,7 @@ export default function ClientSettingsPage() {
 
                 <Card className="max-w-2xl">
                     <CardHeader>
-                        <CardTitle>Profile Information</CardTitle>
+                        <CardTitle>{t("settings.profile")}</CardTitle>
                         <CardDescription>
                             Update your personal details and organization information.
                         </CardDescription>
@@ -62,7 +64,7 @@ export default function ClientSettingsPage() {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="firstName">First Name</Label>
+                                    <Label htmlFor="firstName">{t("settings.first_name")}</Label>
                                     <Input
                                         id="firstName"
                                         value={firstName}
@@ -71,7 +73,7 @@ export default function ClientSettingsPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="lastName">Last Name</Label>
+                                    <Label htmlFor="lastName">{t("settings.last_name")}</Label>
                                     <Input
                                         id="lastName"
                                         value={lastName}
@@ -82,7 +84,7 @@ export default function ClientSettingsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="organization">Organization</Label>
+                                <Label htmlFor="organization">{t("settings.organization")}</Label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input
