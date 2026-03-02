@@ -12,9 +12,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  Plus, 
-  Trash2, 
+import {
+  Plus,
+  Trash2,
   Save,
   Move,
   Maximize2,
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { ChartRenderer } from "./chart-renderer";
 import type { Dashboard, DashboardItem, Visualization } from "@/lib/bi-types";
+import { useTranslation } from "react-i18next";
 
 interface DashboardBuilderProps {
   dashboard: Dashboard;
@@ -45,13 +46,14 @@ export function DashboardBuilder({
 }: DashboardBuilderProps) {
   const [dashboardName, setDashboardName] = useState(dashboard.name);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleSave = () => {
     onSave({ ...dashboard, name: dashboardName });
   };
 
   const resizeItem = (itemId: string, newWidth: number, newHeight: number) => {
-    const updatedItems = dashboard.items.map(item => 
+    const updatedItems = dashboard.items.map(item =>
       item.id === itemId ? { ...item, width: newWidth, height: newHeight } : item
     );
     onUpdateLayout(updatedItems);
@@ -94,9 +96,9 @@ export function DashboardBuilder({
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <LayoutGrid className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Empty Dashboard</h3>
+            <h3 className="text-lg font-medium mb-2">{t("bi.empty_dashboard")}</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Add visualizations to build your dashboard
+              {t("bi.add_visuals")}
             </p>
             <Button onClick={onAddVisualization} data-testid="button-add-first-viz">
               <Plus className="h-4 w-4 mr-2" />
@@ -109,7 +111,7 @@ export function DashboardBuilder({
           {dashboard.items.map((item) => {
             const viz = getVisualization(item.visualizationId);
             const data = getData(item.visualizationId);
-            
+
             if (!viz) return null;
 
             const colSpan = Math.min(item.width, 12);
@@ -119,7 +121,7 @@ export function DashboardBuilder({
               <div
                 key={item.id}
                 className={`relative group`}
-                style={{ 
+                style={{
                   gridColumn: `span ${colSpan}`,
                   minHeight: isSmall ? "200px" : "350px"
                 }}

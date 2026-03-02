@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { ChartType, ChartColors, ChartFormatting, DataColumn } from "@/lib/bi-types";
 import { colorPalettes } from "@/lib/bi-types";
+import { useTranslation } from "react-i18next";
 
 interface VisualizationConfigProps {
   chartType: ChartType;
@@ -67,6 +68,8 @@ export function VisualizationConfig({
       palette,
     });
   };
+
+  const { t } = useTranslation();
 
   const numericColumns = columns.filter(c => c.type === "number");
   // Allow numbers to be used as categories (e.g. Years, IDs, Ratings)
@@ -152,7 +155,7 @@ export function VisualizationConfig({
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
-            <Label>Color Palette</Label>
+            <Label>{t("bi.color_palette")}</Label>
             <Select
               value={paletteNames.find(name =>
                 JSON.stringify(colorPalettes[name]) === JSON.stringify(colors.palette)
@@ -183,7 +186,7 @@ export function VisualizationConfig({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="primary-color">Primary Color</Label>
+            <Label htmlFor="primary-color">{t("bi.primary_color")}</Label>
             <div className="flex gap-2">
               <Input
                 id="primary-color"
@@ -213,7 +216,7 @@ export function VisualizationConfig({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Number Format</Label>
+            <Label>{t("bi.number_format")}</Label>
             <Select
               value={formatting.numberFormat || "number"}
               onValueChange={(v) => onFormattingChange({ ...formatting, numberFormat: v as "number" | "currency" | "percent" })}
@@ -231,7 +234,7 @@ export function VisualizationConfig({
 
           {formatting.numberFormat === "currency" && (
             <div className="space-y-2">
-              <Label htmlFor="currency-symbol">Currency Symbol</Label>
+              <Label htmlFor="currency-symbol">{t("bi.currency_symbol")}</Label>
               <Input
                 id="currency-symbol"
                 value={formatting.currencySymbol || "$"}
@@ -243,7 +246,7 @@ export function VisualizationConfig({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="decimals">Decimal Places</Label>
+            <Label htmlFor="decimals">{t("bi.decimal_places")}</Label>
             <Select
               value={String(formatting.decimals ?? 0)}
               onValueChange={(v) => onFormattingChange({ ...formatting, decimals: parseInt(v) })}
@@ -262,7 +265,7 @@ export function VisualizationConfig({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="show-legend">Show Legend</Label>
+            <Label htmlFor="show-legend">{t("bi.show_legend")}</Label>
             <Switch
               id="show-legend"
               checked={formatting.showLegend !== false}
@@ -272,7 +275,7 @@ export function VisualizationConfig({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="show-grid">Show Grid</Label>
+            <Label htmlFor="show-grid">{t("bi.show_grid")}</Label>
             <Switch
               id="show-grid"
               checked={formatting.showGrid !== false}
@@ -282,7 +285,7 @@ export function VisualizationConfig({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="show-labels">Show Labels</Label>
+            <Label htmlFor="show-labels">{t("bi.show_labels")}</Label>
             <Switch
               id="show-labels"
               checked={formatting.showLabels !== false}

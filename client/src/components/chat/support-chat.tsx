@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageCircle, X, Send, Loader2, Headphones } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface SupportMessage {
     id: string;
@@ -20,6 +21,7 @@ export function SupportChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
     const [conversationId, setConversationId] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     // Get or create support conversation
     const { data: conversation, isLoading: isLoadingConversation } = useQuery({
@@ -99,7 +101,7 @@ export function SupportChatWidget() {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Headphones className="h-5 w-5" />
-                                    <CardTitle className="text-base text-white">Platform Support</CardTitle>
+                                    <CardTitle className="text-base text-white">{t("chat.support")}</CardTitle>
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -110,7 +112,7 @@ export function SupportChatWidget() {
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <p className="text-xs text-blue-100">Chat with our admin team</p>
+                            <p className="text-xs text-blue-100">{t("chat.support_title")}</p>
                         </CardHeader>
                         <CardContent className="p-0">
                             {/* Messages area */}
@@ -123,7 +125,7 @@ export function SupportChatWidget() {
                                     <div className="flex flex-col items-center justify-center h-full text-center">
                                         <MessageCircle className="h-8 w-8 text-muted-foreground mb-2" />
                                         <p className="text-sm text-muted-foreground">
-                                            Send a message to start a conversation with our support team.
+                                            {t("chat.support_start_hint")}
                                         </p>
                                     </div>
                                 ) : (
@@ -134,8 +136,8 @@ export function SupportChatWidget() {
                                         >
                                             <div
                                                 className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${msg.senderId === user?.id
-                                                        ? "bg-blue-600 text-white"
-                                                        : "bg-white border text-foreground"
+                                                    ? "bg-blue-600 text-white"
+                                                    : "bg-white border text-foreground"
                                                     }`}
                                             >
                                                 {msg.senderRole === "admin" && msg.senderId !== user?.id && (
@@ -151,7 +153,7 @@ export function SupportChatWidget() {
                             {/* Input */}
                             <div className="p-3 border-t flex gap-2">
                                 <Input
-                                    placeholder="Type a message..."
+                                    placeholder={t("chat.type_message")}
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && handleSend()}

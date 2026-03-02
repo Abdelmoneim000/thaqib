@@ -17,6 +17,7 @@ import {
   Info
 } from "lucide-react";
 import type { Dataset } from "@/lib/bi-types";
+import { useTranslation } from "react-i18next";
 
 interface SqlEditorProps {
   datasets: Dataset[];
@@ -29,6 +30,7 @@ interface SqlEditorProps {
 
 export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = "", selectedDatasetId, onDatasetChange }: SqlEditorProps) {
   const [sql, setSql] = useState(initialSql);
+  const { t } = useTranslation();
 
 
   const selectedDataset = datasets.find(d => d.id === selectedDatasetId);
@@ -122,7 +124,7 @@ export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = ""
           />
           <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
             <Info className="h-3 w-3" />
-            <span>Use dataset IDs as table names. SQL is parsed client-side for demo purposes.</span>
+            <span>{t("bi.sql_hint")}</span>
           </div>
         </CardContent>
       </Card>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import AnalystLayout from "@/components/analyst-layout";
@@ -57,6 +58,7 @@ const ANALYSIS_FIELDS = [
 ];
 
 export default function BrowseProjectsPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
@@ -128,9 +130,9 @@ export default function BrowseProjectsPage() {
     <AnalystLayout>
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Browse Projects</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("analyst_browse.title")}</h1>
           <p className="text-muted-foreground">
-            Find data analysis projects that match your skills
+            {t("analyst_browse.description")}
           </p>
         </div>
 
@@ -140,7 +142,7 @@ export default function BrowseProjectsPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by title or description..."
+                  placeholder={t("analyst_browse.search_placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -150,7 +152,7 @@ export default function BrowseProjectsPage() {
               <div className="flex gap-2">
                 <Select value={selectedType} onValueChange={setSelectedType}>
                   <SelectTrigger className="w-[160px]" data-testid="select-analysis-type">
-                    <SelectValue placeholder="Analysis Type" />
+                    <SelectValue placeholder={t("analyst_browse.analysis_type")} />
                   </SelectTrigger>
                   <SelectContent>
                     {ANALYSIS_TYPES.map((t) => (
@@ -160,7 +162,7 @@ export default function BrowseProjectsPage() {
                 </Select>
                 <Select value={selectedField} onValueChange={setSelectedField}>
                   <SelectTrigger className="w-[160px]" data-testid="select-analysis-field">
-                    <SelectValue placeholder="Analysis Field" />
+                    <SelectValue placeholder={t("analyst_browse.analysis_field")} />
                   </SelectTrigger>
                   <SelectContent>
                     {ANALYSIS_FIELDS.map((f) => (
@@ -175,7 +177,7 @@ export default function BrowseProjectsPage() {
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {filteredProjects.length} projects
+            {t("analyst_browse.showing_projects", { count: filteredProjects.length })}
           </p>
         </div>
 
@@ -190,7 +192,7 @@ export default function BrowseProjectsPage() {
                       <CardTitle className="text-lg">{project.title}</CardTitle>
                       <CardDescription className="flex items-center gap-2">
                         <Building2 className="h-4 w-4" />
-                        Client Project
+                        {t("analyst_browse.client_project")}
                       </CardDescription>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
@@ -215,17 +217,17 @@ export default function BrowseProjectsPage() {
                   <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      Due: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline'}
+                      {t("analyst_browse.due")} {project.deadline ? new Date(project.deadline).toLocaleDateString() : t("analyst_browse.no_deadline")}
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      Posted {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently'}
+                      {t("analyst_browse.posted")} {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : t("analyst_browse.recently")}
                     </div>
                   </div>
 
                   <div className="flex justify-end gap-2">
                     {isApplied ? (
-                      <Button disabled variant="outline">Applied</Button>
+                      <Button disabled variant="outline">{t("analyst_browse.applied")}</Button>
                     ) : (
                       <Dialog open={applyingTo?.id === project.id} onOpenChange={(open) => !open && setApplyingTo(null)}>
                         <DialogTrigger asChild>
@@ -233,23 +235,23 @@ export default function BrowseProjectsPage() {
                             onClick={() => setApplyingTo(project)}
                             data-testid={`button-apply-${project.id}`}
                           >
-                            Apply Now
+                            {t("analyst_browse.apply_now")}
                           </Button>
                         </DialogTrigger>
 
                         <DialogContent className="sm:max-w-[500px]">
                           <DialogHeader>
-                            <DialogTitle>Apply to Project</DialogTitle>
+                            <DialogTitle>{t("analyst_browse.apply_to_project")}</DialogTitle>
                             <DialogDescription>
-                              Submit your application for "{project.title}"
+                              {t("analyst_browse.submit_application_for", { title: project.title })}
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                              <Label htmlFor="cover">Cover Letter</Label>
+                              <Label htmlFor="cover">{t("analyst_browse.cover_letter")}</Label>
                               <Textarea
                                 id="cover"
-                                placeholder="Explain why you're the best fit for this project..."
+                                placeholder={t("analyst_browse.cover_letter_placeholder")}
                                 value={coverLetter}
                                 onChange={(e) => setCoverLetter(e.target.value)}
                                 rows={6}
@@ -259,11 +261,11 @@ export default function BrowseProjectsPage() {
                           </div>
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setApplyingTo(null)} data-testid="button-cancel-application">
-                              Cancel
+                              {t("common.cancel")}
                             </Button>
                             <Button onClick={handleApply} disabled={createApplicationMutation.isPending} data-testid="button-submit-application">
                               {createApplicationMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              Submit Application
+                              {t("analyst_browse.submit_application")}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
@@ -280,9 +282,9 @@ export default function BrowseProjectsPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Search className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No projects found</h3>
+              <h3 className="text-lg font-medium mb-2">{t("analyst_browse.no_projects_found")}</h3>
               <p className="text-muted-foreground text-center">
-                Try adjusting your search or filters to find more projects
+                {t("analyst_browse.adjust_search")}
               </p>
             </CardContent>
           </Card>

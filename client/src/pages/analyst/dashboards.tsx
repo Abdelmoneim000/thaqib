@@ -30,11 +30,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import type { Dashboard } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 export default function DashboardsPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -82,16 +86,16 @@ export default function DashboardsPage() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Dashboards & Visualizations</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("analyst_management.dashboards_title")}</h1>
             <p className="text-muted-foreground">
-              Create and manage your data visualizations
+              {t("analyst_management.dashboards_desc")}
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/analyst/visualization-builder">
               <Button variant="outline" data-testid="button-new-viz">
                 <BarChart3 className="h-4 w-4 mr-2" />
-                New Visualization
+                {t("analyst_management.new_viz")}
               </Button>
             </Link>
             <CreateDashboardDialog
@@ -100,7 +104,7 @@ export default function DashboardsPage() {
               trigger={
                 <Button data-testid="button-new-dashboard">
                   <Plus className="h-4 w-4 mr-2" />
-                  New Dashboard
+                  {t("analyst_management.new_dashboard")}
                 </Button>
               }
             />
@@ -110,7 +114,7 @@ export default function DashboardsPage() {
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search dashboards..."
+            placeholder={t("analyst_management.search_dashboards")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -120,20 +124,20 @@ export default function DashboardsPage() {
 
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-medium mb-4">Dashboards</h2>
+            <h2 className="text-lg font-medium mb-4">{t("dashboards.title")}</h2>
             {isLoadingDashboards ? (
               <div className="bg-card border rounded-lg p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
             ) : filteredDashboards.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <LayoutDashboard className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-2">No Dashboards Yet</h3>
+                  <h3 className="font-medium mb-2">{t("analyst_management.no_dashboards")}</h3>
                   <p className="text-muted-foreground text-center mb-4">
-                    Create your first dashboard to get started
+                    {t("analyst_management.create_first")}
                   </p>
                   <Button onClick={() => setIsCreateDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Dashboard
+                    {t("analyst_management.create_dashboard")}
                   </Button>
                 </CardContent>
               </Card>
@@ -158,34 +162,25 @@ export default function DashboardsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => {
-                                e.preventDefault();
-                                toggleShowcase(dashboard);
-                              }}>
+                              <DropdownMenuLabel>{t("analyst_applications.actions")}</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => toggleShowcase(dashboard)} className="cursor-pointer">
                                 {dashboard.isShowcase ? (
-                                  <>
-                                    <StarOff className="h-4 w-4 mr-2" />
-                                    Remove from Showcase
-                                  </>
+                                  <><StarOff className="h-4 w-4 mr-2" /> {t("analyst_management.remove_showcase")}</>
                                 ) : (
-                                  <>
-                                    <Star className="h-4 w-4 mr-2" />
-                                    Add to Showcase
-                                  </>
+                                  <><Star className="h-4 w-4 mr-2" /> {t("common.make_public", { defaultValue: "Make Public" })} </>
                                 )}
                               </DropdownMenuItem>
+                              <Link href={`/analyst/dashboards/${dashboard.id}`}>
+                                <DropdownMenuItem className="cursor-pointer">
+                                  <Eye className="h-4 w-4 mr-2" /> {t("analyst_projects.view_details")}
+                                </DropdownMenuItem>
+                              </Link>
+                              <Link href={`/analyst/dashboard-view/${dashboard.id}`}>
+                                <DropdownMenuItem className="cursor-pointer">
+                                  <Edit className="h-4 w-4 mr-2" /> {t("account.edit")}
+                                </DropdownMenuItem>
+                              </Link>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -197,20 +192,21 @@ export default function DashboardsPage() {
                       </CardHeader>
                       <CardContent className="flex flex-col pt-0">
                         <div className="flex items-center justify-between mt-auto">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <BarChart3 className="h-4 w-4" />
-                            {/* Layout items count */}
-                            {(dashboard as any).visualizationsCount || 0} charts
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <BarChart3 className="h-4 w-4 mr-1" />
+                            {Array.isArray(dashboard.layout) ? dashboard.layout.length : 0} {t("chart.visuals")}
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant={dashboard.isPublished ? "default" : "secondary"}>
                               {dashboard.isPublished ? "Published" : "Draft"}
                             </Badge>
                             {dashboard.isShowcase && (
-                              <Badge variant="outline" className="border-yellow-500 text-yellow-600 bg-yellow-50">
-                                <Star className="h-3 w-3 mr-1 fill-yellow-500" />
-                                Showcase
-                              </Badge>
+                              <div className="absolute top-2 right-2">
+                                <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
+                                  <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                  {t("analyst_management.public_showcase")}
+                                </Badge>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -227,11 +223,11 @@ export default function DashboardsPage() {
           </div>
 
           <div>
-            <h2 className="text-lg font-medium mb-4">Saved Visualizations</h2>
+            <h2 className="text-lg font-medium mb-4">{t("dashboards.saved_visualizations")}</h2>
             {isLoadingVisualizations ? (
               <div className="bg-card border rounded-lg p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
             ) : (!visualizations || visualizations.length === 0) ? (
-              <div className="text-muted-foreground text-sm italic">No saved visualizations found. create one from the builder.</div>
+              <div className="text-muted-foreground text-sm italic">{t("dashboards.no_saved_visualizations")}</div>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
                 {visualizations.map((viz) => (

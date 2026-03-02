@@ -43,11 +43,14 @@ import type {
   Dataset,
   VisualQuery
 } from "@/lib/bi-types";
+import { type Visualization } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 export default function VisualizationBuilderPage() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [vizName, setVizName] = useState("New Visualization");
+  const [vizName, setVizName] = useState(t("analyst_viz_builder.new_viz"));
   const [queryMode, setQueryMode] = useState<"visual" | "sql" | "text">("visual"); // Added text mode
 
   const [textContent, setTextContent] = useState(""); // For text block content
@@ -217,18 +220,31 @@ export default function VisualizationBuilderPage() {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (vizData: any) => {
-      const res = await apiRequest("POST", "/api/visualizations", vizData);
+    mutationFn: async (data: Partial<Visualization>) => {
+      const res = await apiRequest("POST", "/api/visualizations", data);
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "Saved!", description: "Visualization saved successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/visualizations"] });
-      navigate("/analyst/dashboards");
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboards"] });
+      toast({
+        title: t("analyst_viz_builder.save_success"),
+        description: t("analyst_viz_builder.save_success_desc"),
+      });
+      // Redirect to the dashboard if one was selected
+      if (selectedDashboardId) {
+        navigate(`/analyst/dashboard-view/${selectedDashboardId}`);
+      } else {
+        navigate("/analyst/dashboards");
+      }
     },
-    onError: () => {
-      toast({ title: "Save failed", description: "Could not save visualization", variant: "destructive" });
-    }
+    onError: (error) => {
+      toast({
+        title: t("analyst_viz_builder.save_failed"),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const handleAxisChange = (axis: "x" | "y", column: string) => {
@@ -263,11 +279,11 @@ export default function VisualizationBuilderPage() {
       datasetId: visualQuery.datasetId,
       chartType: chartType,
       query: queryMode === "visual"
-        ? { type: "visual", columns: columnNames, filters: visualQuery.filters, groupBy: visualQuery.groupBy?.[0], aggregation }
+        ? { type: "visual", columns: columnNames, filters: visualQuery.filters.map(f => ({ ...f, value: String(f.value) })), groupBy: visualQuery.groupBy?.[0], aggregation }
         : queryMode === "sql"
           ? { type: "sql", sql: sqlQuery }
           : { type: "text", text: textContent },
-      config: { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting, description: textContent },
+      config: { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting },
       dashboardId: selectedDashboardId,
     });
   };
@@ -302,45 +318,51 @@ export default function VisualizationBuilderPage() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
+            <div className="flex items-center gap-4 flex-1">
               <Input
                 value={vizName}
                 onChange={(e) => setVizName(e.target.value)}
-                className="text-xl font-semibold border-none p-0 h-auto focus-visible:ring-0 w-[300px]"
+                className="max-w-xs font-semibold text-lg border-none hover:bg-muted/50 focus-visible:bg-muted/50 h-auto py-1"
+                placeholder={t("analyst_viz_builder.viz_name")}
                 data-testid="input-viz-name"
               />
-              <p className="text-sm text-muted-foreground">Create a new visualization</p>
             </div>
-
+            <Button onClick={handleSave} disabled={saveMutation.isPending} data-testid="button-save-viz">
+              {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Save className="h-4 w-4 mr-2" />
+              {t("analyst_viz_builder.save_viz")}
+            </Button>
           </div>
 
           <div className="w-full md:w-[250px]">
-            <Select
-              value={selectedProjectId}
-              onValueChange={(val) => {
-                setSelectedProjectId(val);
-                setSelectedDashboardId("");
-                // Reset dataset selection when project changes
-                setVisualQuery(prev => ({ ...prev, datasetId: "" }));
-              }}
-            >
-              <SelectTrigger>
-                <FolderKanban className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Select Context" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="personal">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Personal Library</span>
-                  </div>
-                </SelectItem>
-                {projects.filter(p => p.id).map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <span className="text-sm font-medium">{t("analyst_viz_builder.target_project")}</span>
+                <Select value={selectedProjectId} onValueChange={(val) => {
+                  setSelectedProjectId(val);
+                  setSelectedDashboardId("");
+                  // Reset dataset selection when project changes
+                  setVisualQuery(prev => ({ ...prev, datasetId: "" }));
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("analyst_viz_builder.select_project")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="personal">
+                      <span className="flex items-center">
+                        <FolderKanban className="h-4 w-4 mr-2 text-muted-foreground" />
+                        {t("analyst_viz_builder.personal_library")}
+                      </span>
+                    </SelectItem>
+                    {projects.filter(p => p.id).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           <div className="w-full md:w-[250px] flex gap-2">
@@ -412,14 +434,18 @@ export default function VisualizationBuilderPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4 space-y-4">
             <Tabs value={queryMode} onValueChange={(v) => setQueryMode(v as any)}>
-              <TabsList className="w-full">
-                <TabsTrigger value="visual" className="flex-1" data-testid="tab-visual-query">
+              <TabsList className="w-full grid grid-cols-3">
+                <TabsTrigger value="visual" data-testid="tab-visual-builder">
                   <MousePointer className="h-4 w-4 mr-2" />
-                  Visual
+                  {t("analyst_viz_builder.query_builder")}
                 </TabsTrigger>
-                <TabsTrigger value="sql" className="flex-1" data-testid="tab-sql-query">
+                <TabsTrigger value="sql" data-testid="tab-sql-editor">
                   <Code className="h-4 w-4 mr-2" />
-                  SQL
+                  {t("analyst_viz_builder.sql_editor")}
+                </TabsTrigger>
+                <TabsTrigger value="text" data-testid="tab-text-markdown">
+                  <Type className="h-4 w-4 mr-2" />
+                  {t("analyst_viz_builder.text_markdown")}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="visual" className="mt-4">
@@ -444,6 +470,49 @@ export default function VisualizationBuilderPage() {
                     groupBy: [],
                   })}
                 />
+              </TabsContent>
+              <TabsContent value="text" className="mt-4">
+                <Card>
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                    <CardTitle className="text-base">{t("analyst_viz_builder.text_block_content")}</CardTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={textEditMode === "write" ? "secondary" : "ghost"}
+                        onClick={() => setTextEditMode("write")}
+                        size="sm"
+                      >
+                        {t("analyst_viz_builder.write_text")}
+                      </Button>
+                      <Button
+                        variant={textEditMode === "preview" ? "secondary" : "ghost"}
+                        onClick={() => setTextEditMode("preview")}
+                        size="sm"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        {t("analyst_viz_builder.preview_text")}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {textEditMode === "write" ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          placeholder={t("analyst_viz_builder.text_placeholder")}
+                          value={textContent}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTextContent(e.target.value)}
+                          className="min-h-[150px] font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {t("analyst_viz_builder.text_markdown_support")}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none min-h-[150px] p-2 border rounded-md">
+                        {textContent ? <ReactMarkdown>{textContent}</ReactMarkdown> : <p className="text-muted-foreground">{t("analyst_viz_builder.no_text_content")}</p>}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
 
@@ -474,11 +543,11 @@ export default function VisualizationBuilderPage() {
               </CardHeader>
               <CardContent>
                 {!hasRun ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <Eye className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-2">No Data Yet</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Configure your query and click Preview to see results
+                  <div className="flex flex-col items-center justify-center py-12 text-center h-full">
+                    <LayoutDashboard className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                    <h3 className="font-medium text-lg mb-1">{t("analyst_viz_builder.no_query_run")}</h3>
+                    <p className="text-muted-foreground max-w-sm">
+                      {t("analyst_viz_builder.run_query_desc")}
                     </p>
                   </div>
                 ) : queryResults.length === 0 ? (

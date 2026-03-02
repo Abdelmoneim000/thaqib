@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
-import { 
+import {
   ArrowLeft,
   Download,
   Share2,
@@ -43,6 +43,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 
 const revenueByRegion = [
   { region: "North", revenue: 197000 },
@@ -70,6 +71,7 @@ const customerSegments = [
 ];
 
 export default function SampleDashboardPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareLink, setShareLink] = useState("");
@@ -90,7 +92,7 @@ export default function SampleDashboardPage() {
       setShareLink(fullUrl);
     },
     onError: () => {
-      toast({ title: "Share failed", description: "Could not create share link", variant: "destructive" });
+      toast({ title: t("analyst_dashboard_view.share_failed"), description: t("analyst_dashboard_view.share_failed_desc"), variant: "destructive" });
     }
   });
 
@@ -102,7 +104,7 @@ export default function SampleDashboardPage() {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareLink);
     setCopied(true);
-    toast({ title: "Copied!", description: "Share link copied to clipboard" });
+    toast({ title: t("analyst_dashboard_view.copied"), description: t("analyst_dashboard_view.copied_desc") });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -112,19 +114,19 @@ export default function SampleDashboardPage() {
 
     try {
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(dashboardEl, { 
+      const canvas = await html2canvas(dashboardEl, {
         backgroundColor: "#ffffff",
         scale: 2,
       });
-      
+
       const link = document.createElement("a");
       link.download = "sales_performance_dashboard.png";
       link.href = canvas.toDataURL("image/png");
       link.click();
-      
-      toast({ title: "Exported!", description: "Dashboard saved as PNG" });
+
+      toast({ title: t("analyst_dashboard_view.exported"), description: t("analyst_dashboard_view.exported_png_desc") });
     } catch (err) {
-      toast({ title: "Export failed", description: "Could not export dashboard", variant: "destructive" });
+      toast({ title: t("analyst_dashboard_view.export_failed"), description: t("analyst_dashboard_view.export_failed_desc"), variant: "destructive" });
     }
   };
 
@@ -135,25 +137,25 @@ export default function SampleDashboardPage() {
     try {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
-      
-      const canvas = await html2canvas(dashboardEl, { 
+
+      const canvas = await html2canvas(dashboardEl, {
         backgroundColor: "#ffffff",
         scale: 2,
       });
-      
+
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "px",
         format: [canvas.width, canvas.height],
       });
-      
+
       pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
       pdf.save("sales_performance_dashboard.pdf");
-      
-      toast({ title: "Exported!", description: "Dashboard saved as PDF" });
+
+      toast({ title: t("analyst_dashboard_view.exported"), description: t("analyst_dashboard_view.exported_pdf_desc") });
     } catch (err) {
-      toast({ title: "Export failed", description: "Could not export dashboard", variant: "destructive" });
+      toast({ title: t("analyst_dashboard_view.export_failed"), description: t("analyst_dashboard_view.export_failed_desc"), variant: "destructive" });
     }
   };
 
@@ -170,7 +172,7 @@ export default function SampleDashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-semibold">Sales Performance Dashboard</h1>
-                <Badge>Published</Badge>
+                <Badge>{t("analyst_dashboard_view.published")}</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 TechCorp Analytics - Updated 2 hours ago
@@ -180,29 +182,29 @@ export default function SampleDashboardPage() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" data-testid="button-refresh">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("analyst_dashboard_view.refresh")}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" data-testid="button-export">
                   <Download className="h-4 w-4 mr-2" />
-                  Export
+                  {t("analyst_dashboard_view.export")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleExportImage} data-testid="menu-export-image">
                   <FileImage className="h-4 w-4 mr-2" />
-                  Export as PNG
+                  {t("analyst_dashboard_view.export_png")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
                   <FileText className="h-4 w-4 mr-2" />
-                  Export as PDF
+                  {t("analyst_dashboard_view.export_pdf")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button size="sm" onClick={handleShare} data-testid="button-share">
               <Share2 className="h-4 w-4 mr-2" />
-              Share
+              {t("analyst_dashboard_view.share")}
             </Button>
           </div>
         </div>
@@ -346,12 +348,12 @@ export default function SampleDashboardPage() {
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Share Dashboard</DialogTitle>
+            <DialogTitle>{t("analyst_dashboard_view.share_dashboard")}</DialogTitle>
             <DialogDescription>
-              Create a shareable link for this dashboard
+              {t("analyst_dashboard_view.share_dashboard_desc")}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             {shareMutation.isPending ? (
               <div className="flex items-center justify-center py-8">
@@ -360,17 +362,17 @@ export default function SampleDashboardPage() {
             ) : shareLink ? (
               <>
                 <div className="space-y-2">
-                  <Label>Share Link</Label>
+                  <Label>{t("analyst_dashboard_view.share_link")}</Label>
                   <div className="flex gap-2">
-                    <Input 
-                      value={shareLink} 
-                      readOnly 
+                    <Input
+                      value={shareLink}
+                      readOnly
                       className="flex-1"
                       data-testid="input-share-link"
                     />
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={handleCopyLink}
                       data-testid="button-copy-link"
                     >
@@ -381,23 +383,23 @@ export default function SampleDashboardPage() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Allow Export</Label>
+                    <Label>{t("analyst_dashboard_view.allow_export")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      Let viewers download as PDF or image
+                      {t("analyst_dashboard_view.allow_export_desc")}
                     </p>
                   </div>
-                  <Switch 
-                    checked={allowExport} 
+                  <Switch
+                    checked={allowExport}
                     onCheckedChange={setAllowExport}
                     data-testid="switch-allow-export"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Link Expires</Label>
+                  <Label>{t("analyst_dashboard_view.link_expires")}</Label>
                   <div className="flex items-center gap-2">
-                    <Input 
-                      type="number" 
+                    <Input
+                      type="number"
                       value={expiresInDays}
                       onChange={(e) => setExpiresInDays(parseInt(e.target.value) || 7)}
                       className="w-20"
@@ -405,7 +407,7 @@ export default function SampleDashboardPage() {
                       max={365}
                       data-testid="input-expires-days"
                     />
-                    <span className="text-sm text-muted-foreground">days</span>
+                    <span className="text-sm text-muted-foreground">{t("analyst_dashboard_view.days")}</span>
                   </div>
                 </div>
               </>
@@ -414,7 +416,7 @@ export default function SampleDashboardPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShareDialogOpen(false)}>
-              Close
+              {t("common.close")}
             </Button>
           </DialogFooter>
         </DialogContent>

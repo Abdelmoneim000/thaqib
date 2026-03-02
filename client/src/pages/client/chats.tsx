@@ -12,6 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 import ClientLayout from "@/components/client-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 function ChatPanel({
   conversation,
@@ -23,6 +24,7 @@ function ChatPanel({
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   const { data: messages = [], isLoading: loadingMessages } = useQuery<Message[]>({
     queryKey: ["/api/conversations", conversation.id, "messages"],
@@ -83,8 +85,8 @@ function ChatPanel({
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <MessageSquare className="h-10 w-10 mb-2 text-muted-foreground opacity-50" />
-            <p className="text-sm text-muted-foreground">No messages yet</p>
-            <p className="text-xs text-muted-foreground">Start the conversation!</p>
+            <p className="text-sm text-muted-foreground">{t("chat.no_messages")}</p>
+            <p className="text-xs text-muted-foreground">{t("chat.start_chat")}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -134,7 +136,7 @@ function ChatPanel({
       <div className="p-4 border-t">
         <div className="flex gap-2">
           <Input
-            placeholder="Type a message..."
+            placeholder={t("chat.type_message")}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
@@ -164,13 +166,14 @@ function ChatList({
   conversations: Conversation[];
   onSelectChat: (conv: Conversation) => void;
 }) {
+  const { t } = useTranslation();
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <MessageSquare className="h-12 w-12 mb-4 text-muted-foreground opacity-50" />
-        <h3 className="font-medium mb-1">No conversations yet</h3>
+        <h3 className="font-medium mb-1">{t("chat.no_conversations")}</h3>
         <p className="text-sm text-muted-foreground max-w-xs">
-          Start a conversation with an analyst by clicking "Chat" on their project application
+          {t("chat.start_conversation_hint")}
         </p>
       </div>
     );
@@ -226,6 +229,7 @@ function ChatList({
 
 export default function ClientChatsPage() {
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
+  const { t } = useTranslation();
 
   const [, params] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
@@ -267,8 +271,8 @@ export default function ClientChatsPage() {
         ) : (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold" data-testid="text-page-title">Chats</h1>
-              <p className="text-muted-foreground">Your conversations with data analysts</p>
+              <h1 className="text-2xl font-semibold" data-testid="text-page-title">{t("chat.title")}</h1>
+              <p className="text-muted-foreground">{t("chat.conversations_desc")}</p>
             </div>
 
             {isLoading ? (

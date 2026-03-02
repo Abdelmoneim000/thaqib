@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartType, ChartColors, ChartFormatting } from "@/lib/bi-types";
 import { colorPalettes } from "@/lib/bi-types";
 import ReactMarkdown from "react-markdown";
+import { useTranslation } from "react-i18next";
 
 interface ChartRendererProps {
   type: ChartType;
@@ -86,6 +87,7 @@ export function ChartRenderer({
   formatting,
   textContent,
 }: ChartRendererProps) {
+  const { t } = useTranslation();
   const palette = colors?.palette || colorPalettes.default;
   const primaryColor = colors?.primary || palette[0];
   const showLegend = formatting?.showLegend ?? true;
@@ -257,7 +259,7 @@ export function ChartRenderer({
         );
 
       case "table": {
-        if (!data.length) return <div className="text-muted-foreground p-4">No data</div>;
+        if (!data.length) return <div className="text-muted-foreground p-4">{t("bi.no_data")}</div>;
         const columns = Object.keys(data[0]);
         const PAGE_SIZE = 100;
         const totalPages = Math.ceil(data.length / PAGE_SIZE);
@@ -314,7 +316,7 @@ export function ChartRenderer({
         );
 
       default:
-        return <div className="text-muted-foreground p-4">Unknown chart type</div>;
+        return <div className="text-muted-foreground p-4">{t("bi.unknown_chart")}</div>;
     }
   };
 

@@ -11,6 +11,7 @@ import type { Conversation, Message } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import AnalystLayout from "@/components/analyst-layout";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 
 function ChatPanel({
   conversation,
@@ -20,6 +21,7 @@ function ChatPanel({
   onBack: () => void;
 }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -57,8 +59,8 @@ function ChatPanel({
 
   const extendedConv = conversation as any;
   const chatName = conversation.isAdminChat
-    ? "Thaqib Help"
-    : (extendedConv.clientName || conversation.clientId?.replace("client-", "Client ") || "Client");
+    ? t("analyst_chats.thaqib_help")
+    : (extendedConv.clientName || conversation.clientId?.replace("client-", "Client ") || t("analyst_chats.client"));
 
   return (
     <div className="flex flex-col h-full">
@@ -74,7 +76,7 @@ function ChatPanel({
         <div>
           <p className="font-medium">{chatName}</p>
           <p className="text-xs text-muted-foreground">
-            {conversation.isAdminChat ? "Support" : (extendedConv.projectTitle || "Project Owner")}
+            {conversation.isAdminChat ? t("analyst_chats.support") : (extendedConv.projectTitle || t("analyst_chats.project_owner"))}
           </p>
         </div>
       </div>
@@ -87,8 +89,8 @@ function ChatPanel({
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <MessageSquare className="h-10 w-10 mb-2 text-muted-foreground opacity-50" />
-            <p className="text-sm text-muted-foreground">No messages yet</p>
-            <p className="text-xs text-muted-foreground">Start the conversation!</p>
+            <p className="text-sm text-muted-foreground">{t("analyst_chats.no_messages")}</p>
+            <p className="text-xs text-muted-foreground">{t("analyst_chats.start_conversations")}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -138,7 +140,7 @@ function ChatPanel({
       <div className="p-4 border-t">
         <div className="flex gap-2">
           <Input
-            placeholder="Type a message..."
+            placeholder={t("analyst_chats.type_message")}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
@@ -168,13 +170,14 @@ function ChatList({
   conversations: Conversation[];
   onSelectChat: (conv: Conversation) => void;
 }) {
+  const { t } = useTranslation();
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <MessageSquare className="h-12 w-12 mb-4 text-muted-foreground opacity-50" />
-        <h3 className="font-medium mb-1">No conversations yet</h3>
+        <h3 className="font-medium mb-1">{t("analyst_chats.no_conversations")}</h3>
         <p className="text-sm text-muted-foreground max-w-xs">
-          Clients will start conversations when they're interested in your proposals
+          {t("analyst_chats.no_conversations_desc")}
         </p>
       </div>
     );
@@ -229,6 +232,7 @@ function ChatList({
 }
 
 export default function AnalystChatsPage() {
+  const { t } = useTranslation();
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
 
   const { data: conversations = [], isLoading } = useQuery<Conversation[]>({
@@ -258,8 +262,8 @@ export default function AnalystChatsPage() {
         ) : (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold" data-testid="text-page-title">Chats</h1>
-              <p className="text-muted-foreground">Your conversations with clients</p>
+              <h1 className="text-2xl font-semibold" data-testid="text-page-title">{t("analyst_chats.title")}</h1>
+              <p className="text-muted-foreground">{t("analyst_chats.desc")}</p>
             </div>
 
             {isLoading ? (

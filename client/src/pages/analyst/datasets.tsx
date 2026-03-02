@@ -58,7 +58,10 @@ interface EnrichedDataset extends Dataset {
     uploadedByName: string;
 }
 
+import { useTranslation } from "react-i18next";
+
 export default function AnalystDatasetsPage() {
+    const { t } = useTranslation();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -155,72 +158,75 @@ export default function AnalystDatasetsPage() {
             <div className="p-6 space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">Datasets</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Manage your personal and project datasets
+                        <h1 className="text-2xl font-semibold tracking-tight">{t("analyst_management.datasets_title")}</h1>
+                        <p className="text-muted-foreground">
+                            {t("analyst_management.datasets_desc")}
                         </p>
                     </div>
-
-                    <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="gap-2">
-                                <Plus className="h-4 w-4" />
-                                Upload Dataset
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Upload Dataset</DialogTitle>
-                                <DialogDescription>
-                                    Upload a CSV file to your Personal Library or a Project.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form onSubmit={handleUpload} className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <Label>Target Location</Label>
-                                    <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select target" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="personal">Personal Library (Private)</SelectItem>
-                                            {projects?.map(p => (
-                                                <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>CSV File</Label>
-                                    <Input
-                                        type="file"
-                                        accept=".csv"
-                                        ref={fileInputRef}
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        Supported formats: .csv (Max 50MB)
-                                    </p>
-                                </div>
-                                <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsUploadOpen(false)}>Cancel</Button>
-                                    <Button type="submit" disabled={uploadMutation.isPending}>
-                                        {uploadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Upload
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex gap-2">
+                        <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="gap-2" data-testid="button-upload-dataset">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    {t("analyst_management.upload_dataset")}
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent data-testid="dialog-upload-dataset">
+                                <DialogHeader>
+                                    <DialogTitle>{t("analyst_management.upload_new")}</DialogTitle>
+                                    <DialogDescription>
+                                        {t("dataset_upload.supported")}
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <form onSubmit={handleUpload} className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label>Target Location</Label>
+                                        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select target" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="personal">Personal Library (Private)</SelectItem>
+                                                {projects?.map(p => (
+                                                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>CSV File</Label>
+                                        <Input
+                                            type="file"
+                                            accept=".csv"
+                                            ref={fileInputRef}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Supported formats: .csv (Max 50MB)
+                                        </p>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button type="button" variant="outline" onClick={() => setIsUploadOpen(false)}>
+                                            {t("common.cancel")}
+                                        </Button>
+                                        <Button type="submit" disabled={uploadMutation.isPending} data-testid="button-submit-upload">
+                                            {uploadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            {t("analyst_management.upload_dataset")}
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>My Datasets</CardTitle>
-                            <div className="relative w-64">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <CardTitle>{t("client_datasets.my_datasets")}</CardTitle>
+                            <div className="relative max-w-md">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search datasets..."
+                                    placeholder={t("analyst_management.search_datasets")}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-8"
@@ -232,18 +238,18 @@ export default function AnalystDatasetsPage() {
                         {filteredDatasets.length === 0 ? (
                             <div className="text-center py-10 text-muted-foreground">
                                 <FileSpreadsheet className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                                <p>No datasets found</p>
+                                <p>{t("client_datasets.no_datasets")}</p>
                             </div>
                         ) : (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Context</TableHead>
-                                        <TableHead>Rows</TableHead>
-                                        <TableHead>Size</TableHead>
-                                        <TableHead>Uploaded</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>{t("analyst_management.name")}</TableHead>
+                                        <TableHead>{t("analyst_management.project")}</TableHead>
+                                        <TableHead>{t("analyst_management.size")}</TableHead>
+                                        <TableHead className="hidden md:table-cell">{t("analyst_management.uploaded_by")}</TableHead>
+                                        <TableHead className="hidden lg:table-cell">{t("analyst_management.uploaded_date")}</TableHead>
+                                        <TableHead className="w-[100px]"></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -262,9 +268,9 @@ export default function AnalystDatasetsPage() {
                                                     dataset.projectTitle
                                                 )}
                                             </TableCell>
-                                            <TableCell>{dataset.rowCount?.toLocaleString()}</TableCell>
                                             <TableCell>{(dataset.fileSize ? (dataset.fileSize / 1024).toFixed(1) + ' KB' : '-')}</TableCell>
-                                            <TableCell>{dataset.createdAt ? new Date(dataset.createdAt).toLocaleDateString() : '-'}</TableCell>
+                                            <TableCell>{dataset.uploadedByName || '-'}</TableCell>
+                                            <TableCell className="hidden lg:table-cell">{dataset.createdAt ? new Date(dataset.createdAt).toLocaleDateString() : '-'}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -274,13 +280,39 @@ export default function AnalystDatasetsPage() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuLabel>{t("analyst_applications.actions")}</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
                                                         <DropdownMenuItem
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={() => setDatasetToDelete(dataset.id)}
+                                                            className="cursor-pointer"
+                                                            onClick={async () => {
+                                                                try {
+                                                                    const res = await fetch(`/api/datasets/${dataset.id}/download-link`);
+                                                                    if (!res.ok) throw new Error("Failed to get download link");
+                                                                    const { downloadUrl } = await res.json();
+                                                                    window.open(downloadUrl, '_blank');
+                                                                } catch (err) {
+                                                                    toast({
+                                                                        title: t("analyst_management.download_error"),
+                                                                        description: t("analyst_management.download_error_desc"),
+                                                                        variant: "destructive"
+                                                                    });
+                                                                }
+                                                            }}
                                                         >
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Delete
+                                                            <Download className="h-4 w-4 mr-2" />
+                                                            {t("dataset_upload.uploading")}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            className="cursor-pointer text-destructive focus:text-destructive"
+                                                            onClick={() => {
+                                                                setDatasetToDelete(dataset.id);
+                                                                setIsDeleteOpen(true);
+                                                            }}
+                                                            data-testid={`menu-delete-${dataset.id}`}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                            {t("dataset_upload.delete")}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -293,22 +325,27 @@ export default function AnalystDatasetsPage() {
                     </CardContent>
                 </Card>
 
-                <AlertDialog open={!!datasetToDelete} onOpenChange={(open) => !open && setDatasetToDelete(null)}>
-                    <AlertDialogContent>
+                <AlertDialog open={isDeleteOpen} onOpenChange={(open) => {
+                    setIsDeleteOpen(open);
+                    if (!open) setDatasetToDelete(null);
+                }}>
+                    <AlertDialogContent data-testid="dialog-delete-dataset">
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogTitle>{t("dataset_upload.delete_confirm")}</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently delete the dataset. This action cannot be undone.
+                                {t("analyst_management.delete_confirm")}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                             <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 onClick={() => datasetToDelete && deleteMutation.mutate(datasetToDelete)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                data-testid="button-confirm-delete"
+                                disabled={deleteMutation.isPending}
                             >
                                 {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Delete
+                                {t("dataset_upload.delete")}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

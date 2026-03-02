@@ -24,7 +24,7 @@ import { Link } from "wouter";
 import { Switch } from "@/components/ui/switch";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-
+import { useTranslation } from "react-i18next";
 interface AnalystStats {
   totalEarnings: number;
   completedProjects: number;
@@ -36,6 +36,7 @@ export default function AnalystSettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [newSkill, setNewSkill] = useState("");
+  const { t } = useTranslation();
 
   // Parse skills from comma-separated string or array if stored differently
   const initialSkills = user?.skills ? user.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
@@ -98,9 +99,9 @@ export default function AnalystSettingsPage() {
   return (
     <AnalystLayout>
       <div className="p-6 space-y-6 max-w-4xl">
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("analyst_settings.title")}</h1>
         <p className="text-muted-foreground">
-          Manage your profile and preferences
+          {t("analyst_settings.description")}
         </p>
 
 
@@ -109,21 +110,21 @@ export default function AnalystSettingsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Earnings
+                  {t("analyst_dashboard.total_earnings")}
                 </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">${stats.totalEarnings?.toLocaleString() || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  From {stats.completedProjects || 0} completed projects
+                  {t("analyst_dashboard.from_completed").replace("From completed projects", `From ${stats.completedProjects || 0} completed projects`)}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Active Projects
+                  {t("analyst_dashboard.active_projects")}
                 </CardTitle>
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -138,16 +139,16 @@ export default function AnalystSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Profile Information
+              {t("analyst_settings.profile_info")}
             </CardTitle>
             <CardDescription>
-              Update your public profile that clients will see
+              {t("analyst_settings.profile_desc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="firstName">{t("common.name")}</Label>
                 <Input
                   id="firstName"
                   value={firstName}
@@ -156,7 +157,7 @@ export default function AnalystSettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName">{t("common.name")}</Label>
                 <Input
                   id="lastName"
                   value={lastName}
@@ -166,7 +167,7 @@ export default function AnalystSettingsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("common.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -177,7 +178,7 @@ export default function AnalystSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="title">Professional Title</Label>
+              <Label htmlFor="title">{t("common.role")}</Label>
               <Input
                 id="title"
                 value={title}
@@ -187,13 +188,13 @@ export default function AnalystSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+              <Label htmlFor="bio">{t("analyst_settings.profile_info")}</Label>
               <Textarea
                 id="bio"
                 rows={4}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Share your experience and expertise..."
+                placeholder={t("analyst_settings.share_experience")}
                 data-testid="textarea-bio"
               />
             </div>
@@ -211,13 +212,14 @@ export default function AnalystSettingsPage() {
               )}
             </div>
             {isPublic && (
-              <p className="text-xs text-muted-foreground">
-                Your profile is visible to clients at public link.
-              </p>
+              <div>
+                <Label>{t("analyst_settings.public_profile")}</Label>
+                <p className="text-sm text-muted-foreground">{t("analyst_settings.public_desc")}</p>
+              </div>
             )}
-            <Button onClick={handleSaveProfile} disabled={updateProfileMutation.isPending} data-testid="button-save-profile">
+            <Button className="w-full md:w-auto mt-6" onClick={handleSaveProfile} disabled={updateProfileMutation.isPending} data-testid="button-save-profile">
               {updateProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Profile
+              {t("settings.save_changes")}
             </Button>
           </CardContent>
         </Card>
@@ -226,10 +228,10 @@ export default function AnalystSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Briefcase className="h-5 w-5" />
-              Skills
+              {t("analyst_settings.skills_expertise")}
             </CardTitle>
             <CardDescription>
-              Skills help clients find you for relevant projects
+              {t("analyst_settings.skills_desc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -262,7 +264,9 @@ export default function AnalystSettingsPage() {
                 onKeyDown={(e) => e.key === 'Enter' && handleAddSkill()}
                 data-testid="input-add-skill"
               />
-              <Button variant="outline" onClick={handleAddSkill} data-testid="button-add-skill">Add</Button>
+              <Button type="button" onClick={handleAddSkill} variant="secondary" data-testid="button-add-skill">
+                {t("analyst_settings.add_skill")}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -270,11 +274,11 @@ export default function AnalystSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notifications
+              <Globe className="h-5 w-5" />
+              {t("analyst_settings.preferences")}
             </CardTitle>
             <CardDescription>
-              Configure how you receive updates
+              {t("analyst_settings.notification_settings")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

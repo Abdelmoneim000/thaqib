@@ -38,6 +38,8 @@ import PublicProfilePage from "@/pages/public-profile";
 import TermsPage from "@/pages/terms";
 import { SupportChatWidget } from "@/components/chat/support-chat";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -156,6 +158,13 @@ function Router() {
 }
 
 function App() {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

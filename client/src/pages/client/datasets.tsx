@@ -51,6 +51,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
 
 interface EnrichedDataset extends Dataset {
     projectTitle: string;
@@ -65,6 +66,7 @@ export default function ClientDatasetsPage() {
     const [datasetToDelete, setDatasetToDelete] = useState<string | null>(null);
     const [selectedProjectId, setSelectedProjectId] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { t } = useTranslation();
 
     // Fetch Datasets
     const { data: datasets, isLoading } = useQuery<EnrichedDataset[]>({
@@ -156,9 +158,9 @@ export default function ClientDatasetsPage() {
             <div className="p-6 space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">Datasets</h1>
+                        <h1 className="text-2xl font-semibold tracking-tight">{t("client_datasets.title")}</h1>
                         <p className="text-sm text-muted-foreground">
-                            Manage your data files across all projects
+                            {t("client_datasets.manage_desc")}
                         </p>
                     </div>
 
@@ -166,22 +168,22 @@ export default function ClientDatasetsPage() {
                         <DialogTrigger asChild>
                             <Button className="gap-2">
                                 <Plus className="h-4 w-4" />
-                                Upload Dataset
+                                {t("client_datasets.upload")}
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Upload Dataset</DialogTitle>
+                                <DialogTitle>{t("client_datasets.upload")}</DialogTitle>
                                 <DialogDescription>
-                                    Upload a CSV file to a specific project.
+                                    {t("client_datasets.upload_desc")}
                                 </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleUpload} className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <Label>Project</Label>
+                                    <Label>{t("client_datasets.project")}</Label>
                                     <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select a project" />
+                                            <SelectValue placeholder={t("client_datasets.select_project")} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {projects?.map(p => (
@@ -191,21 +193,21 @@ export default function ClientDatasetsPage() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>CSV File</Label>
+                                    <Label>{t("client_datasets.csv_file")}</Label>
                                     <Input
                                         type="file"
                                         accept=".csv"
                                         ref={fileInputRef}
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                        Supported formats: .csv (Max 50MB)
+                                        {t("client_datasets.supported_formats")}
                                     </p>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsUploadOpen(false)}>Cancel</Button>
+                                    <Button type="button" variant="outline" onClick={() => setIsUploadOpen(false)}>{t("common.cancel")}</Button>
                                     <Button type="submit" disabled={uploadMutation.isPending}>
                                         {uploadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Upload
+                                        {t("common.submit")}
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -216,11 +218,11 @@ export default function ClientDatasetsPage() {
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>All Datasets</CardTitle>
+                            <CardTitle>{t("client_datasets.all_datasets")}</CardTitle>
                             <div className="relative w-64">
                                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search datasets..."
+                                    placeholder={t("client_datasets.search_placeholder")}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-8"
@@ -232,18 +234,18 @@ export default function ClientDatasetsPage() {
                         {filteredDatasets.length === 0 ? (
                             <div className="text-center py-10 text-muted-foreground">
                                 <FileSpreadsheet className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                                <p>No datasets found</p>
+                                <p>{t("client_datasets.no_datasets")}</p>
                             </div>
                         ) : (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Project</TableHead>
-                                        <TableHead>Rows</TableHead>
-                                        <TableHead>Size</TableHead>
-                                        <TableHead>Uploaded</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>{t("common.name")}</TableHead>
+                                        <TableHead>{t("client_datasets.project")}</TableHead>
+                                        <TableHead>{t("client_datasets.rows")}</TableHead>
+                                        <TableHead>{t("client_datasets.size")}</TableHead>
+                                        <TableHead>{t("client_datasets.uploaded")}</TableHead>
+                                        <TableHead className="text-right">{t("common.actions")}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -268,13 +270,26 @@ export default function ClientDatasetsPage() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
                                                         <DropdownMenuItem
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={() => setDatasetToDelete(dataset.id)}
+                                                            onClick={() => {
+                                                                // TODO: Implement download logic
+                                                                toast({ title: "Download not implemented", description: "This feature is coming soon!" });
+                                                            }}
                                                         >
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Delete
+                                                            <Download className="h-4 w-4 mr-2" />
+                                                            {t("client_datasets.download")}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            className="text-destructive cursor-pointer"
+                                                            onClick={() => {
+                                                                setDatasetToDelete(dataset.id);
+                                                                setIsDeleteOpen(true);
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                            {t("client_datasets.delete")}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -287,22 +302,22 @@ export default function ClientDatasetsPage() {
                     </CardContent>
                 </Card>
 
-                <AlertDialog open={!!datasetToDelete} onOpenChange={(open) => !open && setDatasetToDelete(null)}>
+                <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogTitle>{t("client_datasets.delete")}</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently delete the dataset and remove it from all projects. This action cannot be undone.
+                                {t("client_datasets.delete_confirm")}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>{t("client_datasets.cancel")}</AlertDialogCancel>
                             <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 onClick={() => datasetToDelete && deleteMutation.mutate(datasetToDelete)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                                 {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Delete
+                                {t("client_datasets.confirm")}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface CreateDashboardDialogProps {
     projectId?: string;
@@ -34,6 +35,7 @@ export function CreateDashboardDialog({
 }: CreateDashboardDialogProps) {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const { t } = useTranslation();
     const [internalOpen, setInternalOpen] = useState(false);
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
@@ -53,20 +55,20 @@ export function CreateDashboardDialog({
                 queryClient.invalidateQueries({ queryKey: [`/api/dashboards?projectId=${projectId}`] });
             }
 
-            toast({ title: "Dashboard created", description: "You can now add visualizations." });
+            toast({ title: t("dashboards.dashboard_created"), description: t("dashboards.add_visuals_now") });
             if (setIsOpen) setIsOpen(false);
             setName("");
             setDescription("");
             if (onSuccess) onSuccess(data.id);
         },
         onError: () => {
-            toast({ title: "Failed to create dashboard", variant: "destructive" });
+            toast({ title: t("dashboards.create_failed"), variant: "destructive" });
         }
     });
 
     const handleCreate = () => {
         if (!name) {
-            toast({ title: "Name is required", variant: "destructive" });
+            toast({ title: t("common.required"), variant: "destructive" });
             return;
         }
         createDashboardMutation.mutate({
@@ -88,40 +90,40 @@ export function CreateDashboardDialog({
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Create New Dashboard</DialogTitle>
+                    <DialogTitle>{t("bi.create_dashboard")}</DialogTitle>
                     <DialogDescription>
                         {projectId && projectId !== "personal"
-                            ? "Create a dashboard for this project."
-                            : "Create a blank dashboard to add visualizations."}
+                            ? t("bi.create_dashboard_desc.project")
+                            : t("bi.create_dashboard_desc")}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Dashboard Name</Label>
+                        <Label htmlFor="name">{t("bi.dashboard_name")}</Label>
                         <Input
                             id="name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g., Q1 Sales Report"
+                            placeholder={t("bi.dashboard_name_placeholder")}
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="desc">Description (optional)</Label>
+                        <Label htmlFor="desc">{t("bi.dashboard_desc")}</Label>
                         <Textarea
                             id="desc"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Brief description of the dashboard"
+                            placeholder={t("bi.dashboard_desc_placeholder")}
                         />
                     </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsOpen && setIsOpen(false)}>
-                        Cancel
+                        {t("common.cancel")}
                     </Button>
                     <Button onClick={handleCreate} disabled={createDashboardMutation.isPending}>
                         {createDashboardMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Dashboard
+                        {t("bi.create_dashboard")}
                     </Button>
                 </DialogFooter>
             </DialogContent>

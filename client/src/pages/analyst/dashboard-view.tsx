@@ -25,6 +25,7 @@ import type { ChartType, ChartColors, ChartFormatting } from "@/lib/bi-types";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 // Wrapper component to handle data fetching for a single visualization
 function DashboardChart({ viz, onDelete, readOnly }: { viz: Visualization; onDelete: (id: string) => void, readOnly?: boolean }) {
@@ -140,7 +141,8 @@ function DashboardChart({ viz, onDelete, readOnly }: { viz: Visualization; onDel
 }
 
 
-export default function DashboardViewPage() {
+export default function AnalystDashboardViewPage() {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const [_, setLocation] = useLocation();
     const { toast } = useToast();
@@ -213,6 +215,11 @@ export default function DashboardViewPage() {
         }
     });
 
+    const handleShare = () => {
+        // Placeholder for share logic
+        toast({ title: "Share", description: "Share functionality not yet implemented." });
+    };
+
     const isLoading = isDashboardLoading || isVizLoading;
 
     if (isLoading) {
@@ -270,7 +277,22 @@ export default function DashboardViewPage() {
                             </p>
                         )}
                     </div>
-
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboards", id] })}>
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {t("analyst_dashboard_view.refresh")}
+                        </Button>
+                        <Link href={`/analyst/dashboard-view/${id}`}>
+                            <Button variant="outline" size="sm">
+                                <LayoutDashboard className="h-4 w-4 mr-2" />
+                                {t("account.edit_profile", { defaultValue: "Edit Layout" })}
+                            </Button>
+                        </Link>
+                        <Button size="sm" onClick={handleShare}>
+                            <Send className="h-4 w-4 mr-2" />
+                            {t("analyst_dashboard_view.share")}
+                        </Button>
+                    </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         {!readOnly && (
                             <>

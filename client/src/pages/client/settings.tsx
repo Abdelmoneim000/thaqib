@@ -30,7 +30,7 @@ export default function ClientSettingsPage() {
             toast({ title: t("settings.saved") });
         },
         onError: (error: Error) => {
-            toast({ title: "Update failed", description: error.message, variant: "destructive" });
+            toast({ title: t("client_settings.update_failed"), description: error.message, variant: "destructive" });
         }
     });
 
@@ -49,7 +49,7 @@ export default function ClientSettingsPage() {
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
                     <p className="text-muted-foreground">
-                        Manage your account settings and profile
+                        {t("client_settings.manage_desc")}
                     </p>
                 </div>
 
@@ -57,7 +57,7 @@ export default function ClientSettingsPage() {
                     <CardHeader>
                         <CardTitle>{t("settings.profile")}</CardTitle>
                         <CardDescription>
-                            Update your personal details and organization information.
+                            {t("client_settings.profile_desc")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -91,7 +91,7 @@ export default function ClientSettingsPage() {
                                         id="organization"
                                         value={organization}
                                         onChange={(e) => setOrganization(e.target.value)}
-                                        placeholder="Company Name"
+                                        placeholder={t("client_settings.company_placeholder")}
                                         className="pl-9"
                                     />
                                 </div>
@@ -100,7 +100,7 @@ export default function ClientSettingsPage() {
                             <div className="pt-4 flex justify-end">
                                 <Button type="submit" disabled={updateProfileMutation.isPending}>
                                     {updateProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Save Changes
+                                    {t("client_settings.save_changes")}
                                 </Button>
                             </div>
                         </form>

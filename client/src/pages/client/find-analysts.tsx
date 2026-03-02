@@ -9,9 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Star, Briefcase, ExternalLink } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function FindAnalystsPage() {
     const [searchQuery, setSearchQuery] = useState("");
+    const { t } = useTranslation();
 
     const { data: analysts, isLoading } = useQuery<any[]>({
         queryKey: ["/api/public/analysts", searchQuery],
@@ -31,15 +33,15 @@ export default function FindAnalystsPage() {
             <div className="container mx-auto px-4 py-8 max-w-6xl">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Find Analysts</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">{t("nav.find_analysts")}</h1>
                         <p className="text-muted-foreground mt-1">
-                            Discover top talent for your data projects
+                            {t("find_analysts.discover_talent")}
                         </p>
                     </div>
                     <div className="relative w-full md:w-80">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                            placeholder="Search by name, skill, or title..."
+                            placeholder={t("find_analysts.search_placeholder")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10"
@@ -54,8 +56,8 @@ export default function FindAnalystsPage() {
                 ) : filteredAnalysts.length === 0 ? (
                     <div className="text-center py-12 bg-muted/20 rounded-lg border border-dashed">
                         <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
-                        <h3 className="text-lg font-medium">No analysts found</h3>
-                        <p className="text-muted-foreground">Try adjusting your search terms</p>
+                        <h3 className="text-lg font-medium">{t("find_analysts.no_analysts")}</h3>
+                        <p className="text-muted-foreground">{t("find_analysts.adjust_search")}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -104,7 +106,7 @@ export default function FindAnalystsPage() {
                                 <CardFooter className="pt-2">
                                     <Link href={`/analyst/public/${analyst.id}`} className="w-full">
                                         <Button variant="outline" className="w-full justify-between group">
-                                            View Profile
+                                            {t("common.view_profile")}
                                             <ExternalLink className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </Button>
                                     </Link>

@@ -29,6 +29,7 @@ import { CreateDashboardDialog } from "@/components/bi/create-dashboard-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface EnrichedProject extends Project {
   clientName: string;
@@ -38,6 +39,7 @@ interface EnrichedProject extends Project {
 }
 
 export default function AnalystProjectDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,23 +69,23 @@ export default function AnalystProjectDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/dashboards?projectId=${id}`] });
-      toast({ title: "Dashboard submitted", description: "The dashboard has been submitted for client review." });
+      toast({ title: t("analyst_project_detail.dashboard_submitted"), description: t("analyst_project_detail.dashboard_submitted_desc") });
     },
     onError: () => {
-      toast({ title: "Submission failed", description: "Could not submit dashboard.", variant: "destructive" });
+      toast({ title: t("analyst_project_detail.submission_failed"), description: t("analyst_project_detail.submission_failed_desc"), variant: "destructive" });
     }
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "in_progress":
-        return <Badge variant="default">In Progress</Badge>;
+        return <Badge variant="default">{t("analyst_project_detail.in_progress")}</Badge>;
       case "review":
-        return <Badge variant="secondary">Review</Badge>;
+        return <Badge variant="secondary">{t("analyst_project_detail.review")}</Badge>;
       case "completed":
-        return <Badge className="bg-green-600">Completed</Badge>;
+        return <Badge className="bg-green-600">{t("analyst_project_detail.completed")}</Badge>;
       case "open":
-        return <Badge variant="outline">Open</Badge>;
+        return <Badge variant="outline">{t("analyst_project_detail.open")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -105,9 +107,9 @@ export default function AnalystProjectDetailPage() {
         <div className="p-6">
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <h3 className="text-lg font-medium mb-2">Project not found</h3>
+              <h3 className="text-lg font-medium mb-2">{t("analyst_project_detail.project_not_found")}</h3>
               <Link href="/analyst/projects">
-                <Button variant="outline">Back to Projects</Button>
+                <Button variant="outline">{t("analyst_project_detail.back_to_projects")}</Button>
               </Link>
             </CardContent>
           </Card>
@@ -125,8 +127,8 @@ export default function AnalystProjectDetailPage() {
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
               data-testid="button-back-projects"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Projects
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+              {t("analyst_project_detail.back_to_projects")}
             </button>
           </Link>
 
@@ -146,35 +148,35 @@ export default function AnalystProjectDetailPage() {
             {project.budget && (
               <div className="flex items-center gap-1.5">
                 <DollarSign className="h-4 w-4" />
-                <span>${project.budget.toLocaleString()} budget</span>
+                <span>${project.budget.toLocaleString()} {t("analyst_project_detail.budget")}</span>
               </div>
             )}
             <div className="flex items-center gap-1.5">
               <Building2 className="h-4 w-4" />
-              <span>Client: {project.clientName}</span>
+              <span>{t("analyst_project_detail.client")} {project.clientName}</span>
             </div>
             {project.createdAt && (
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
-                <span>Started {new Date(project.createdAt).toLocaleDateString()}</span>
+                <span>{t("analyst_project_detail.started")} {new Date(project.createdAt).toLocaleDateString()}</span>
               </div>
             )}
           </div>
         </div>
 
         <Tabs defaultValue="chat" className="w-full">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="chat" data-testid="tab-chat">
               <MessageSquare className="h-4 w-4 mr-2" />
-              Chat with Client
+              {t("analyst_project_detail.chat_with_client")}
             </TabsTrigger>
             <TabsTrigger value="datasets" data-testid="tab-datasets">
               <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Datasets ({project.datasetsCount || 0})
+              {t("analyst_project_detail.datasets")} ({project.datasetsCount || 0})
             </TabsTrigger>
             <TabsTrigger value="dashboards" data-testid="tab-dashboards">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Dashboards ({project.dashboardsCount || 0})
+              {t("analyst_project_detail.dashboards")} ({project.dashboardsCount || 0})
             </TabsTrigger>
           </TabsList>
 
@@ -189,7 +191,7 @@ export default function AnalystProjectDetailPage() {
           <TabsContent value="datasets">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Project Datasets</CardTitle>
+                <CardTitle className="text-base">{t("analyst_project_detail.project_datasets")}</CardTitle>
               </CardHeader>
               <CardContent>
                 {project.datasets && project.datasets.length > 0 ? (
@@ -202,7 +204,7 @@ export default function AnalystProjectDetailPage() {
                           </div>
                           <div>
                             <p className="font-medium">{dataset.name}</p>
-                            <p className="text-xs text-muted-foreground">{dataset.fileName} • {dataset.rowCount ? `${dataset.rowCount.toLocaleString()} rows` : 'Unknown size'}</p>
+                            <p className="text-xs text-muted-foreground">{dataset.fileName} • {dataset.rowCount ? `${dataset.rowCount.toLocaleString()} ${t("analyst_project_detail.rows")}` : t("analyst_project_detail.unknown_size")}</p>
                           </div>
                         </div>
                         {dataset.createdAt && (
@@ -216,7 +218,7 @@ export default function AnalystProjectDetailPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                     <FileSpreadsheet className="h-10 w-10 mb-2 opacity-50" />
-                    <p className="text-sm">No datasets available yet</p>
+                    <p className="text-sm">{t("analyst_project_detail.no_datasets")}</p>
                   </div>
                 )}
               </CardContent>
@@ -226,7 +228,7 @@ export default function AnalystProjectDetailPage() {
           <TabsContent value="dashboards">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Project Dashboards</CardTitle>
+                <CardTitle className="text-base">{t("analyst_project_detail.project_dashboards")}</CardTitle>
                 {project.status !== "completed" && (
                   <CreateDashboardDialog
                     open={isCreateDialogOpen}
@@ -235,7 +237,7 @@ export default function AnalystProjectDetailPage() {
                     trigger={
                       <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Dashboard
+                        {t("analyst_project_detail.create_dashboard")}
                       </Button>
                     }
                   />
@@ -256,9 +258,9 @@ export default function AnalystProjectDetailPage() {
                                 dashboard.status === "submitted" ? "secondary" :
                                   "outline"
                             }>
-                              {dashboard.status === "approved" ? "Approved" :
-                                dashboard.status === "submitted" ? "Under Review" :
-                                  dashboard.status === "rejected" ? "Changes Requested" : "Draft"}
+                              {dashboard.status === "approved" ? t("analyst_project_detail.approved") :
+                                dashboard.status === "submitted" ? t("analyst_project_detail.under_review") :
+                                  dashboard.status === "rejected" ? t("analyst_project_detail.changes_requested") : t("analyst_project_detail.draft")}
                             </Badge>
                           </div>
                           {dashboard.description && (
@@ -270,7 +272,7 @@ export default function AnalystProjectDetailPage() {
                             <Link href={`/analyst/dashboard/${dashboard.id}`} className="flex-1">
                               <Button variant="outline" className="w-full" size="sm">
                                 <Eye className="h-4 w-4 mr-2" />
-                                View & Edit
+                                {t("analyst_project_detail.view_edit")}
                               </Button>
                             </Link>
                             {(dashboard.status === "draft" || dashboard.status === "rejected") && project.status !== "completed" && (
@@ -278,7 +280,7 @@ export default function AnalystProjectDetailPage() {
                                 size="sm"
                                 onClick={() => submitDashboardMutation.mutate(dashboard.id)}
                                 disabled={submitDashboardMutation.isPending}
-                                title="Submit for Review"
+                                title={t("analyst_project_detail.submit_for_review")}
                               >
                                 {submitDashboardMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                               </Button>
@@ -291,11 +293,11 @@ export default function AnalystProjectDetailPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                     <BarChart3 className="h-10 w-10 mb-2 opacity-50" />
-                    <p className="text-sm">Dashboards created: {project.dashboardsCount}</p>
+                    <p className="text-sm">{t("analyst_project_detail.dashboards_created")} {project.dashboardsCount}</p>
                     {project.status !== "completed" && (
                       <Link href="/analyst/visualization-builder">
                         <Button className="mt-4" size="sm" data-testid="button-create-visualization">
-                          Create Visualization
+                          {t("analyst_project_detail.create_visualization")}
                         </Button>
                       </Link>
                     )}

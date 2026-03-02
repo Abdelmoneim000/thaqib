@@ -4,10 +4,12 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export function ImpersonationBanner() {
     const [, navigate] = useLocation();
     const { user } = useAuth();
+    const { t } = useTranslation();
 
     const stopMutation = useMutation({
         mutationFn: async () => {
@@ -32,7 +34,7 @@ export function ImpersonationBanner() {
                 <div className="flex items-center gap-2 text-sm font-medium">
                     <AlertTriangle className="h-4 w-4" />
                     <span>
-                        Viewing as: <strong>{user?.firstName} {user?.lastName}</strong> ({user?.role})
+                        {t("impersonation.viewing_as")}: <strong>{user?.firstName} {user?.lastName}</strong> ({user?.role})
                     </span>
                 </div>
                 <Button
@@ -43,7 +45,7 @@ export function ImpersonationBanner() {
                     disabled={stopMutation.isPending}
                 >
                     <ArrowLeft className="h-3 w-3" />
-                    Return to Admin
+                    {t("impersonation.return_admin")}
                 </Button>
             </div>
         </div>

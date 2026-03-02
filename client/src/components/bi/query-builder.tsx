@@ -27,6 +27,7 @@ import type {
   AggregationType,
   VisualQuery
 } from "@/lib/bi-types";
+import { useTranslation } from "react-i18next";
 
 interface QueryBuilderProps {
   datasets: Dataset[];
@@ -56,6 +57,7 @@ const operatorOptions = [
 
 export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: QueryBuilderProps) {
   const { datasetId: selectedDatasetId, columns: rawColumns, filters, groupBy } = query;
+  const { t } = useTranslation();
 
   // Ensure columns is treated as QueryColumn[]
   const columns = (rawColumns as QueryColumn[]) || [];

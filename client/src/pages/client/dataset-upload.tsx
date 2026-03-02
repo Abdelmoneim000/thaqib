@@ -21,6 +21,7 @@ import { queryClient } from "@/lib/queryClient";
 import type { Dataset } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface UploadedFile {
   id: string;
@@ -59,6 +60,7 @@ function UploadedFileCard({
   onRemove: () => void;
   onUpload: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Card className="border-card-border bg-card">
       <CardContent className="p-4">
@@ -86,19 +88,19 @@ function UploadedFileCard({
 
               {file.status === "pending" && (
                 <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                  Ready to upload
+                  {t("datasets.ready_to_upload")}
                 </span>
               )}
               {file.status === "complete" && (
                 <span className="flex items-center gap-1 text-sm text-chart-2">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Uploaded
+                  {t("datasets.uploaded")}
                 </span>
               )}
               {file.status === "error" && (
                 <span className="flex items-center gap-1 text-sm text-destructive">
                   <AlertCircle className="h-3.5 w-3.5" />
-                  Failed
+                  {t("datasets.failed")}
                 </span>
               )}
             </div>
@@ -117,6 +119,7 @@ export default function DatasetUploadPage() {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const { data: existingDatasets } = useQuery<Dataset[]>({
     queryKey: ["/api/datasets"], // Fetch all user datasets
@@ -272,21 +275,21 @@ export default function DatasetUploadPage() {
             data-testid="button-back-project"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Project
+            {t("datasets.back_to_project")}
           </button>
         </Link>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Upload Datasets</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("datasets.upload_title")}</h1>
           <p className="text-muted-foreground">
-            Upload your data files for analysts to work with
+            {t("datasets.upload_subtitle")}
           </p>
         </div>
 
         <Tabs defaultValue="upload" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="upload">Upload New</TabsTrigger>
-            <TabsTrigger value="library">Import from Library</TabsTrigger>
+            <TabsTrigger value="upload">{t("datasets.upload_new")}</TabsTrigger>
+            <TabsTrigger value="library">{t("datasets.import_library")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
@@ -315,14 +318,14 @@ export default function DatasetUploadPage() {
                       <Upload className="h-8 w-8 text-primary" />
                     </div>
                     <h3 className="text-lg font-medium mb-2">
-                      Drop files here or click to upload
+                      {t("datasets.drop_files")}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Supports CSV, Excel, JSON, and Parquet files up to 50MB
+                      {t("datasets.supports_formats")}
                     </p>
                     <label htmlFor="file-upload">
                       <Button variant="outline" data-testid="button-browse-files" asChild>
-                        <span>Browse Files</span>
+                        <span>{t("datasets.browse_files")}</span>
                       </Button>
                     </label>
                   </div>
@@ -333,9 +336,9 @@ export default function DatasetUploadPage() {
             {files.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-medium">Uploaded Files</h2>
+                  <h2 className="text-lg font-medium">{t("datasets.uploaded_files")}</h2>
                   <span className="text-sm text-muted-foreground">
-                    {files.filter(f => f.status === "complete").length} of {files.length} complete
+                    {files.filter(f => f.status === "complete").length} {t("common.of")} {files.length} {t("datasets.complete")}
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -351,13 +354,13 @@ export default function DatasetUploadPage() {
                 </div>
                 {files.some(f => f.status === "pending") && (
                   <div className="flex justify-end pt-2">
-                    <Button onClick={startAllUploads}>Upload All Pending</Button>
+                    <Button onClick={startAllUploads}>{t("datasets.upload_all_pending")}</Button>
                   </div>
                 )}
                 <div className="flex justify-end gap-3 pt-4">
                   <Link href={`/client/projects/${id}`}>
                     <Button variant="outline" data-testid="button-done-upload">
-                      Done
+                      {t("datasets.done")}
                     </Button>
                   </Link>
                 </div>
@@ -368,8 +371,8 @@ export default function DatasetUploadPage() {
           <TabsContent value="library">
             <Card className="border-card-border bg-card">
               <CardHeader>
-                <CardTitle>Your Dataset Library</CardTitle>
-                <CardDescription>Reuse datasets you've previously uploaded to other projects.</CardDescription>
+                <CardTitle>{t("datasets.your_library")}</CardTitle>
+                <CardDescription>{t("datasets.reuse_desc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -383,7 +386,7 @@ export default function DatasetUploadPage() {
                           <div>
                             <p className="font-medium">{dataset.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              {dataset.rowCount?.toLocaleString()} rows • {formatFileSize(dataset.fileSize || 0)}
+                              {dataset.rowCount?.toLocaleString()} {t("datasets.rows")} • {formatFileSize(dataset.fileSize || 0)}
                             </p>
                           </div>
                         </div>
@@ -394,13 +397,13 @@ export default function DatasetUploadPage() {
                           disabled={importMutation.isPending}
                         >
                           <Copy className="h-4 w-4 mr-2" />
-                          Import
+                          {t("datasets.import")}
                         </Button>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                      No existing datasets found.
+                      {t("datasets.no_existing")}
                     </div>
                   )}
                 </div>
@@ -411,28 +414,28 @@ export default function DatasetUploadPage() {
 
         <Card className="border-card-border bg-card mt-6">
           <CardHeader>
-            <CardTitle className="text-base">Data Security</CardTitle>
+            <CardTitle className="text-base">{t("datasets.data_security")}</CardTitle>
             <CardDescription>
-              Your data is protected with enterprise-grade security
+              {t("datasets.security_desc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-chart-2" />
-                Files are encrypted at rest and in transit
+                {t("datasets.encrypted")}
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-chart-2" />
-                Only assigned analysts can access your data
+                {t("datasets.assigned_only")}
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-chart-2" />
-                Complete audit logging of all data access
+                {t("datasets.audit_logging")}
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-chart-2" />
-                Data is automatically deleted after project completion
+                {t("datasets.auto_deleted")}
               </li>
             </ul>
           </CardContent>

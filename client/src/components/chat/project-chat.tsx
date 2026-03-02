@@ -9,6 +9,7 @@ import { Send, MessageSquare, Loader2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import type { Message, Conversation } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 interface ProjectChatProps {
   projectId: string;
@@ -19,6 +20,7 @@ interface ProjectChatProps {
 export function ProjectChat({ projectId, currentUserId, currentUserRole }: ProjectChatProps) {
   const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   const { data: conversation, isLoading: loadingConversation } = useQuery<Conversation>({
     queryKey: ["/api/conversations/project", projectId],
@@ -94,8 +96,8 @@ export function ProjectChat({ projectId, currentUserId, currentUserRole }: Proje
     return (
       <Card className="h-full flex flex-col items-center justify-center" data-testid="card-chat-unavailable">
         <MessageSquare className="h-10 w-10 mb-2 text-muted-foreground opacity-50" />
-        <p className="text-sm text-muted-foreground">Chat unavailable</p>
-        <p className="text-xs text-muted-foreground">An analyst must be assigned to enable chat</p>
+        <p className="text-sm text-muted-foreground">{t("chat.chat_unavailable")}</p>
+        <p className="text-xs text-muted-foreground">{t("chat.chat_unavailable_desc")}</p>
       </Card>
     );
   }
@@ -117,8 +119,8 @@ export function ProjectChat({ projectId, currentUserId, currentUserRole }: Proje
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
               <MessageSquare className="h-10 w-10 mb-2 opacity-50" />
-              <p className="text-sm">No messages yet</p>
-              <p className="text-xs">Start the conversation</p>
+              <p className="text-sm">{t("chat.no_messages")}</p>
+              <p className="text-xs">{t("chat.start_conversation")}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -177,7 +179,7 @@ export function ProjectChat({ projectId, currentUserId, currentUserRole }: Proje
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
+              placeholder={t("chat.type_message")}
               disabled={sendMutation.isPending}
               data-testid="input-chat-message"
             />

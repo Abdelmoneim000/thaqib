@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, Dataset } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 type ProjectStatus = "draft" | "open" | "in_progress" | "completed" | "cancelled";
 
@@ -82,6 +83,7 @@ function getStatusBadge(status: string) {
 }
 
 function CreateProjectDialog() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [title, setTitle] = useState("");
@@ -171,24 +173,24 @@ function CreateProjectDialog() {
       <DialogTrigger asChild>
         <Button className="gap-2" data-testid="button-create-project">
           <Plus className="h-4 w-4" />
-          New Project
+          {t("client_projects.new_project")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
+          <DialogTitle>{t("client_projects.create_project")}</DialogTitle>
           <DialogDescription>
-            Define your data analysis project. Analysts will be able to apply.
+            {t("client_projects.project_details")}
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4 mt-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="title">Project Name <span className="text-red-500">*</span></Label>
+            <Label htmlFor="title">{t("client_projects.project_title")} <span className="text-red-500">*</span></Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Customer Churn Analysis"
+              placeholder={t("client_projects.title_placeholder")}
               required
               data-testid="input-project-title"
             />
@@ -237,19 +239,19 @@ function CreateProjectDialog() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t("client_projects.description")}</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what you need analyzed and expected deliverables..."
+              placeholder={t("client_projects.desc_placeholder")}
               className="min-h-[100px]"
               data-testid="input-project-description"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="deadline">Deadline</Label>
+            <Label htmlFor="deadline">{t("client_projects.deadline")}</Label>
             <Input
               id="deadline"
               value={deadline}
@@ -328,11 +330,11 @@ function CreateProjectDialog() {
               disabled={createProjectMutation.isPending}
               data-testid="button-cancel-project"
             >
-              Cancel
+              {t("client_projects.cancel")}
             </Button>
             <Button type="submit" disabled={createProjectMutation.isPending} data-testid="button-submit-project">
               {createProjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Project
+              {t("client_projects.create")}
             </Button>
           </div>
         </form>
@@ -342,6 +344,7 @@ function CreateProjectDialog() {
 }
 
 function ProjectCard({ project }: { project: UIProject }) {
+  const { t } = useTranslation();
   return (
     <Link href={`/client/projects/${project.id}`}>
       <Card className="border-card-border bg-card hover-elevate cursor-pointer h-full flex flex-col">
@@ -369,13 +372,13 @@ function ProjectCard({ project }: { project: UIProject }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem data-testid={`menu-view-${project.id}`}>
-                  View Details
+                  {t("client_projects.view_details")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive"
                   data-testid={`menu-delete-${project.id}`}
                 >
-                  Delete
+                  {t("common.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -397,11 +400,11 @@ function ProjectCard({ project }: { project: UIProject }) {
             )}
             <div className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
-              <span>{project.applicants ?? 0} applicants</span>
+              <span>{project.applicants ?? 0} {t("client_projects.applicants").toLowerCase()}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <FileSpreadsheet className="h-4 w-4" />
-              <span>{project.datasets ?? 0} datasets</span>
+              <span>{project.datasets ?? 0} {t("client_projects.datasets").toLowerCase()}</span>
             </div>
           </div>
           <div>
@@ -414,14 +417,15 @@ function ProjectCard({ project }: { project: UIProject }) {
 }
 
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
         <FolderKanban className="h-8 w-8 text-muted-foreground" />
       </div>
-      <h3 className="mb-2 text-lg font-medium">No projects yet</h3>
+      <h3 className="mb-2 text-lg font-medium">{t("client_projects.no_projects")}</h3>
       <p className="mb-6 max-w-sm text-sm text-muted-foreground">
-        Create your first project to start working with data analysts.
+        {t("client_projects.no_projects_desc")}
       </p>
       <CreateProjectDialog />
     </div>
@@ -429,6 +433,7 @@ function EmptyState() {
 }
 
 export default function ClientProjectsPage() {
+  const { t } = useTranslation();
   const { data: projects, isLoading } = useQuery<UIProject[]>({
     queryKey: ["/api/projects"],
   });
@@ -448,9 +453,9 @@ export default function ClientProjectsPage() {
       <div className="p-6">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">My Projects</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("client_projects.title")}</h1>
             <p className="text-sm text-muted-foreground">
-              Manage your data analysis projects
+              {t("client_projects.desc")}
             </p>
           </div>
           {projects && projects.length > 0 && <CreateProjectDialog />}

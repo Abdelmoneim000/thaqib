@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Loader2
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface EnrichedProject extends Project {
   clientName: string;
@@ -27,19 +28,21 @@ interface EnrichedProject extends Project {
 }
 
 function getStatusBadge(status: string) {
+  const { t } = useTranslation();
   switch (status) {
     case "in_progress":
-      return <Badge variant="default">In Progress</Badge>;
+      return <Badge variant="default">{t("analyst_projects.in_progress")}</Badge>;
     case "review":
-      return <Badge variant="secondary">Under Review</Badge>;
+      return <Badge variant="secondary">{t("analyst_projects.under_review")}</Badge>;
     case "completed":
-      return <Badge className="bg-green-600 hover:bg-green-700">Completed</Badge>;
+      return <Badge className="bg-green-600 hover:bg-green-700">{t("analyst_projects.completed")}</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
 }
 
 function ProjectCard({ project, showActions = true }: { project: EnrichedProject; showActions?: boolean }) {
+  const { t } = useTranslation();
   // Simple progress estimation based on status
   const progress = project.status === "completed" ? 100 : project.status === "review" ? 90 : 40;
 
@@ -63,10 +66,10 @@ function ProjectCard({ project, showActions = true }: { project: EnrichedProject
       <CardContent className="space-y-4">
         <div className="pt-2">
           <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-2 px-1">
-            <span>In Progress</span>
-            <span>Submitted</span>
-            <span>Review</span>
-            <span>Complete</span>
+            <span>{t("analyst_projects.in_progress")}</span>
+            <span>{t("analyst_projects.submitted")}</span>
+            <span>{t("analyst_projects.under_review")}</span>
+            <span>{t("analyst_projects.complete")}</span>
           </div>
           <div className="relative mx-1">
             {/* Timeline line */}
@@ -74,34 +77,34 @@ function ProjectCard({ project, showActions = true }: { project: EnrichedProject
 
             {/* Active Timeline */}
             <div className={`absolute top-1.5 left-0 h-0.5 bg-primary transition-all duration-500 ${project.status === "completed" ? "w-full" :
-                project.status === "review" ? "w-3/4" :
-                  "w-1/4"
+              project.status === "review" ? "w-3/4" :
+                "w-1/4"
               }`}></div>
 
             {/* Dots */}
             <div className="relative flex justify-between">
               {/* Step 1: In Progress */}
               <div className={`w-3 h-3 rounded-full border-2 ${["in_progress", "review", "completed"].includes(project.status)
-                  ? "bg-primary border-primary"
-                  : "bg-background border-muted"
+                ? "bg-primary border-primary"
+                : "bg-background border-muted"
                 }`}></div>
 
               {/* Step 2: Submitted */}
               <div className={`w-3 h-3 rounded-full border-2 ${["review", "completed"].includes(project.status)
-                  ? "bg-primary border-primary"
-                  : "bg-background border-muted"
+                ? "bg-primary border-primary"
+                : "bg-background border-muted"
                 }`}></div>
 
               {/* Step 3: Under Review */}
               <div className={`w-3 h-3 rounded-full border-2 ${["review", "completed"].includes(project.status)
-                  ? "bg-primary border-primary"
-                  : "bg-background border-muted"
+                ? "bg-primary border-primary"
+                : "bg-background border-muted"
                 }`}></div>
 
               {/* Step 4: Complete */}
               <div className={`w-3 h-3 rounded-full border-2 ${project.status === "completed"
-                  ? "bg-primary border-primary"
-                  : "bg-background border-muted"
+                ? "bg-primary border-primary"
+                : "bg-background border-muted"
                 }`}></div>
             </div>
           </div>
@@ -111,29 +114,29 @@ function ProjectCard({ project, showActions = true }: { project: EnrichedProject
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-muted-foreground">Deadline</p>
-              <p className="font-medium">{project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline'}</p>
+              <p className="text-muted-foreground">{t("analyst_projects.deadline")}</p>
+              <p className="font-medium">{project.deadline ? new Date(project.deadline).toLocaleDateString() : t("analyst_projects.no_deadline")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-muted-foreground">Datasets</p>
-              <p className="font-medium">{project.datasetsCount} files</p>
+              <p className="text-muted-foreground">{t("analyst_projects.datasets")}</p>
+              <p className="font-medium">{project.datasetsCount} {t("analyst_projects.files")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-muted-foreground">Dashboards</p>
-              <p className="font-medium">{project.dashboardsCount} created</p>
+              <p className="text-muted-foreground">{t("analyst_projects.dashboards")}</p>
+              <p className="font-medium">{project.dashboardsCount} {t("analyst_projects.created")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-muted-foreground">Last Activity</p>
-              <p className="font-medium">{project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently'}</p>
+              <p className="text-muted-foreground">{t("analyst_projects.last_activity")}</p>
+              <p className="font-medium">{project.createdAt ? new Date(project.createdAt).toLocaleDateString() : t("analyst_projects.recently")}</p>
             </div>
           </div>
         </div>
@@ -142,7 +145,7 @@ function ProjectCard({ project, showActions = true }: { project: EnrichedProject
           <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
             <Link href={`/analyst/projects/${project.id}`}>
               <Button variant="outline" size="sm" data-testid={`button-details-${project.id}`}>
-                View Details
+                {t("analyst_projects.view_details")}
               </Button>
             </Link>
 
@@ -162,7 +165,7 @@ function ProjectCard({ project, showActions = true }: { project: EnrichedProject
             )}
             {project.status === "review" && (
               <Button variant="secondary" size="sm" disabled>
-                Awaiting Client Review
+                {t("analyst_projects.awaiting_review")}
               </Button>
             )}
           </div>
@@ -173,6 +176,7 @@ function ProjectCard({ project, showActions = true }: { project: EnrichedProject
 }
 
 export default function AnalystProjectsPage() {
+  const { t } = useTranslation();
   const { data: projects, isLoading } = useQuery<EnrichedProject[]>({
     queryKey: ["/api/projects"],
   });
@@ -197,9 +201,9 @@ export default function AnalystProjectsPage() {
     <AnalystLayout>
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Active Projects</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("analyst_projects.title")}</h1>
           <p className="text-muted-foreground">
-            Manage your ongoing data analysis projects
+            {t("analyst_projects.description")}
           </p>
         </div>
 
@@ -207,7 +211,7 @@ export default function AnalystProjectsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                In Progress
+                {t("analyst_projects.in_progress")}
               </CardTitle>
               <BarChart3 className="h-4 w-4 text-primary" />
             </CardHeader>
@@ -218,7 +222,7 @@ export default function AnalystProjectsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Under Review
+                {t("analyst_projects.under_review")}
               </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -229,7 +233,7 @@ export default function AnalystProjectsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Completed
+                {t("analyst_projects.total_completed")}
               </CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-600" />
             </CardHeader>
@@ -242,10 +246,10 @@ export default function AnalystProjectsPage() {
         <Tabs defaultValue="active" className="w-full">
           <TabsList>
             <TabsTrigger value="active" data-testid="tab-active">
-              Active ({activeProjects.length})
+              {t("analyst_projects.active")} ({activeProjects.length})
             </TabsTrigger>
             <TabsTrigger value="completed" data-testid="tab-completed">
-              Completed ({completedProjects.length})
+              {t("analyst_projects.completed")} ({completedProjects.length})
             </TabsTrigger>
           </TabsList>
 
@@ -258,13 +262,13 @@ export default function AnalystProjectsPage() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No active projects</h3>
+                  <h3 className="text-lg font-medium mb-2">{t("analyst_projects.no_active")}</h3>
                   <p className="text-muted-foreground text-center mb-4">
-                    Start by browsing available projects and applying
+                    {t("analyst_projects.browse_start")}
                   </p>
                   <Link href="/analyst/browse">
                     <Button data-testid="button-browse-projects">
-                      Browse Projects
+                      {t("analyst_projects.browse_projects")}
                     </Button>
                   </Link>
                 </CardContent>
@@ -281,7 +285,7 @@ export default function AnalystProjectsPage() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <CheckCircle2 className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No completed projects yet</p>
+                  <p className="text-muted-foreground">{t("analyst_projects.no_completed")}</p>
                 </CardContent>
               </Card>
             )}

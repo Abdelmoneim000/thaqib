@@ -9,20 +9,24 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   MessageSquare,
   Send,
-  User
+  User,
+  Search
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Conversation, Message, User as UserType } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 export default function AdminChatsPage() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   const { data: conversations, isLoading: isLoadingConversations } = useQuery<Conversation[]>({
     queryKey: ["/api/admin/conversations"],
@@ -107,16 +111,24 @@ export default function AdminChatsPage() {
     u => u.role !== "admin" && !conversations?.some(c => c.clientId === u.id)
   ) || [];
 
+  const filteredConversations = conversations?.filter(conv => {
+    const clientName = getUserName(conv.clientId).toLowerCase();
+    return clientName.includes(searchQuery.toLowerCase());
+  });
+
   return (
     <AdminLayout>
       <div className="p-6 h-[calc(100vh-theme(spacing.14))]">
+        <div className="mb-6 shrink-0">
+          <h1 className="text-2xl font-semibold tracking-tight">{t("admin_chats.title")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t("admin_chats.description")}
+          </p>
+        </div>
         <div className="flex gap-6 h-full">
-          <Card className="w-80 flex flex-col" data-testid="card-conversations-list">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Support Chats
-              </CardTitle>
+          <Card className="w-1/3 flex flex-col h-[calc(100vh-12rem)]" data-testid="card-conversations-list">
+            <CardHeader className="border-b py-4">
+              <CardTitle className="text-lg">{t("chat.title")}</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden flex flex-col">
               <div className="mb-4">
@@ -126,7 +138,7 @@ export default function AdminChatsPage() {
                   className="w-full p-2 border rounded mb-2"
                   data-testid="select-user"
                 >
-                  <option value="">Start new chat...</option>
+                  <option value="">{t("admin_chats.start_new_chat")}</option>
                   {usersWithoutConversation.map(user => (
                     <option key={user.id} value={user.id}>
                       {user.firstName} {user.lastName} ({user.role})
@@ -140,8 +152,18 @@ export default function AdminChatsPage() {
                   disabled={!selectedUserId || createConversationMutation.isPending}
                   data-testid="button-start-chat"
                 >
-                  Start Chat
+                  {t("admin_chats.start_chat")}
                 </Button>
+              </div>
+
+              <div className="relative mb-4">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t("admin_chats.search_users")}
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
 
               <ScrollArea className="flex-1">
@@ -151,13 +173,13 @@ export default function AdminChatsPage() {
                       <Skeleton key={i} className="h-16 w-full" />
                     ))}
                   </div>
-                ) : conversations?.length === 0 ? (
+                ) : filteredConversations?.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4 text-sm">
-                    No support chats yet
+                    {t("admin_chats.no_chats")}
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {conversations?.map((conv) => (
+                    {filteredConversations?.map((conv) => (
                       <div
                         key={conv.id}
                         className={`p-3 rounded cursor-pointer border ${selectedConversation === conv.id ? "bg-muted border-primary" : "hover:bg-muted/50"
@@ -190,14 +212,14 @@ export default function AdminChatsPage() {
             <CardHeader className="border-b">
               <CardTitle>
                 {selectedConversation
-                  ? `Chat with ${getUserName(conversations?.find(c => c.id === selectedConversation)?.clientId || "")}`
-                  : "Select a conversation"}
+                  ? `${t("admin_chats.chat_with")} ${getUserName(conversations?.find(c => c.id === selectedConversation)?.clientId || "")}`
+                  : t("admin_chats.select_conversation")}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden flex flex-col p-0">
               {!selectedConversation ? (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-muted-foreground">Select a conversation to view messages</p>
+                  <p className="text-muted-foreground">{t("admin_chats.select_conversation")}</p>
                 </div>
               ) : (
                 <>
@@ -210,7 +232,7 @@ export default function AdminChatsPage() {
                       </div>
                     ) : messages?.length === 0 ? (
                       <p className="text-muted-foreground text-center py-8">
-                        No messages yet. Start the conversation!
+                        {t("admin_chats.no_messages")}
                       </p>
                     ) : (
                       <div className="space-y-4">
@@ -222,14 +244,14 @@ export default function AdminChatsPage() {
                           >
                             <div
                               className={`max-w-[70%] rounded-lg p-3 ${message.senderRole === "admin"
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
                                 }`}
                             >
                               <div className="flex items-center gap-2 mb-1">
                                 <User className="h-3 w-3" />
                                 <span className="text-xs font-medium">
-                                  {message.senderRole === "admin" ? "Thaqib Help" : getUserName(message.senderId)}
+                                  {message.senderRole === "admin" ? t("admin_chats.thaqib_help") : getUserName(message.senderId)}
                                 </span>
                               </div>
                               <p className="text-sm">{message.content}</p>
@@ -246,7 +268,7 @@ export default function AdminChatsPage() {
                       <Input
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type your message..."
+                        placeholder={t("admin_chats.type_message")}
                         onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                         data-testid="input-message"
                       />
