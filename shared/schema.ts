@@ -30,7 +30,7 @@ export const projects = pgTable("projects", {
   description: text("description"),
   clientId: varchar("client_id").notNull(),
   analystId: varchar("analyst_id"),
-  status: text("status").notNull().default("open"),
+  status: text("status").notNull().default("pending_approval"),
   budget: integer("budget"),
   platformFee: integer("platform_fee").default(0),
   analysisType: text("analysis_type"), // descriptive, diagnostic, predictive, prescriptive

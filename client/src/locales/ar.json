@@ -303,7 +303,8 @@
         "assigned": "معين",
         "pending": "معلق",
         "accepted": "مقبول",
-        "rejected": "مرفوض"
+        "rejected": "مرفوض",
+        "pending_approval": "قيد موافقة الإدارة"
     },
     "not_found": {
         "title": "404 الصفحة غير موجودة",
@@ -685,6 +686,7 @@
         "search_projects": "ابحث في المشاريع...",
         "status_all": "جميع الحالات",
         "status_draft": "مسودة",
+        "pending_approval": "قيد موافقة الإدارة",
         "status_open": "مفتوح",
         "status_in_progress": "قيد التنفيذ",
         "status_completed": "مكتمل",

@@ -22,6 +22,7 @@ import {
     Loader2,
     User,
     Clock,
+    DollarSign,
 } from "lucide-react";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -44,6 +45,7 @@ interface ApplicationWithDetails extends Application {
 
 export default function AdminProjectsPage() {
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+    const [budgetInput, setBudgetInput] = useState<string>("");
     const { toast } = useToast();
     const { t } = useTranslation();
 
@@ -109,10 +111,26 @@ export default function AdminProjectsPage() {
         },
     });
 
+    const publishProjectMutation = useMutation({
+        mutationFn: async ({ projectId, budget }: { projectId: string; budget: number }) => {
+            await apiRequest("PATCH", `/api/admin/projects/${projectId}`, { status: "open", budget });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+            toast({ title: "Project published successfully" });
+            setBudgetInput("");
+        },
+        onError: () => {
+            toast({ title: "Failed to publish project", variant: "destructive" });
+        },
+    });
+
     const selectedProject = projects?.find((p) => p.id === selectedProjectId);
 
     const getStatusColor = (status: string) => {
         switch (status) {
+            case "pending_approval":
+                return "bg-orange-100 text-orange-800";
             case "open":
                 return "bg-blue-100 text-blue-800";
             case "in_progress":
@@ -293,120 +311,157 @@ export default function AdminProjectsPage() {
                                     </div>
                                 )}
 
-                                {/* Applicants Section */}
-                                <div>
-                                    <h3 className="font-medium text-sm mb-2 flex items-center gap-2">
-                                        <Users className="h-4 w-4" />
-                                        {t("admin.applicants")} ({applications?.length || 0})
-                                    </h3>
-
-                                    {isLoadingApps ? (
-                                        <div className="space-y-2">
-                                            {[1, 2].map((i) => (
-                                                <Skeleton key={i} className="h-20 w-full" />
-                                            ))}
-                                        </div>
-                                    ) : !applications?.length ? (
-                                        <p className="text-xs text-muted-foreground text-center py-4">
-                                            {t("admin.no_applications")}
+                                {/* Admin Action: Pending Approval Set Budget */}
+                                {selectedProject.status === "pending_approval" && (
+                                    <div className="bg-orange-50 border border-orange-200 rounded-md p-4 space-y-3 mt-4">
+                                        <h4 className="font-medium text-sm text-orange-900">{t("admin.set_budget_publish", { defaultValue: "Set Budget & Publish" })}</h4>
+                                        <p className="text-xs text-orange-700">
+                                            {t("admin.set_budget_publish_desc", { defaultValue: "Specify the project budget before publishing it to analysts." })}
                                         </p>
-                                    ) : (
-                                        <div className="space-y-2 max-h-[300px] overflow-auto">
-                                            {applications.map((app) => (
-                                                <div
-                                                    key={app.id}
-                                                    className="border rounded-lg p-3 space-y-2"
-                                                    data-testid={`application-${app.id}`}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                                                <User className="h-3.5 w-3.5" />
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-sm font-medium">
-                                                                    {app.analystName}
-                                                                </span>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {app.analystEmail}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <Badge
-                                                            variant={
-                                                                app.status === "accepted"
-                                                                    ? "default"
-                                                                    : app.status === "rejected"
-                                                                        ? "destructive"
-                                                                        : "secondary"
-                                                            }
-                                                        >
-                                                            {app.status}
-                                                        </Badge>
-                                                    </div>
-
-                                                    {app.analystSkills && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {t("auth.skills")}: {app.analystSkills}
-                                                        </p>
-                                                    )}
-
-                                                    {app.coverLetter && (
-                                                        <p className="text-xs bg-muted rounded p-2">
-                                                            {app.coverLetter}
-                                                        </p>
-                                                    )}
-
-                                                    {app.proposedBudget && (
-                                                        <p className="text-xs">
-                                                            {t("common.proposed_budget")}: ${app.proposedBudget.toLocaleString()}
-                                                        </p>
-                                                    )}
-
-                                                    {app.status === "pending" && (
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                size="sm"
-                                                                className="flex-1 h-7 text-xs"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    acceptMutation.mutate(app.id);
-                                                                }}
-                                                                disabled={acceptMutation.isPending}
-                                                                data-testid={`button-accept-${app.id}`}
-                                                            >
-                                                                {acceptMutation.isPending ? (
-                                                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                                                ) : (
-                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                                )}
-                                                                Accept
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="flex-1 h-7 text-xs"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    rejectMutation.mutate(app.id);
-                                                                }}
-                                                                disabled={rejectMutation.isPending}
-                                                                data-testid={`button-reject-${app.id}`}
-                                                            >
-                                                                {rejectMutation.isPending ? (
-                                                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                                                ) : (
-                                                                    <XCircle className="h-3 w-3 mr-1" />
-                                                                )}
-                                                                Reject
-                                                            </Button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <input
+                                                    type="number"
+                                                    placeholder={t("admin.enter_budget", { defaultValue: "Enter amount..." })}
+                                                    className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                    value={budgetInput}
+                                                    onChange={(e) => setBudgetInput(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                disabled={!budgetInput || isNaN(Number(budgetInput)) || publishProjectMutation.isPending}
+                                                onClick={() => {
+                                                    publishProjectMutation.mutate({
+                                                        projectId: selectedProject.id,
+                                                        budget: Number(budgetInput)
+                                                    });
+                                                }}
+                                            >
+                                                {publishProjectMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                                {t("common.publish", { defaultValue: "Publish" })}
+                                            </Button>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
+
+                                {/* Applicants Section */}
+                                {selectedProject.status !== "pending_approval" && (
+                                    <div>
+                                        <h3 className="font-medium text-sm mb-2 flex items-center gap-2">
+                                            <Users className="h-4 w-4" />
+                                            {t("admin.applicants")} ({applications?.length || 0})
+                                        </h3>
+
+                                        {isLoadingApps ? (
+                                            <div className="space-y-2">
+                                                {[1, 2].map((i) => (
+                                                    <Skeleton key={i} className="h-20 w-full" />
+                                                ))}
+                                            </div>
+                                        ) : !applications?.length ? (
+                                            <p className="text-xs text-muted-foreground text-center py-4">
+                                                {t("admin.no_applications")}
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-2 max-h-[300px] overflow-auto">
+                                                {applications.map((app) => (
+                                                    <div
+                                                        key={app.id}
+                                                        className="border rounded-lg p-3 space-y-2"
+                                                        data-testid={`application-${app.id}`}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                                                    <User className="h-3.5 w-3.5" />
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-sm font-medium">
+                                                                        {app.analystName}
+                                                                    </span>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {app.analystEmail}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <Badge
+                                                                variant={
+                                                                    app.status === "accepted"
+                                                                        ? "default"
+                                                                        : app.status === "rejected"
+                                                                            ? "destructive"
+                                                                            : "secondary"
+                                                                }
+                                                            >
+                                                                {app.status}
+                                                            </Badge>
+                                                        </div>
+
+                                                        {app.analystSkills && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {t("auth.skills")}: {app.analystSkills}
+                                                            </p>
+                                                        )}
+
+                                                        {app.coverLetter && (
+                                                            <p className="text-xs bg-muted rounded p-2">
+                                                                {app.coverLetter}
+                                                            </p>
+                                                        )}
+
+                                                        {app.proposedBudget && (
+                                                            <p className="text-xs">
+                                                                {t("common.proposed_budget")}: ${app.proposedBudget.toLocaleString()}
+                                                            </p>
+                                                        )}
+
+                                                        {app.status === "pending" && (
+                                                            <div className="flex gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    className="flex-1 h-7 text-xs"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        acceptMutation.mutate(app.id);
+                                                                    }}
+                                                                    disabled={acceptMutation.isPending}
+                                                                    data-testid={`button-accept-${app.id}`}
+                                                                >
+                                                                    {acceptMutation.isPending ? (
+                                                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                                                    ) : (
+                                                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                    )}
+                                                                    Accept
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="flex-1 h-7 text-xs"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        rejectMutation.mutate(app.id);
+                                                                    }}
+                                                                    disabled={rejectMutation.isPending}
+                                                                    data-testid={`button-reject-${app.id}`}
+                                                                >
+                                                                    {rejectMutation.isPending ? (
+                                                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                                                    ) : (
+                                                                        <XCircle className="h-3 w-3 mr-1" />
+                                                                    )}
+                                                                    Reject
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     )}

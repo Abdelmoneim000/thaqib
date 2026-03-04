@@ -45,7 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Project, Dataset } from "@shared/schema";
 import { useTranslation } from "react-i18next";
 
-type ProjectStatus = "draft" | "open" | "in_progress" | "completed" | "cancelled";
+type ProjectStatus = "draft" | "pending_approval" | "open" | "in_progress" | "completed" | "cancelled";
 
 // Extended Project type for UI
 interface UIProject extends Project {
@@ -71,11 +71,13 @@ const ANALYSIS_FIELDS = [
 ];
 
 function getStatusBadge(status: string) {
+  const { t } = useTranslation();
   const variants: Record<string, { label: string; className: string }> = {
     draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
-    open: { label: "Open", className: "bg-chart-2/10 text-chart-2" },
-    in_progress: { label: "In Progress", className: "bg-chart-4/10 text-chart-4" },
-    completed: { label: "Completed", className: "bg-chart-1/10 text-chart-1" },
+    pending_approval: { label: t("client_projects.pending_approval"), className: "bg-orange-500/10 text-orange-600 border-orange-200" },
+    open: { label: t("common.open"), className: "bg-chart-2/10 text-chart-2" },
+    in_progress: { label: t("common.in_progress"), className: "bg-chart-4/10 text-chart-4" },
+    completed: { label: t("common.completed"), className: "bg-chart-1/10 text-chart-1" },
     cancelled: { label: "Cancelled", className: "bg-destructive/10 text-destructive" },
   };
   const { label, className } = variants[status] || variants.open;
@@ -164,7 +166,7 @@ function CreateProjectDialog() {
       analysisField: analysisField === "others" ? "others" : (analysisField || null),
       customAnalysisField: analysisField === "others" ? customAnalysisField : null,
       deadline: deadline ? new Date(deadline).toISOString() : null,
-      status: "open"
+      status: "pending_approval"
     });
   };
 
