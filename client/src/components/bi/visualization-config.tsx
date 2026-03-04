@@ -113,7 +113,7 @@ export function VisualizationConfig({
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="x-axis">X-Axis (Category)</Label>
+              <Label htmlFor="x-axis">{t("bi.X_axis")} ({t("bi.category")})</Label>
               <Select value={xAxis || ""} onValueChange={(v) => onAxisChange("x", v)}>
                 <SelectTrigger id="x-axis" data-testid="select-x-axis">
                   <SelectValue placeholder="Select column" />
@@ -128,7 +128,7 @@ export function VisualizationConfig({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="y-axis">Y-Axis (Value)</Label>
+              <Label htmlFor="y-axis">{t("bi.Y_axis")} ({t("bi.value")})</Label>
               <Select value={yAxis || ""} onValueChange={(v) => onAxisChange("y", v)}>
                 <SelectTrigger id="y-axis" data-testid="select-y-axis">
                   <SelectValue placeholder="Select column" />
@@ -150,7 +150,7 @@ export function VisualizationConfig({
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Palette className="h-4 w-4" />
-            Colors
+            {t("bi.colors")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -211,7 +211,7 @@ export function VisualizationConfig({
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Hash className="h-4 w-4" />
-            Formatting
+            {t("bi.formatting")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

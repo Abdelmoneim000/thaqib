@@ -76,18 +76,18 @@ export function DashboardBuilder({
             value={dashboardName}
             onChange={(e) => setDashboardName(e.target.value)}
             className="text-lg font-semibold max-w-md"
-            placeholder="Dashboard Name"
+            placeholder={t("dashboards.dashboard_name_placeholder")}
             data-testid="input-dashboard-name"
           />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onAddVisualization} data-testid="button-add-viz">
             <Plus className="h-4 w-4 mr-2" />
-            Add Chart
+            {t("dashboards.add_chart")}
           </Button>
           <Button onClick={handleSave} data-testid="button-save-dashboard">
             <Save className="h-4 w-4 mr-2" />
-            Save Dashboard
+            {t("dashboards.save_dashboard")}
           </Button>
         </div>
       </div>
@@ -102,7 +102,7 @@ export function DashboardBuilder({
             </p>
             <Button onClick={onAddVisualization} data-testid="button-add-first-viz">
               <Plus className="h-4 w-4 mr-2" />
-              Add Your First Chart
+              {t("dashboards.add_first_chart")}
             </Button>
           </CardContent>
         </Card>

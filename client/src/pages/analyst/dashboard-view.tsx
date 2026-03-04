@@ -33,6 +33,7 @@ function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualizat
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(viz.name);
     const [isRenaming, setIsRenaming] = useState(false);
+    const { t } = useTranslation();
 
     // Extract text content for text charts
     let textContent: string | undefined;
@@ -97,7 +98,7 @@ function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualizat
         return (
             <Card className="h-full flex items-center justify-center min-h-[300px]">
                 <div className="text-center p-4">
-                    <p className="text-destructive mb-2">Error loading data</p>
+                    <p className="text-destructive mb-2">{t("bi.error_loading")}</p>
                     <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
                 </div>
             </Card>
@@ -137,7 +138,7 @@ function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualizat
                             onClick={handleRenameSubmit}
                             disabled={isRenaming || !editName.trim()}
                         >
-                            {isRenaming ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                            {isRenaming ? <Loader2 className="h-4 w-4 animate-spin" /> : t("dashboard_view.save")}
                         </Button>
                     </div>
                 ) : (
@@ -165,15 +166,15 @@ function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualizat
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Visualization?</AlertDialogTitle>
+                                    <AlertDialogTitle>{t("bi.delete_viz")}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This will remove this visualization from the dashboard. This action cannot be undone.
+                                        {t("bi.delete_viz_desc")}
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel>{t("dashboard_view.cancel")}</AlertDialogCancel>
                                     <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                                        {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+                                        {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("dashboard_view.delete")}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
@@ -241,10 +242,11 @@ export default function AnalystDashboardViewPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`/api/dashboards/${id}`] });
-            toast({ title: "Dashboard submitted", description: "The dashboard has been submitted for client review." });
+            queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+            toast({ title: t("dashboard_view.dashboard_submitted"), description: t("dashboard_view.dashboard_submitted_desc") });
         },
         onError: () => {
-            toast({ title: "Submission failed", description: "Could not submit dashboard.", variant: "destructive" });
+            toast({ title: t("dashboard_view.submission_failed"), description: t("dashboard_view.submission_failed_desc"), variant: "destructive" });
         }
     });
 
@@ -254,10 +256,10 @@ export default function AnalystDashboardViewPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`/api/visualizations`, { dashboardId: id }] });
-            toast({ title: "Deleted", description: "Visualization removed." });
+            toast({ title: t("dashboard_view.deleted"), description: t("dashboard_view.deleted_desc") });
         },
         onError: () => {
-            toast({ title: "Error", description: "Failed to delete visualization", variant: "destructive" });
+            toast({ title: t("dashboard_view.error"), description: t("dashboard_view.error_desc"), variant: "destructive" });
         }
     });
 
@@ -268,10 +270,10 @@ export default function AnalystDashboardViewPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`/api/visualizations`, { dashboardId: id }] });
-            toast({ title: "Renamed", description: "Visualization name updated." });
+            toast({ title: t("dashboard_view.renamed"), description: t("dashboard_view.renamed_desc") });
         },
         onError: () => {
-            toast({ title: "Error", description: "Failed to rename visualization", variant: "destructive" });
+            toast({ title: t("dashboard_view.error"), description: t("dashboard_view.error_desc"), variant: "destructive" });
         }
     });
 
@@ -281,17 +283,17 @@ export default function AnalystDashboardViewPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/dashboards"] });
-            toast({ title: "Dashboard deleted", description: "The dashboard has been permanently removed." });
+            toast({ title: t("dashboard_view.dashboard_deleted_title"), description: t("dashboard_view.dashboard_deleted_desc") });
             setLocation(isClient ? "/client/find-analysts" : "/analyst/dashboards");
         },
         onError: () => {
-            toast({ title: "Error", description: "Failed to delete dashboard", variant: "destructive" });
+            toast({ title: t("dashboard_view.error_title"), description: t("dashboard_view.delete_dashboard_failed_desc"), variant: "destructive" });
         }
     });
 
     const handleShare = () => {
         // Placeholder for share logic
-        toast({ title: "Share", description: "Share functionality not yet implemented." });
+        toast({ title: t("dashboard_view.share_title"), description: t("dashboard_view.share_desc") });
     };
 
     const isLoading = isDashboardLoading || isVizLoading;
@@ -311,11 +313,11 @@ export default function AnalystDashboardViewPage() {
             <Layout>
                 <div className="flex flex-col items-center justify-center min-h-[50vh]">
                     <LayoutDashboard className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold">Dashboard not found</h2>
+                    <h2 className="text-xl font-semibold">{t("dashboard_view.not_found_title")}</h2>
                     <Button asChild className="mt-4" variant="outline">
                         <Link href={isClient ? "/client/projects" : "/analyst/dashboards"}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            {isClient ? "Back to Projects" : "Back to Dashboards"}
+                            {isClient ? t("dashboard_view.back_to_projects") : t("dashboard_view.back_to_dashboards")}
                         </Link>
                     </Button>
                 </div>
@@ -345,9 +347,9 @@ export default function AnalystDashboardViewPage() {
                                     dashboard.status === "submitted" ? "secondary" :
                                         "outline"
                             }>
-                                {dashboard.status === "approved" ? "Approved" :
-                                    dashboard.status === "submitted" ? "Under Review" :
-                                        dashboard.status === "rejected" ? "Changes Requested" : "Draft"}
+                                {dashboard.status === "approved" ? t("dashboard_view.status_approved") :
+                                    dashboard.status === "submitted" ? t("dashboard_view.status_under_review") :
+                                        dashboard.status === "rejected" ? t("dashboard_view.status_changes_requested") : t("dashboard_view.status_draft")}
                             </Badge>
                         </div>
                         {dashboard.description && (
@@ -364,18 +366,18 @@ export default function AnalystDashboardViewPage() {
                                     <AlertDialogTrigger asChild>
                                         <Button size="sm" variant="destructive" className="mr-2">
                                             <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete Dashboard
+                                            {t("dashboard_view.delete_dashboard_button")}
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogTitle>{t("dashboard_view.delete_dashboard_confirm_title")}</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently delete the dashboard "{dashboard.name}" and all its visualizations.
+                                                {t("dashboard_view.delete_dashboard_confirm_desc")}
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogCancel>{t("dashboard_view.delete_dashboard_cancel")}</AlertDialogCancel>
                                             <AlertDialogAction
                                                 onClick={() => {
                                                     setIsDeletingDashboard(true);
@@ -383,7 +385,7 @@ export default function AnalystDashboardViewPage() {
                                                 }}
                                                 className="bg-destructive hover:bg-destructive/90"
                                             >
-                                                {isDeletingDashboard ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+                                                {isDeletingDashboard ? <Loader2 className="h-4 w-4 animate-spin" /> : t("dashboard_view.delete_dashboard_confirm")}
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
@@ -392,7 +394,7 @@ export default function AnalystDashboardViewPage() {
                                 <Button asChild size="sm" variant="outline">
                                     <Link href={`/analyst/visualization-builder?dashboardId=${dashboard.id}&projectId=${dashboard.projectId || ""}`}>
                                         <Plus className="mr-2 h-4 w-4" />
-                                        Add Visual
+                                        {t("dashboard_view.add_visualization")}
                                     </Link>
                                 </Button>
 
@@ -403,13 +405,13 @@ export default function AnalystDashboardViewPage() {
                                         disabled={submitMutation.isPending}
                                     >
                                         {submitMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                        Submit for Review
+                                        {t("dashboard_view.submit_for_review")}
                                     </Button>
                                 ) : dashboard.projectId ? (
                                     <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md">
                                         <CheckCircle2 className="h-4 w-4 text-primary" />
                                         <span className="font-medium">
-                                            {dashboard.status === "submitted" ? "Submitted" : "Approved"}
+                                            {dashboard.status === "submitted" ? t("dashboard_view.status_submitted") : t("dashboard_view.status_approved")}
                                         </span>
                                     </div>
                                 ) : null}
@@ -420,7 +422,7 @@ export default function AnalystDashboardViewPage() {
                             <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md">
                                 <CheckCircle2 className="h-4 w-4 text-primary" />
                                 <span className="font-medium">
-                                    {dashboard.status === "submitted" ? "Submitted" : "Approved"}
+                                    {dashboard.status === "submitted" ? t("dashboard_view.status_submitted") : t("dashboard_view.status_approved")}
                                 </span>
                             </div>
                         )}
@@ -444,11 +446,11 @@ export default function AnalystDashboardViewPage() {
 
                 {visualizations?.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 border rounded-lg border-dashed">
-                        <p className="text-muted-foreground mb-4">This dashboard has no visualizations yet.</p>
+                        <p className="text-muted-foreground mb-4">{t("dashboard_view.no_visualizations")}</p>
                         {!finalReadOnly && (
                             <Button asChild>
                                 <Link href={`/analyst/visualization-builder?dashboardId=${dashboard.id}&projectId=${dashboard.projectId || ""}`}>
-                                    Create Visualization
+                                    {t("dashboard_view.create_visualization")}
                                 </Link>
                             </Button>
                         )}

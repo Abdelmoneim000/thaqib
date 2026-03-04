@@ -418,7 +418,7 @@ export default function VisualizationBuilderPage() {
               ) : (
                 <Eye className="h-4 w-4 mr-2" />
               )}
-              Preview
+              {t("analyst_viz_builder.preview")}
             </Button>
             <Button
               onClick={handleSave}
@@ -430,7 +430,7 @@ export default function VisualizationBuilderPage() {
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              Save
+              {t("analyst_viz_builder.save_viz")}
             </Button>
           </div>
         </div >
@@ -519,31 +519,12 @@ export default function VisualizationBuilderPage() {
                 </Card>
               </TabsContent>
             </Tabs>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Description (Markdown)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="Enter description, context, or guides in Markdown..."
-                    value={textContent}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTextContent(e.target.value)}
-                    className="min-h-[150px] font-mono text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Supports **bold**, *italic*, - lists, # headings
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           <div className="lg:col-span-8 space-y-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Preview</CardTitle>
+                <CardTitle className="text-base">{t("analyst_viz_builder.preview")}</CardTitle>
               </CardHeader>
               <CardContent>
                 {!hasRun ? (
@@ -576,7 +557,7 @@ export default function VisualizationBuilderPage() {
             {textContent && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Description Preview</CardTitle>
+                  <CardTitle className="text-base">{t("analyst_viz_builder.description_preview")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="prose prose-sm dark:prose-invert max-w-none">

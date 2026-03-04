@@ -468,6 +468,17 @@ export async function registerRoutes(
       if (!dashboard) {
         return res.status(404).json({ error: "Dashboard not found" });
       }
+
+      // Automatically sync project status based on dashboard submission
+      if (dashboard.projectId && status) {
+        if (status === "submitted") {
+          await storage.updateProject(dashboard.projectId, { status: "review" });
+        } else if (status === "rejected") {
+          await storage.updateProject(dashboard.projectId, { status: "in_progress" });
+        }
+        // If approved, we don't automatically complete the project, client does that manually
+      }
+
       res.json(dashboard);
     } catch (error) {
       res.status(500).json({ error: "Failed to update dashboard" });
@@ -880,11 +891,14 @@ export async function registerRoutes(
         projectsList = await Promise.all(projects.map(async (p) => {
           const datasets = await storage.getDatasetsByProject(p.id);
           const applications = await storage.getApplicationsByProject(p.id);
+          const dashboards = await storage.getDashboardsByProject(p.id);
 
           return {
             ...p,
             datasets: datasets.length,
-            applicants: applications.length
+            applicants: applications.length,
+            hasSubmittedDashboards: dashboards.some((d: any) => d.status === "submitted"),
+            hasApprovedDashboards: dashboards.some((d: any) => d.status === "approved" || d.status === "completed")
           };
         }));
 

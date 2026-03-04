@@ -50,13 +50,13 @@ export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = ""
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Schema Reference
+            {t("bi.schema_reference")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Select value={selectedDatasetId} onValueChange={onDatasetChange}>
             <SelectTrigger data-testid="select-sql-dataset">
-              <SelectValue placeholder="Select dataset to view schema" />
+              <SelectValue placeholder={t("bi.select_dataset_desc")} />
             </SelectTrigger>
             <SelectContent>
               {datasets.map((dataset) => (
@@ -70,7 +70,7 @@ export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = ""
           {selectedDataset && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                Table: <code className="bg-muted px-1 rounded">{selectedDataset.id}</code>
+                {t("bi.table")}: <code className="bg-muted px-1 rounded">{selectedDataset.id}</code>
               </p>
               <div className="flex flex-wrap gap-1">
                 {selectedDataset.columns.map((col) => (
@@ -111,7 +111,7 @@ export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = ""
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Code className="h-4 w-4" />
-            SQL Query
+            {t("bi.sql_query")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -131,7 +131,7 @@ export function SqlEditor({ datasets, onQueryChange, onRunQuery, initialSql = ""
 
       <Button onClick={onRunQuery} className="w-full" data-testid="button-run-sql">
         <Play className="h-4 w-4 mr-2" />
-        Run SQL Query
+        {t("bi.run_sql_query")}
       </Button>
     </div>
   );

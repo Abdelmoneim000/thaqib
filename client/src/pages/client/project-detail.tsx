@@ -402,6 +402,8 @@ export default function ClientProjectDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/dashboards`, { projectId: id }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}`] });
       toast({ title: "Dashboard reviewed", description: "Feedback has been sent to the analyst." });
     },
     onError: () => {

@@ -138,13 +138,13 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: Que
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Data Source
+            {t("bi.data_source")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Select value={selectedDatasetId} onValueChange={handleDatasetChange}>
             <SelectTrigger data-testid="select-dataset">
-              <SelectValue placeholder="Select a dataset" />
+              <SelectValue placeholder={t("bi.select_dataset")} />
             </SelectTrigger>
             <SelectContent>
               {datasets.filter(d => d.id).map((dataset) => (
@@ -156,7 +156,7 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: Que
           </Select>
           {selectedDataset && (
             <p className="text-xs text-muted-foreground mt-2">
-              {selectedDataset.rowCount} rows, {selectedDataset.columns.length} columns
+              {selectedDataset.rowCount} {t("bi.rows")} {selectedDataset.columns.length} {t("bi.columns")}
             </p>
           )}
         </CardContent>
@@ -169,17 +169,17 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: Que
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <LayoutGrid className="h-4 w-4" />
-                  Columns
+                  {t("bi.columns")}
                 </CardTitle>
                 <Button variant="outline" size="sm" onClick={addColumn} data-testid="button-add-column">
                   <Plus className="h-3 w-3 mr-1" />
-                  Add
+                  {t("bi.add_column")}
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {columns.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No columns selected. Add columns to include in your query.</p>
+                <p className="text-sm text-muted-foreground">{t("bi.no_columns_selected")}</p>
               ) : (
                 columns.map((col, index) => (
                   <div key={index} className="flex items-center gap-2">
@@ -232,17 +232,17 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: Que
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Filter className="h-4 w-4" />
-                  Filters
+                  {t("bi.filters")}
                 </CardTitle>
                 <Button variant="outline" size="sm" onClick={addFilter} data-testid="button-add-filter">
                   <Plus className="h-3 w-3 mr-1" />
-                  Add
+                  {t("bi.add_filter")}
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {filters.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No filters applied. Add filters to narrow your results.</p>
+                <p className="text-sm text-muted-foreground">{t("bi.no_filters_applied")}</p>
               ) : (
                 filters.map((filter, index) => (
                   <div key={index} className="flex items-center gap-2">
@@ -301,7 +301,7 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: Que
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <ArrowUpDown className="h-4 w-4" />
-                Group By
+                {t("bi.group_by")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -322,7 +322,7 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: Que
               </div>
               {groupBy.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Grouping by: {groupBy.join(", ")}
+                  {t("bi.grouping_by")} {groupBy.join(", ")}
                 </p>
               )}
             </CardContent>
@@ -330,7 +330,7 @@ export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: Que
 
           <Button onClick={onRunQuery} className="w-full" data-testid="button-run-query">
             <Play className="h-4 w-4 mr-2" />
-            Run Query
+            {t("bi.run_query")}
           </Button>
         </>
       )}

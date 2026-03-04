@@ -198,7 +198,7 @@ export default function DashboardsPage() {
                         <div className="flex items-center justify-between mt-auto">
                           <div className="flex items-center text-sm text-muted-foreground">
                             <BarChart3 className="h-4 w-4 mr-1" />
-                            {(dashboard as any).visualizationsCount || 0} {t("chart.visuals")}
+                            {(dashboard as any).visualizationsCount || 0} {t("dashboards.chart_visuals")}
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant={dashboard.isPublished ? "default" : "secondary"}>
