@@ -201,7 +201,6 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [organization, setOrganization] = useState("");
-  const [skills, setSkills] = useState("");
   const [phone, setPhone] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -251,7 +250,6 @@ function RegisterForm() {
         lastName,
         role,
         organization: role === "client" ? organization : undefined,
-        skills: role === "analyst" ? skills : undefined,
         phone: role === "analyst" ? phone : undefined,
         termsAccepted,
       });
@@ -336,13 +334,6 @@ function RegisterForm() {
             <div className="space-y-2">
               <Label htmlFor="reg-org">{t("auth.organization")} <span className="text-muted-foreground text-xs">({t("auth.organization_optional")})</span></Label>
               <Input id="reg-org" placeholder={t("auth.organization_placeholder")} value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11" />
-            </div>
-          )}
-
-          {role === "analyst" && (
-            <div className="space-y-2">
-              <Label htmlFor="reg-skills">{t("auth.skills")} <span className="text-muted-foreground text-xs">({t("auth.skills_optional")})</span></Label>
-              <Input id="reg-skills" placeholder={t("auth.skills_placeholder")} value={skills} onChange={(e) => setSkills(e.target.value)} className="h-11" />
             </div>
           )}
 
