@@ -321,7 +321,7 @@ export default function AnalystDatasetsPage() {
                 }}>
                     <AlertDialogContent data-testid="dialog-delete-dataset">
                         <AlertDialogHeader>
-                            <AlertDialogTitle>{t("datasets.delete_confirm")}</AlertDialogTitle>
+                            <AlertDialogTitle>{t("datasets.delete_confirm_title")}</AlertDialogTitle>
                             <AlertDialogDescription>
                                 {t("analyst_management.delete_confirm")}
                             </AlertDialogDescription>
