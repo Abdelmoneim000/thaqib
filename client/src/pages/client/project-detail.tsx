@@ -664,6 +664,12 @@ export default function ClientProjectDetailPage() {
                 <span>{t("project_detail.due")} {new Date(project.deadline).toLocaleDateString()}</span>
               </div>
             )}
+            {project.budget && (
+              <div className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                <DollarSign className="h-4 w-4" />
+                <span>{project.budget.toLocaleString()}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
               <span>{applicants?.length || 0} {t("project_detail.applicants")}</span>

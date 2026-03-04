@@ -344,7 +344,19 @@
         "new": "new",
         "proposed_budget": "Proposed",
         "view_profile": "View Profile",
-        "more": "more"
+        "more": "more",
+        "completed": "completed",
+        "in_progress": "in progress",
+        "pending_approval": "pending approval",
+        "pending": "pending",
+        "accepted": "accepted",
+        "rejected": "rejected",
+        "draft": "draft",
+        "submitted": "submitted",
+        "approved": "approved",
+        "showcase": "showcase",
+        "published": "published",
+        "open": "open"
     },
     "find_analysts": {
         "discover_talent": "Discover top talent for your data projects",
@@ -699,7 +711,11 @@
         "success": "Project Created",
         "success_desc": "Your new project has been created successfully.",
         "error": "Creation Failed",
-        "error_desc": "Could not create the project. Please try again."
+        "error_desc": "Could not create the project. Please try again.",
+        "analysis_field": "Analysis Field",
+        "analysis_type_desc": "Choose the type of analysis you need",
+        "custom_analysis_field_placeholder": "Specify your analysis field",
+        "custom_analysis_field": "Custom Analysis Field"
     },
     "client_settings": {
         "manage_desc": "Manage your account settings and profile",
@@ -804,6 +820,12 @@
     },
     "project_detail": {
         "accepted": "Accepted",
+        "title_required": "Title is required",
+        "description_required": "Description is required",
+        "analysis_type_required": "Analysis type is required",
+        "analysis_field_required": "Analysis field is required",
+        "budget_required": "Budget is required",
+        "deadline_required": "Deadline is required",
         "rejected": "Rejected",
         "pending_review": "Pending Review",
         "skills": "skills",
@@ -857,6 +879,12 @@
         "submit_application": "Submit Application",
         "no_projects_found": "No projects found",
         "adjust_search": "Try adjusting your search or filters to find more projects",
-        "back_to_projects": "Back to Projects"
+        "back_to_projects": "Back to Projects",
+        "edit_project_details": "Edit Project Details",
+        "update_project": "Update Project",
+        "project_updated": "Project updated successfully",
+        "project_update_failed": "Failed to update project",
+        "project_created": "Project created successfully",
+        "project_creation_failed": "Failed to create project"
     }
 }

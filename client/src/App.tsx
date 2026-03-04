@@ -12,7 +12,6 @@ import RoleSelectionPage from "@/pages/role-selection";
 import ClientProjectsPage from "@/pages/client/projects";
 import ClientProjectDetailPage from "@/pages/client/project-detail";
 import ClientChatsPage from "@/pages/client/chats";
-import FindAnalystsPage from "@/pages/client/find-analysts";
 import DatasetUploadPage from "@/pages/client/dataset-upload";
 import AnalystDashboardPage from "@/pages/analyst/dashboard";
 import BrowseProjectsPage from "@/pages/analyst/browse";
@@ -80,9 +79,7 @@ function Router() {
       <Route path="/client/projects">
         <ProtectedRoute component={ClientProjectsPage} allowedRoles={["client"]} />
       </Route>
-      <Route path="/client/find-analysts">
-        <ProtectedRoute component={FindAnalystsPage} allowedRoles={["client"]} />
-      </Route>
+
       <Route path="/client/projects/:id">
         <ProtectedRoute component={ClientProjectDetailPage} allowedRoles={["client"]} />
       </Route>

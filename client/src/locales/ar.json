@@ -338,7 +338,19 @@
         "new": "جديد",
         "proposed_budget": "المقترح",
         "view_profile": "عرض الملف الشخصي",
-        "more": "المزيد"
+        "more": "المزيد",
+        "completed": "مكتمل",
+        "in_progress": "قيد التنفيذ",
+        "pending_approval": "قيد الموافقة",
+        "pending": "معلق",
+        "accepted": "مقبول",
+        "rejected": "مرفوض",
+        "draft": "مسودة",
+        "submitted": "تم الإرسال",
+        "approved": "تمت الموافقة",
+        "showcase": "معرض",
+        "published": "تم النشر",
+        "open": "مفتوح"
     },
     "find_analysts": {
         "discover_talent": "اكتشف أفضل المواهب لمشاريع البيانات الخاصة بك",
@@ -701,7 +713,11 @@
         "success": "تم إنشاء المشروع",
         "success_desc": "تم إنشاء مشروعك الجديد بنجاح.",
         "error": "فشل الإنشاء",
-        "error_desc": "تعذر إنشاء المشروع. يرجى المحاولة مرة أخرى."
+        "error_desc": "تعذر إنشاء المشروع. يرجى المحاولة مرة أخرى.",
+        "analysis_field": "مجال التحليل",
+        "analysis_type_desc": "اختر نوع التحليل الذي تحتاجه",
+        "custom_analysis_field_placeholder": "حدد مجال التحليل الخاص بك",
+        "custom_analysis_field": "مجال تحليل مخصص"
     },
     "client_settings": {
         "manage_desc": "إدارة إعدادات حسابك والملف الشخصي",
@@ -796,7 +812,15 @@
         "no_comment": "لا يوجد تعليق"
     },
     "project_detail": {
+        "title": "عنوان المشروع",
+        "description": "وصف المشروع",
         "accepted": "مقبول",
+        "title_required": "العنوان مطلوب",
+        "description_required": "الوصف مطلوب",
+        "analysis_type_required": "نوع التحليل مطلوب",
+        "analysis_field_required": "مجال التحليل مطلوب",
+        "budget_required": "الميزانية مطلوبة",
+        "deadline_required": "الموعد النهائي مطلوب",
         "rejected": "مرفوض",
         "pending_review": "قيد المراجعة",
         "skills": "مهارات",
@@ -850,6 +874,13 @@
         "submit_application": "إرسال الطلب",
         "no_projects_found": "لم يتم العثور على مشاريع",
         "adjust_search": "حاول تعديل البحث أو الفلاتر للعثور على المزيد من المشاريع",
-        "back_to_projects": "العودة للمشاريع"
+        "back_to_projects": "العودة للمشاريع",
+        "edit_project_details": "تعديل تفاصيل المشروع",
+        "update_project_details": "تحديث تفاصيل المشروع",
+        "project_updated": "تم تحديث المشروع بنجاح",
+        "project_update_failed": "فشل تحديث المشروع",
+        "save_changes": "حفظ التغييرات",
+        "project_created": "تم إرسال المشروع للمراجعة",
+        "project_creation_failed": "فشل إرسال المشروع للمراجعة"
     }
 }

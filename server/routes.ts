@@ -944,10 +944,22 @@ export async function registerRoutes(
   app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = getUserId(req);
-      const { title, description, budget, deadline, analysisType, analysisField, customAnalysisField } = req.body;
+      const { title, description, budget, deadline, analysisType, analysisField, customAnalysisField, status } = req.body;
 
       if (!title) {
         return res.status(400).json({ error: "Title is required" });
+      }
+      if (!description) {
+        return res.status(400).json({ error: "Description is required" });
+      }
+      if (!analysisType) {
+        return res.status(400).json({ error: "Analysis type is required" });
+      }
+      if (!analysisField || (analysisField === "others" && !customAnalysisField)) {
+        return res.status(400).json({ error: "Analysis field is required" });
+      }
+      if (!deadline) {
+        return res.status(400).json({ error: "Deadline is required" });
       }
 
       const project = await storage.createProject({
@@ -956,7 +968,7 @@ export async function registerRoutes(
         budget: budget || null,
         deadline: deadline ? new Date(deadline) : null,
         clientId: userId!,
-        status: "open",
+        status: status || "pending_approval",
         analysisType: analysisType || null,
         analysisField: analysisField || null,
         customAnalysisField: customAnalysisField || null,
@@ -1481,27 +1493,6 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/projects", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
-    try {
-      const allProjects = await storage.getAllProjects();
-      res.json(allProjects);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch projects" });
-    }
-  });
-
-  app.patch("/api/admin/projects/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
-    try {
-      const { analystId, status } = req.body;
-      const project = await storage.updateProject(req.params.id, { analystId, status });
-      if (!project) {
-        return res.status(404).json({ error: "Project not found" });
-      }
-      res.json(project);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update project" });
-    }
-  });
 
   app.get("/api/admin/datasets", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {

@@ -30,7 +30,6 @@ const menuItemDefs = [
   { titleKey: "nav.chats", url: "/client/chats", icon: MessageSquare },
   { titleKey: "nav.datasets", url: "/client/datasets", icon: FileSpreadsheet },
   { titleKey: "nav.settings", url: "/client/settings", icon: Settings },
-  { titleKey: "nav.find_analysts", url: "/client/find-analysts", icon: Users },
 ];
 
 function ClientSidebar() {

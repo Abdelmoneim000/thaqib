@@ -186,6 +186,7 @@ export default function AdminProjectsPage() {
                                                 <TableHead>{t("projects.project_title")}</TableHead>
                                                 <TableHead>{t("projects.client")}</TableHead>
                                                 <TableHead>{t("projects.status")}</TableHead>
+                                                <TableHead>{t("projects.budget", { defaultValue: "Budget" })}</TableHead>
                                                 <TableHead>{t("projects.applicants")}</TableHead>
                                                 <TableHead>{t("projects.analyst")}</TableHead>
                                                 <TableHead></TableHead>
@@ -208,8 +209,18 @@ export default function AdminProjectsPage() {
                                                     </TableCell>
                                                     <TableCell>
                                                         <Badge className={getStatusColor(project.status)}>
-                                                            {project.status}
+                                                            {t(`common.${project.status}`, { defaultValue: project.status })}
                                                         </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="font-medium text-emerald-600 dark:text-emerald-400">
+                                                        <div className="flex items-center gap-1">
+                                                            {project.budget ? (
+                                                                <>
+                                                                    <DollarSign className="h-3 w-3" />
+                                                                    <span>{project.budget.toLocaleString()}</span>
+                                                                </>
+                                                            ) : "—"}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex items-center gap-1">
@@ -273,7 +284,7 @@ export default function AdminProjectsPage() {
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">{t("projects.status")}:</span>
                                         <Badge className={getStatusColor(selectedProject.status)}>
-                                            {selectedProject.status}
+                                            {t(`common.${selectedProject.status}`, { defaultValue: selectedProject.status })}
                                         </Badge>
                                     </div>
                                     {selectedProject.analystName && (

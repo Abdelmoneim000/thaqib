@@ -34,6 +34,7 @@ import {
   Loader2,
   Upload,
   BarChart3,
+  DollarSign
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -118,24 +119,24 @@ function CreateProjectDialog() {
         try {
           await fetch("/api/datasets", { method: "POST", body: formData });
         } catch {
-          toast({ title: "Dataset upload failed", description: "Project created but dataset could not be uploaded.", variant: "destructive" });
+          toast({ title: "Dataset upload failed", description: t("project_detail.dataset_upload_failed"), variant: "destructive" });
         }
       } else if (datasetMode === "existing" && selectedDatasetId) {
         try {
           await apiRequest("PATCH", `/api/datasets/${selectedDatasetId}`, { projectId: project.id });
         } catch {
-          toast({ title: "Dataset link failed", description: "Project created but dataset could not be linked.", variant: "destructive" });
+          toast({ title: "Dataset link failed", description: t("project_detail.dataset_link_failed"), variant: "destructive" });
         }
       }
 
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/datasets"] });
-      toast({ title: "Project created", description: "Your project has been posted successfully." });
+      toast({ title: "Project created", description: t("project_detail.project_created") });
       setOpen(false);
       resetForm();
     },
     onError: () => {
-      toast({ title: "Failed to create project", variant: "destructive" });
+      toast({ title: "Failed to create project", description: t("project_detail.project_creation_failed"), variant: "destructive" });
     }
   });
 
@@ -155,7 +156,23 @@ function CreateProjectDialog() {
     e.preventDefault();
 
     if (!title.trim()) {
-      toast({ title: "Title required", variant: "destructive" });
+      toast({ title: t("project_detail.title_required"), variant: "destructive" });
+      return;
+    }
+    if (!analysisType) {
+      toast({ title: t("project_detail.analysis_type_required"), variant: "destructive" });
+      return;
+    }
+    if (!analysisField || (analysisField === "others" && !customAnalysisField.trim())) {
+      toast({ title: t("project_detail.analysis_field_required"), variant: "destructive" });
+      return;
+    }
+    if (!description.trim()) {
+      toast({ title: t("project_detail.description_required"), variant: "destructive" });
+      return;
+    }
+    if (!deadline) {
+      toast({ title: t("project_detail.deadline_required"), variant: "destructive" });
       return;
     }
 
@@ -200,7 +217,7 @@ function CreateProjectDialog() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Analysis Type</Label>
+              <Label>{t("client_projects.analysis_type")}</Label>
               <Select value={analysisType} onValueChange={setAnalysisType}>
                 <SelectTrigger data-testid="select-analysis-type">
                   <SelectValue placeholder="Select type" />
@@ -213,7 +230,7 @@ function CreateProjectDialog() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Analysis Field</Label>
+              <Label>{t("client_projects.analysis_field")}</Label>
               <Select value={analysisField} onValueChange={setAnalysisField}>
                 <SelectTrigger data-testid="select-analysis-field">
                   <SelectValue placeholder="Select field" />
@@ -229,12 +246,12 @@ function CreateProjectDialog() {
 
           {analysisField === "others" && (
             <div className="space-y-2">
-              <Label htmlFor="custom-field">Custom Analysis Field</Label>
+              <Label htmlFor="custom-field">{t("client_projects.custom_analysis_field")}</Label>
               <Input
                 id="custom-field"
                 value={customAnalysisField}
                 onChange={(e) => setCustomAnalysisField(e.target.value)}
-                placeholder="Specify your analysis field"
+                placeholder={t("client_projects.custom_analysis_field_placeholder")}
                 data-testid="input-custom-field"
               />
             </div>
@@ -395,6 +412,12 @@ function ProjectCard({ project }: { project: UIProject }) {
               <div className="flex items-center gap-1.5">
                 <BarChart3 className="h-4 w-4" />
                 <span className="capitalize">{project.analysisType}</span>
+              </div>
+            )}
+            {project.budget && (
+              <div className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                <DollarSign className="h-4 w-4" />
+                <span>{project.budget.toLocaleString()}</span>
               </div>
             )}
             {project.deadline && (

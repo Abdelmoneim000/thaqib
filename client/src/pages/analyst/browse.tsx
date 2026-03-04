@@ -35,7 +35,8 @@ import {
   Building2,
   Clock,
   BarChart3,
-  Loader2
+  Loader2,
+  DollarSign
 } from "lucide-react";
 
 const ANALYSIS_TYPES = [
@@ -199,6 +200,12 @@ export default function BrowseProjectsPage() {
                       {project.analysisType && (
                         <Badge variant="secondary" className="capitalize">
                           {project.analysisType}
+                        </Badge>
+                      )}
+                      {project.budget && (
+                        <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-700 gap-1 rounded-sm flex items-center shadow-none text-white font-medium border-emerald-700">
+                          <DollarSign className="h-3 w-3" />
+                          {project.budget.toLocaleString()}
                         </Badge>
                       )}
                       {project.analysisField && (
