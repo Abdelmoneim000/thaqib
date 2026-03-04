@@ -103,6 +103,9 @@ function ApplicantCard({
               {applicant.status === "pending" && (
                 <Badge className="bg-chart-4/10 text-chart-4 border-0">{t("project_detail.pending_review")}</Badge>
               )}
+              {applicant.status === "withdrawn" && (
+                <Badge variant="secondary" className="border-0">Withdrawn</Badge>
+              )}
             </div>
             <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">

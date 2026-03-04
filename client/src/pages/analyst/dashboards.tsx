@@ -198,7 +198,7 @@ export default function DashboardsPage() {
                         <div className="flex items-center justify-between mt-auto">
                           <div className="flex items-center text-sm text-muted-foreground">
                             <BarChart3 className="h-4 w-4 mr-1" />
-                            {Array.isArray(dashboard.layout) ? dashboard.layout.length : 0} {t("chart.visuals")}
+                            {(dashboard as any).visualizationsCount || 0} {t("chart.visuals")}
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant={dashboard.isPublished ? "default" : "secondary"}>
@@ -226,42 +226,6 @@ export default function DashboardsPage() {
             )}
           </div>
 
-          <div>
-            <h2 className="text-lg font-medium mb-4">{t("dashboards.saved_visualizations")}</h2>
-            {isLoadingVisualizations ? (
-              <div className="bg-card border rounded-lg p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-            ) : (!visualizations || visualizations.length === 0) ? (
-              <div className="text-muted-foreground text-sm italic">{t("dashboards.no_saved_visualizations")}</div>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                {visualizations.map((viz) => (
-                  <Card
-                    key={viz.id}
-                    className="hover-elevate cursor-pointer"
-                    data-testid={`card-viz-${viz.id}`}
-                  >
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-medium truncate" title={viz.name}>{viz.name}</p>
-                          <p className="text-sm text-muted-foreground truncate" title={viz.dashboardName}>
-                            {viz.dashboardName || 'No Dashboard'}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="capitalize shrink-0">
-                          {viz.chartType}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3">
-                        <Clock className="h-3 w-3" />
-                        {viz.createdAt ? new Date(viz.createdAt).toLocaleDateString() : ''}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </AnalystLayout >

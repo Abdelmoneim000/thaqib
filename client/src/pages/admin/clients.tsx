@@ -20,8 +20,10 @@ import {
   UserCog,
   Loader2,
   Trash2,
+  Search,
 } from "lucide-react";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +37,7 @@ interface ClientWithDetails extends User {
 
 export default function AdminClientsPage() {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -92,8 +95,17 @@ export default function AdminClientsPage() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card data-testid="card-clients-list">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>All Clients</CardTitle>
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search clients..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoadingClients ? (
@@ -115,7 +127,7 @@ export default function AdminClientsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {clients?.map((client) => (
+                    {clients?.filter(c => `${c.firstName} ${c.lastName} ${c.email} ${c.phone}`.toLowerCase().includes(searchTerm.toLowerCase())).map((client) => (
                       <TableRow
                         key={client.id}
                         className={selectedClient === client.id ? "bg-muted" : ""}

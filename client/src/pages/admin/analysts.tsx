@@ -27,9 +27,11 @@ import {
   UserMinus,
   UserCog,
   Loader2,
-  Trash2
+  Trash2,
+  Search
 } from "lucide-react";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -39,6 +41,7 @@ import { useTranslation } from "react-i18next";
 export default function AdminAnalystsPage() {
   const [selectedAnalyst, setSelectedAnalyst] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const qc = useQueryClient();
   const { t } = useTranslation();
@@ -120,8 +123,17 @@ export default function AdminAnalystsPage() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card data-testid="card-analysts-list">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>All Analysts</CardTitle>
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search analysts..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoadingAnalysts ? (
@@ -143,7 +155,7 @@ export default function AdminAnalystsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {analysts?.map((analyst) => (
+                    {analysts?.filter(a => `${a.firstName} ${a.lastName} ${a.email} ${a.phone}`.toLowerCase().includes(searchTerm.toLowerCase())).map((analyst) => (
                       <TableRow
                         key={analyst.id}
                         className={selectedAnalyst === analyst.id ? "bg-muted" : ""}

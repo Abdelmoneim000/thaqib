@@ -999,9 +999,12 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Unauthorized" });
       }
 
-      // Lock editing once an analyst is assigned (except status changes by admin)
+      // Lock editing once an analyst is assigned (except status changes by admin or client marking as completed)
       if (project.analystId && user?.role !== "admin") {
-        return res.status(403).json({ error: "Project cannot be edited after an analyst has been assigned" });
+        const isStatusOnlyUpdate = Object.keys(updates).length === 1 && updates.status !== undefined;
+        if (!isStatusOnlyUpdate) {
+          return res.status(403).json({ error: "Project cannot be edited after an analyst has been assigned" });
+        }
       }
 
       // Only allow specific updates
@@ -1637,8 +1640,8 @@ export async function registerRoutes(
       return res.status(400).send("Cannot withdraw an application that isn't pending.");
     }
 
-    await storage.deleteApplication(id);
-    res.json({ message: "Application deleted successfully" });
+    await storage.updateApplication(id, { status: "withdrawn" });
+    res.json({ message: "Application withdrawn successfully" });
   });
 
   // Admin: Update project (status, assignment, etc.)
@@ -1655,8 +1658,8 @@ export async function registerRoutes(
   // Admin: Delete project
   app.delete("/api/admin/projects/:id", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {
-      const deleted = await storage.deleteProject(req.params.id);
-      if (!deleted) return res.status(404).json({ error: "Project not found" });
+      const updated = await storage.updateProject(req.params.id, { status: "deleted" });
+      if (!updated) return res.status(404).json({ error: "Project not found" });
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete project" });
