@@ -17,8 +17,8 @@ export function ImpersonationBanner() {
             return res.json();
         },
         onSuccess: () => {
-            // Invalidate all queries to refresh everything
-            queryClient.invalidateQueries();
+            // Clear all queries to prevent stale state bleed
+            queryClient.clear();
             // Small delay to let the session update before navigating
             setTimeout(() => navigate("/admin/dashboard"), 100);
         },

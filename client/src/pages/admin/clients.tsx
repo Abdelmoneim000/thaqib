@@ -48,7 +48,7 @@ export default function AdminClientsPage() {
       return res.json();
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries();
+      queryClient.clear();
       toast({ title: "Impersonating", description: `Now viewing as ${data.firstName} ${data.lastName}` });
       navigate("/client/projects");
     },

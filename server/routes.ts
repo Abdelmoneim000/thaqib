@@ -912,7 +912,9 @@ export async function registerRoutes(
             ...p,
             clientName,
             datasetsCount: datasets.length,
-            dashboardsCount: dashboards.length
+            dashboardsCount: dashboards.length,
+            hasSubmittedDashboards: dashboards.some((d: any) => d.status === "submitted"),
+            hasApprovedDashboards: dashboards.some((d: any) => d.status === "approved" || d.status === "completed")
           };
         }));
         return res.json(enriched);

@@ -25,6 +25,8 @@ interface EnrichedProject extends Project {
   clientName: string;
   datasetsCount: number;
   dashboardsCount: number;
+  hasSubmittedDashboards?: boolean;
+  hasApprovedDashboards?: boolean;
 }
 
 function getStatusBadge(status: string) {
@@ -43,8 +45,19 @@ function getStatusBadge(status: string) {
 
 function ProjectCard({ project, showActions = true }: { project: EnrichedProject; showActions?: boolean }) {
   const { t } = useTranslation();
-  // Simple progress estimation based on status
-  const progress = project.status === "completed" ? 100 : project.status === "review" ? 90 : 40;
+  // Calculate actual progress based on dashboard status
+  let progressStep = 1;
+  if (project.status === "completed") {
+    progressStep = 4;
+  } else if (project.hasApprovedDashboards) {
+    progressStep = 3;
+  } else if (project.hasSubmittedDashboards || project.status === "review") {
+    progressStep = 2;
+  }
+
+  const barWidth = progressStep === 4 ? "w-full" :
+    progressStep === 3 ? "w-[66%]" :
+      progressStep === 2 ? "w-[33%]" : "w-0";
 
   return (
     <Card data-testid={`card-project-${project.id}`}>
@@ -76,33 +89,30 @@ function ProjectCard({ project, showActions = true }: { project: EnrichedProject
             <div className="absolute top-1.5 left-0 w-full h-0.5 bg-muted"></div>
 
             {/* Active Timeline */}
-            <div className={`absolute top-1.5 left-0 h-0.5 bg-primary transition-all duration-500 ${project.status === "completed" ? "w-full" :
-              project.status === "review" ? "w-3/4" :
-                "w-1/4"
-              }`}></div>
+            <div className={`absolute top-1.5 left-0 h-0.5 bg-primary transition-all duration-500 ${barWidth}`}></div>
 
             {/* Dots */}
             <div className="relative flex justify-between">
               {/* Step 1: In Progress */}
-              <div className={`w-3 h-3 rounded-full border-2 ${["in_progress", "review", "completed"].includes(project.status)
+              <div className={`w-3 h-3 rounded-full border-2 ${progressStep >= 1
                 ? "bg-primary border-primary"
                 : "bg-background border-muted"
                 }`}></div>
 
               {/* Step 2: Submitted */}
-              <div className={`w-3 h-3 rounded-full border-2 ${["review", "completed"].includes(project.status)
+              <div className={`w-3 h-3 rounded-full border-2 ${progressStep >= 2
                 ? "bg-primary border-primary"
                 : "bg-background border-muted"
                 }`}></div>
 
               {/* Step 3: Under Review */}
-              <div className={`w-3 h-3 rounded-full border-2 ${["review", "completed"].includes(project.status)
+              <div className={`w-3 h-3 rounded-full border-2 ${progressStep >= 3
                 ? "bg-primary border-primary"
                 : "bg-background border-muted"
                 }`}></div>
 
               {/* Step 4: Complete */}
-              <div className={`w-3 h-3 rounded-full border-2 ${project.status === "completed"
+              <div className={`w-3 h-3 rounded-full border-2 ${progressStep >= 4
                 ? "bg-primary border-primary"
                 : "bg-background border-muted"
                 }`}></div>

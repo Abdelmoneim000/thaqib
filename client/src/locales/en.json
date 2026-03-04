@@ -372,7 +372,8 @@
         "failed_send": "Failed to send message",
         "thaqib_help": "Thaqib Help",
         "search_users": "Search users...",
-        "start_new_chat": "Start new chat"
+        "start_new_chat": "Start new chat",
+        "start_chat": "Start Chat"
     },
     "analyst_settings": {
         "title": "Settings",
@@ -468,7 +469,9 @@
         "no_apps_desc": "Start by browsing available projects and applying",
         "browse_projects": "Browse Projects",
         "all": "All",
-        "actions": "Actions"
+        "actions": "Actions",
+        "project_completed": "Project Completed",
+        "start_project": "Start Project"
     },
     "analyst_management": {
         "datasets_title": "Data Management",

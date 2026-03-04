@@ -377,7 +377,8 @@
         "failed_send": "فشل إرسال الرسالة",
         "thaqib_help": "مساعدة ثاقب",
         "search_users": "البحث عن مستخدمين...",
-        "start_new_chat": "بدء محادثة جديدة"
+        "start_new_chat": "بدء محادثة جديدة",
+        "start_chat": "بدء المحادثة"
     },
     "analyst_settings": {
         "title": "الإعدادات",
