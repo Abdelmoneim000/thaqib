@@ -264,7 +264,7 @@ function CreateProjectDialog() {
 
           {/* Dataset Attachment */}
           <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
-            <Label className="font-medium">Dataset Attachment</Label>
+            <Label className="font-medium">{t("projects.dataset_attachment")}</Label>
             <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
@@ -273,7 +273,7 @@ function CreateProjectDialog() {
                 onClick={() => setDatasetMode("none")}
                 className="text-xs"
               >
-                None
+                {t("projects.none")}
               </Button>
               <Button
                 type="button"
@@ -283,7 +283,7 @@ function CreateProjectDialog() {
                 className="text-xs gap-1"
               >
                 <Upload className="h-3 w-3" />
-                Upload
+                {t("projects.upload")}
               </Button>
               <Button
                 type="button"
@@ -293,7 +293,7 @@ function CreateProjectDialog() {
                 className="text-xs gap-1"
               >
                 <FileSpreadsheet className="h-3 w-3" />
-                Existing
+                {t("projects.existing")}
               </Button>
             </div>
 
@@ -305,14 +305,14 @@ function CreateProjectDialog() {
                   ref={fileInputRef}
                   data-testid="input-dataset-file"
                 />
-                <p className="text-xs text-muted-foreground">Supported formats: .csv (Max 50MB)</p>
+                <p className="text-xs text-muted-foreground">{t("projects.supported_formats")}</p>
               </div>
             )}
 
             {datasetMode === "existing" && (
               <Select value={selectedDatasetId} onValueChange={setSelectedDatasetId}>
                 <SelectTrigger data-testid="select-existing-dataset">
-                  <SelectValue placeholder="Choose a dataset" />
+                  <SelectValue placeholder={t("projects.choose_dataset")} />
                 </SelectTrigger>
                 <SelectContent>
                   {existingDatasets?.map((d) => (
@@ -331,11 +331,11 @@ function CreateProjectDialog() {
               disabled={createProjectMutation.isPending}
               data-testid="button-cancel-project"
             >
-              {t("client_projects.cancel")}
+              {t("projects.cancel")}
             </Button>
             <Button type="submit" disabled={createProjectMutation.isPending} data-testid="button-submit-project">
               {createProjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("client_projects.create")}
+              {t("projects.create")}
             </Button>
           </div>
         </form>

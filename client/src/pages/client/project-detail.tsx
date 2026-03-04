@@ -104,7 +104,7 @@ function ApplicantCard({
                 <Badge className="bg-chart-4/10 text-chart-4 border-0">{t("project_detail.pending_review")}</Badge>
               )}
               {applicant.status === "withdrawn" && (
-                <Badge variant="secondary" className="border-0">Withdrawn</Badge>
+                <Badge variant="secondary" className="border-0">{t("project_detail.withdrawn")}</Badge>
               )}
             </div>
             <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
@@ -527,7 +527,7 @@ export default function ClientProjectDetailPage() {
               data-testid="button-back-projects"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Projects
+              {t("project_detail.back_to_projects")}
             </button>
           </Link>
 
@@ -546,14 +546,14 @@ export default function ClientProjectDetailPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Edit Project Details</DialogTitle>
+                        <DialogTitle>{t("project_detail.edit_project_details")}</DialogTitle>
                         <DialogDescription>
-                          Update your project title and description.
+                          {t("project_detail.update_project_details")}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                          <Label htmlFor="title">Title</Label>
+                          <Label htmlFor="title">{t("project_detail.title")}</Label>
                           <input
                             id="title"
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -562,7 +562,7 @@ export default function ClientProjectDetailPage() {
                           />
                         </div>
                         <div className="grid gap-2">
-                          <Label htmlFor="description">Description</Label>
+                          <Label htmlFor="description">{t("project_detail.description")}</Label>
                           <Textarea
                             id="description"
                             value={editDescription}
@@ -572,10 +572,10 @@ export default function ClientProjectDetailPage() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>{t("project_detail.cancel")}</Button>
                         <Button onClick={handleUpdateProject} disabled={updateProjectMutation.isPending}>
                           {updateProjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Save Changes
+                          {t("project_detail.save_changes")}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -607,9 +607,9 @@ export default function ClientProjectDetailPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Complete Project & Rate Analyst</DialogTitle>
+                        <DialogTitle>{t("project_detail.complete_project_and_rate_analyst")}</DialogTitle>
                         <DialogDescription>
-                          Please rate the analyst's performance to close this project.
+                          {t("project_detail.please_rate_the_analysts_performance_to_close_this_project")}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
@@ -629,23 +629,23 @@ export default function ClientProjectDetailPage() {
                           </div>
                         </div>
                         <div className="grid gap-2">
-                          <Label htmlFor="comment">Comment</Label>
+                          <Label htmlFor="comment">{t("project_detail.comment")}</Label>
                           <Textarea
                             id="comment"
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
-                            placeholder="Describe your experience working with this analyst..."
+                            placeholder={t("project_detail.describe_your_experience_working_with_this_analyst")}
                           />
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsReviewOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setIsReviewOpen(false)}>{t("project_detail.cancel")}</Button>
                         <Button
                           onClick={handleCompleteProject}
                           disabled={rating === 0 || submitRatingMutation.isPending}
                         >
                           {submitRatingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                          Submit & Complete
+                          {t("project_detail.submit_and_complete")}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -659,16 +659,16 @@ export default function ClientProjectDetailPage() {
             {project.deadline && (
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
-                <span>Due {new Date(project.deadline).toLocaleDateString()}</span>
+                <span>{t("project_detail.due")} {new Date(project.deadline).toLocaleDateString()}</span>
               </div>
             )}
             <div className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
-              <span>{applicants?.length || 0} applicants</span>
+              <span>{applicants?.length || 0} {t("project_detail.applicants")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <FileSpreadsheet className="h-4 w-4" />
-              <span>{datasets?.length || 0} datasets</span>
+              <span>{datasets?.length || 0} {t("project_detail.datasets")}</span>
             </div>
           </div>
         </div >
@@ -677,19 +677,19 @@ export default function ClientProjectDetailPage() {
           <TabsList className="mb-6">
             <TabsTrigger value="applicants" data-testid="tab-applicants">
               <Users className="h-4 w-4 mr-2" />
-              Applicants
+              {t("project_detail.applicants")}
             </TabsTrigger>
             <TabsTrigger value="datasets" data-testid="tab-datasets">
               <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Datasets
+              {t("project_detail.datasets")}
             </TabsTrigger>
             <TabsTrigger value="dashboards" data-testid="tab-dashboards">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Dashboards
+              {t("project_detail.dashboards")}
             </TabsTrigger>
             <TabsTrigger value="chat" data-testid="tab-chat">
               <MessageSquare className="h-4 w-4 mr-2" />
-              Chat
+              {t("project_detail.chat")}
             </TabsTrigger>
           </TabsList>
 
@@ -700,9 +700,9 @@ export default function ClientProjectDetailPage() {
               <Card className="border-card-border bg-card">
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-1">No applicants yet</h3>
+                  <h3 className="font-medium mb-1">{t("project_detail.no_applicants_yet")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Analysts will appear here when they apply to your project.
+                    {t("project_detail.analysts_will_appear_here_when_they_apply_to_your_project")}
                   </p>
                 </CardContent>
               </Card>
@@ -734,15 +734,15 @@ export default function ClientProjectDetailPage() {
                   <Card className="border-card-border bg-card">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                       <FileSpreadsheet className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="font-medium mb-1">No datasets uploaded</h3>
+                      <h3 className="font-medium mb-1">{t("project_detail.no_datasets_uploaded")}</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Upload your data files to get started.
+                        {t("project_detail.upload_your_data_files_to_get_started")}
                       </p>
                       {(project.status === "draft" || project.status === "open") && (
                         <Link href={`/client/projects/${project.id}/upload`}>
                           <Button data-testid="button-upload-empty">
                             <Upload className="h-4 w-4 mr-2" />
-                            Upload Dataset
+                            {t("project_detail.upload_dataset")}
                           </Button>
                         </Link>
                       )}
@@ -771,9 +771,9 @@ export default function ClientProjectDetailPage() {
                   <Card className="border-card-border bg-card">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                       <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="font-medium mb-1">No dashboards yet</h3>
+                      <h3 className="font-medium mb-1">{t("project_detail.no_dashboards_yet")}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Dashboards will appear here when your analyst delivers them.
+                        {t("project_detail.dashboards_will_appear_here_when_your_analyst_delivers_them")}
                       </p>
                     </CardContent>
                   </Card>
@@ -795,19 +795,19 @@ export default function ClientProjectDetailPage() {
       <AlertDialog open={!!datasetToDelete} onOpenChange={(open) => !open && setDatasetToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove dataset from project?</AlertDialogTitle>
+            <AlertDialogTitle>{t("project_detail.remove_dataset_from_project")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove the dataset from this project but keep it in your personal library.
+              {t("project_detail.this_will_remove_the_dataset_from_this_project_but_keep_it_in_your_personal_library")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("project_detail.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => datasetToDelete && unlinkDatasetMutation.mutate(datasetToDelete)}
             >
               {unlinkDatasetMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Remove
+              {t("project_detail.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
