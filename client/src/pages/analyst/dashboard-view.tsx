@@ -28,8 +28,11 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 
 // Wrapper component to handle data fetching for a single visualization
-function DashboardChart({ viz, onDelete, readOnly }: { viz: Visualization; onDelete: (id: string) => void, readOnly?: boolean }) {
+function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualization; onDelete: (id: string) => void, onRename?: (id: string, newName: string) => Promise<void>, readOnly?: boolean }) {
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(viz.name);
+    const [isRenaming, setIsRenaming] = useState(false);
 
     // Extract text content for text charts
     let textContent: string | undefined;
@@ -64,6 +67,24 @@ function DashboardChart({ viz, onDelete, readOnly }: { viz: Visualization; onDel
         onDelete(viz.id);
     };
 
+    const handleRenameSubmit = async () => {
+        if (!editName.trim() || editName === viz.name) {
+            setIsEditing(false);
+            setEditName(viz.name);
+            return;
+        }
+
+        if (onRename) {
+            setIsRenaming(true);
+            try {
+                await onRename(viz.id, editName);
+                setIsEditing(false);
+            } finally {
+                setIsRenaming(false);
+            }
+        }
+    };
+
     if (isLoading) {
         return (
             <Card className="h-full flex items-center justify-center min-h-[300px]">
@@ -92,13 +113,53 @@ function DashboardChart({ viz, onDelete, readOnly }: { viz: Visualization; onDel
 
     return (
         <Card className="h-full flex flex-col min-h-[350px] relative group">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-base font-medium">{viz.name}</CardTitle>
-                {!readOnly && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0 min-h-[60px]">
+                {isEditing ? (
+                    <div className="flex items-center gap-2 flex-1 mr-4">
+                        <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameSubmit();
+                                if (e.key === 'Escape') {
+                                    setIsEditing(false);
+                                    setEditName(viz.name);
+                                }
+                            }}
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            autoFocus
+                            disabled={isRenaming}
+                        />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRenameSubmit}
+                            disabled={isRenaming || !editName.trim()}
+                        >
+                            {isRenaming ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                        </Button>
+                    </div>
+                ) : (
+                    <CardTitle className="text-base font-medium flex-1 flex items-center pr-4">
+                        <span className="truncate">{viz.name}</span>
+                        {!readOnly && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsEditing(true)}
+                                className="h-6 w-6 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></svg>
+                            </Button>
+                        )}
+                    </CardTitle>
+                )}
+                {!readOnly && !isEditing && (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive -mr-2">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </AlertDialogTrigger>
@@ -200,6 +261,20 @@ export default function AnalystDashboardViewPage() {
         }
     });
 
+    const renameVizMutation = useMutation({
+        mutationFn: async ({ vizId, newName }: { vizId: string; newName: string }) => {
+            const res = await apiRequest("PATCH", `/api/visualizations/${vizId}`, { name: newName });
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`/api/visualizations`, { dashboardId: id }] });
+            toast({ title: "Renamed", description: "Visualization name updated." });
+        },
+        onError: () => {
+            toast({ title: "Error", description: "Failed to rename visualization", variant: "destructive" });
+        }
+    });
+
     const deleteDashboardMutation = useMutation({
         mutationFn: async () => {
             await apiRequest("DELETE", `/api/dashboards/${id}`);
@@ -281,24 +356,7 @@ export default function AnalystDashboardViewPage() {
                             </p>
                         )}
                     </div>
-                    {!isClient && !finalReadOnly && (
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboards", id] })}>
-                                <Calendar className="h-4 w-4 mr-2" />
-                                {t("analyst_dashboard_view.refresh")}
-                            </Button>
-                            <Link href={`/analyst/dashboard-view/${id}`}>
-                                <Button variant="outline" size="sm">
-                                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                                    {t("account.edit_profile", { defaultValue: "Edit Layout" })}
-                                </Button>
-                            </Link>
-                            <Button size="sm" onClick={handleShare}>
-                                <Send className="h-4 w-4 mr-2" />
-                                {t("analyst_dashboard_view.share")}
-                            </Button>
-                        </div>
-                    )}
+                    {/* Removed Layout Controls */}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         {!finalReadOnly && (
                             <>
@@ -372,7 +430,14 @@ export default function AnalystDashboardViewPage() {
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                     {visualizations?.map((viz) => (
                         <div key={viz.id} className="min-h-[350px]">
-                            <DashboardChart viz={viz} onDelete={(id) => deleteVizMutation.mutate(id)} readOnly={finalReadOnly} />
+                            <DashboardChart
+                                viz={viz}
+                                onDelete={(id) => deleteVizMutation.mutate(id)}
+                                onRename={async (id, newName) => {
+                                    await renameVizMutation.mutateAsync({ vizId: id, newName });
+                                }}
+                                readOnly={finalReadOnly}
+                            />
                         </div>
                     ))}
                 </div>

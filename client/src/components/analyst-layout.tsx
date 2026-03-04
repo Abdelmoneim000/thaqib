@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "react-i18next";
+import { LanguageToggle } from "@/components/language-toggle";
 
 function AnalystSidebar() {
   const [location] = useLocation();
@@ -130,7 +131,8 @@ export default function AnalystLayout({ children }: { children: React.ReactNode 
           <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-6">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex-1" />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+              <LanguageToggle />
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium" data-testid="avatar-user">
                 {initials}
               </div>

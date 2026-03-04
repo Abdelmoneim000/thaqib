@@ -102,14 +102,18 @@ export default function VisualizationBuilderPage() {
     // Always enabled, if simple fetch we filter client side
   });
 
-  // Filter dashboards based on selection
+  // Filter dashboards based on selection and status
   const filteredDashboards = useMemo(() => {
     if (!dashboards) return [];
+
+    // Check status to exclude read-only dashboards
+    const filterByStatus = (d: any) => d.status !== "submitted" && d.status !== "approved";
+
     if (selectedProjectId === "personal") {
-      return dashboards.filter(d => !d.projectId);
+      return dashboards.filter(d => !d.projectId && filterByStatus(d));
     }
     if (selectedProjectId) {
-      return dashboards.filter(d => d.projectId === selectedProjectId);
+      return dashboards.filter(d => d.projectId === selectedProjectId && filterByStatus(d));
     }
     return [];
   }, [dashboards, selectedProjectId]);
@@ -233,7 +237,7 @@ export default function VisualizationBuilderPage() {
       });
       // Redirect to the dashboard if one was selected
       if (selectedDashboardId) {
-        navigate(`/analyst/dashboard-view/${selectedDashboardId}`);
+        navigate(`/analyst/dashboard/${selectedDashboardId}`);
       } else {
         navigate("/analyst/dashboards");
       }

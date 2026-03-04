@@ -212,8 +212,8 @@ function RegisterForm() {
     const missing: string[] = [];
     if (!firstName.trim()) missing.push(t("auth.first_name"));
     if (!lastName.trim()) missing.push(t("auth.last_name"));
-    if (role === "client" && !phone.trim()) missing.push(t("auth.phone"));
-    if (role === "analyst" && !email.trim()) missing.push(t("auth.email"));
+    if (role === "client" && !email.trim()) missing.push(t("auth.email"));
+    if (role === "analyst" && !phone.trim()) missing.push(t("auth.phone"));
     if (!password) missing.push(t("auth.password"));
 
     if (missing.length > 0) {
@@ -240,9 +240,9 @@ function RegisterForm() {
     }
 
     try {
-      // For clients: use email if provided, otherwise use phone directly as identifier
-      // For analysts: use email as the identifier
-      const identifier = role === "client" ? (email.trim() || phone.trim()) : email;
+      // For clients: use email as the primary identifier
+      // For analysts: use phone as the primary identifier (or fallback to email if we need it for something else)
+      const identifier = role === "analyst" ? (phone.trim() || email.trim()) : email;
 
       await register({
         email: identifier,
@@ -252,7 +252,7 @@ function RegisterForm() {
         role,
         organization: role === "client" ? organization : undefined,
         skills: role === "analyst" ? skills : undefined,
-        phone: role === "client" ? phone : undefined,
+        phone: role === "analyst" ? phone : undefined,
         termsAccepted,
       });
       toast({ title: t("auth.account_created"), description: t("auth.account_created_desc") });
@@ -315,7 +315,7 @@ function RegisterForm() {
             </div>
           </div>
 
-          {role === "client" ? (
+          {role === "analyst" ? (
             <div className="space-y-2">
               <Label htmlFor="reg-phone">{t("auth.phone")} <span className="text-red-500">*</span></Label>
               <Input id="reg-phone" type="tel" placeholder="+966 5XX XXX XXXX" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-11" />
