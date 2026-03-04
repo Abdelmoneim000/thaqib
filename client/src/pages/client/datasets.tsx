@@ -272,9 +272,19 @@ export default function ClientDatasetsPage() {
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>{t("common.actions")}</DropdownMenuLabel>
                                                         <DropdownMenuItem
-                                                            onClick={() => {
-                                                                // TODO: Implement download logic
-                                                                toast({ title: "Download not implemented", description: "This feature is coming soon!" });
+                                                            onClick={async () => {
+                                                                try {
+                                                                    const res = await fetch(`/api/datasets/${dataset.id}/download-link`);
+                                                                    if (!res.ok) throw new Error("Failed to get download link");
+                                                                    const { downloadUrl } = await res.json();
+                                                                    window.open(downloadUrl, '_blank');
+                                                                } catch (err) {
+                                                                    toast({
+                                                                        title: "Download failed",
+                                                                        description: "Could not generate a download link for this dataset.",
+                                                                        variant: "destructive"
+                                                                    });
+                                                                }
                                                             }}
                                                         >
                                                             <Download className="h-4 w-4 mr-2" />

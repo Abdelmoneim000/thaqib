@@ -102,148 +102,156 @@ export function ChartRenderer({
     switch (type) {
       case "bar":
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
-              <XAxis
-                dataKey={xAxis || categoryField}
-                className="text-xs fill-muted-foreground"
-                tick={{ fill: 'currentColor' }}
-                tickFormatter={labelFmt}
-              />
-              <YAxis
-                className="text-xs fill-muted-foreground"
-                tick={{ fill: 'currentColor' }}
-                tickFormatter={(value) => formatValue(value, formatting)}
-              />
-              <Tooltip
-                formatter={(value: number) => formatValue(value, formatting)}
-                labelFormatter={labelFmt}
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--popover))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  color: 'hsl(var(--popover-foreground))'
-                }}
-              />
-              {showLegend && <Legend />}
-              <Bar dataKey={yAxis || valueField || "value"} fill={primaryColor} radius={[4, 4, 0, 0]}>
-                {data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={palette[index % palette.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div dir="ltr" className="w-full h-full">
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
+                <XAxis
+                  dataKey={xAxis || categoryField}
+                  className="text-xs fill-muted-foreground"
+                  tick={{ fill: 'currentColor' }}
+                  tickFormatter={labelFmt}
+                />
+                <YAxis
+                  className="text-xs fill-muted-foreground"
+                  tick={{ fill: 'currentColor' }}
+                  tickFormatter={(value) => formatValue(value, formatting)}
+                />
+                <Tooltip
+                  formatter={(value: number) => formatValue(value, formatting)}
+                  labelFormatter={labelFmt}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--popover-foreground))'
+                  }}
+                />
+                {showLegend && <Legend />}
+                <Bar dataKey={yAxis || valueField || "value"} fill={primaryColor} radius={[4, 4, 0, 0]}>
+                  {data.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={palette[index % palette.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         );
 
       case "line":
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
-              <XAxis
-                dataKey={xAxis || categoryField}
-                className="text-xs fill-muted-foreground"
-                tick={{ fill: 'currentColor' }}
-                tickFormatter={formatLabel}
-              />
-              <YAxis
-                className="text-xs fill-muted-foreground"
-                tick={{ fill: 'currentColor' }}
-                tickFormatter={(value) => formatValue(value, formatting)}
-              />
-              <Tooltip
-                formatter={(value: number) => formatValue(value, formatting)}
-                labelFormatter={labelFmt}
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--popover))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  color: 'hsl(var(--popover-foreground))'
-                }}
-              />
-              {showLegend && <Legend />}
-              <Line
-                type="monotone"
-                dataKey={yAxis || valueField || "value"}
-                stroke={primaryColor}
-                strokeWidth={2}
-                dot={{ fill: primaryColor, strokeWidth: 2 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div dir="ltr" className="w-full h-full">
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
+                <XAxis
+                  dataKey={xAxis || categoryField}
+                  className="text-xs fill-muted-foreground"
+                  tick={{ fill: 'currentColor' }}
+                  tickFormatter={formatLabel}
+                />
+                <YAxis
+                  className="text-xs fill-muted-foreground"
+                  tick={{ fill: 'currentColor' }}
+                  tickFormatter={(value) => formatValue(value, formatting)}
+                />
+                <Tooltip
+                  formatter={(value: number) => formatValue(value, formatting)}
+                  labelFormatter={labelFmt}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--popover-foreground))'
+                  }}
+                />
+                {showLegend && <Legend />}
+                <Line
+                  type="monotone"
+                  dataKey={yAxis || valueField || "value"}
+                  stroke={primaryColor}
+                  strokeWidth={2}
+                  dot={{ fill: primaryColor, strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         );
 
       case "area":
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
-              <XAxis
-                dataKey={xAxis || categoryField}
-                className="text-xs fill-muted-foreground"
-                tick={{ fill: 'currentColor' }}
-                tickFormatter={formatLabel}
-              />
-              <YAxis
-                className="text-xs fill-muted-foreground"
-                tick={{ fill: 'currentColor' }}
-                tickFormatter={(value) => formatValue(value, formatting)}
-              />
-              <Tooltip
-                formatter={(value: number) => formatValue(value, formatting)}
-                labelFormatter={labelFmt}
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--popover))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  color: 'hsl(var(--popover-foreground))'
-                }}
-              />
-              {showLegend && <Legend />}
-              <Area
-                type="monotone"
-                dataKey={yAxis || valueField || "value"}
-                stroke={primaryColor}
-                fill={primaryColor}
-                fillOpacity={0.3}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div dir="ltr" className="w-full h-full">
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                {showGrid && <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />}
+                <XAxis
+                  dataKey={xAxis || categoryField}
+                  className="text-xs fill-muted-foreground"
+                  tick={{ fill: 'currentColor' }}
+                  tickFormatter={formatLabel}
+                />
+                <YAxis
+                  className="text-xs fill-muted-foreground"
+                  tick={{ fill: 'currentColor' }}
+                  tickFormatter={(value) => formatValue(value, formatting)}
+                />
+                <Tooltip
+                  formatter={(value: number) => formatValue(value, formatting)}
+                  labelFormatter={labelFmt}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--popover-foreground))'
+                  }}
+                />
+                {showLegend && <Legend />}
+                <Area
+                  type="monotone"
+                  dataKey={yAxis || valueField || "value"}
+                  stroke={primaryColor}
+                  fill={primaryColor}
+                  fillOpacity={0.3}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         );
 
       case "pie":
       case "donut":
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={type === "donut" ? 60 : 0}
-                outerRadius={100}
-                paddingAngle={2}
-                dataKey={valueField || "value"}
-                nameKey={categoryField || "name"}
-                label={formatting?.showLabels !== false}
-              >
-                {data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={palette[index % palette.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value: number) => formatValue(value, formatting)}
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--popover))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  color: 'hsl(var(--popover-foreground))'
-                }}
-              />
-              {showLegend && <Legend />}
-            </PieChart>
-          </ResponsiveContainer>
+          <div dir="ltr" className="w-full h-full">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={type === "donut" ? 60 : 0}
+                  outerRadius={100}
+                  paddingAngle={2}
+                  dataKey={valueField || "value"}
+                  nameKey={categoryField || "name"}
+                  label={formatting?.showLabels !== false}
+                >
+                  {data.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={palette[index % palette.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number) => formatValue(value, formatting)}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--popover-foreground))'
+                  }}
+                />
+                {showLegend && <Legend />}
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         );
 
       case "metric":

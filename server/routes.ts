@@ -337,6 +337,17 @@ export async function registerRoutes(
 
   app.delete("/api/datasets/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
+      const userId = getUserId(req);
+      const dataset = await storage.getDataset(req.params.id);
+
+      if (!dataset) {
+        return res.status(404).json({ error: "Dataset not found" });
+      }
+
+      if (dataset.uploadedBy !== userId) {
+        return res.status(403).json({ error: "Not authorized. You are not the owner of this dataset." });
+      }
+
       const deleted = await storage.deleteDataset(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Dataset not found" });
@@ -1250,6 +1261,17 @@ export async function registerRoutes(
   // Messages API
   app.get("/api/conversations/:conversationId/messages", isAuthenticated, async (req: Request, res: Response) => {
     try {
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const user = await storage.getUser(userId);
+      const conversation = await storage.getConversation(req.params.conversationId);
+
+      if (!conversation) return res.status(404).json({ error: "Conversation not found" });
+
+      if (user?.role !== "admin" && conversation.clientId !== userId && conversation.analystId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You do not have access to this conversation" });
+      }
+
       const messages = await storage.getMessagesByConversation(req.params.conversationId);
       res.json(messages);
     } catch (error) {
@@ -1265,6 +1287,13 @@ export async function registerRoutes(
 
       if (!content) {
         return res.status(400).json({ error: "content is required" });
+      }
+
+      const conversation = await storage.getConversation(req.params.conversationId);
+      if (!conversation) return res.status(404).json({ error: "Conversation not found" });
+
+      if (user?.role !== "admin" && conversation.clientId !== userId && conversation.analystId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You do not have access to this conversation" });
       }
 
       const message = await storage.createMessage({
@@ -1573,6 +1602,43 @@ export async function registerRoutes(
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch applications" });
     }
+  });
+
+  // Application endpoints (Analyst specific)
+  app.patch("/api/applications/:id", async (req, res) => {
+    if (!req.session.userId) return res.sendStatus(401);
+    const id = req.params.id;
+    const body = req.body;
+
+    const application = await storage.updateApplication(id, body);
+    if (!application) return res.status(404).send("Application not found");
+    res.json(application);
+  });
+
+  app.delete("/api/applications/:id", async (req, res) => {
+    if (!req.session.userId) return res.sendStatus(401);
+
+    // Determine the user
+    const user = await storage.getUser(req.session.userId);
+    if (user?.role !== "analyst") {
+      return res.status(403).json({ message: "Only analysts can withdraw applications." });
+    }
+
+    const id = req.params.id;
+    // We only need to securely drop apps the analyst applied for.
+    const apps = await storage.getApplicationsByAnalyst(req.session.userId);
+    const targetApp = apps.find(a => a.id === id);
+
+    if (!targetApp) {
+      return res.status(404).send("Application not found or you don't own it.");
+    }
+
+    if (targetApp.status !== "pending") {
+      return res.status(400).send("Cannot withdraw an application that isn't pending.");
+    }
+
+    await storage.deleteApplication(id);
+    res.json({ message: "Application deleted successfully" });
   });
 
   // Admin: Update project (status, assignment, etc.)

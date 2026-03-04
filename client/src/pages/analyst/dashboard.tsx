@@ -34,8 +34,7 @@ interface AnalystStats {
   totalClients: number;
 }
 
-function getStatusBadge(status: string) {
-  const { t } = useTranslation();
+function getStatusBadge(status: string, t: any) {
   switch (status) {
     case "in_progress":
       return <Badge variant="default">{t("analyst_dashboard.in_progress")}</Badge>;
@@ -204,7 +203,7 @@ export default function AnalystDashboardPage() {
                           </div>
                           <div className="text-sm font-medium">${(project.budget || 0).toLocaleString()}</div>
                         </div>
-                        {getStatusBadge(project.status)}
+                        {getStatusBadge(project.status, t)}
                       </div>
                     </div>
                   ))

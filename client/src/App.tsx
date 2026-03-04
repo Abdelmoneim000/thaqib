@@ -92,9 +92,6 @@ function Router() {
       <Route path="/client/chats">
         <ProtectedRoute component={ClientChatsPage} allowedRoles={["client"]} />
       </Route>
-      <Route path="/analyst/dashboard">
-        <ProtectedRoute component={AnalystDashboardPage} allowedRoles={["analyst"]} />
-      </Route>
       <Route path="/analyst/browse">
         <ProtectedRoute component={BrowseProjectsPage} allowedRoles={["analyst"]} />
       </Route>

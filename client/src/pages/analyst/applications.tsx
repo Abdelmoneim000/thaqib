@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Application } from "@shared/schema";
 import {
   Calendar,
@@ -63,7 +63,7 @@ function getStatusBadge(status: string) {
   }
 }
 
-function ApplicationCard({ application }: { application: EnrichedApplication }) {
+function ApplicationCard({ application, onWithdraw, isWithdrawing }: { application: EnrichedApplication; onWithdraw: (id: string) => void; isWithdrawing: boolean }) {
   const { t } = useTranslation();
   return (
     <Card data-testid={`card-application-${application.id}`}>
@@ -114,19 +114,22 @@ function ApplicationCard({ application }: { application: EnrichedApplication }) 
 
         <div className="flex flex-wrap justify-end gap-2 pt-4 border-t">
           {application.status === "pending" && (
-            <Button variant="outline" size="sm" data-testid={`button-withdraw-${application.id}`}>
+            <Button variant="outline" size="sm" disabled={isWithdrawing} data-testid={`button-withdraw-${application.id}`} onClick={() => {
+              onWithdraw(application.id);
+            }}>
+              {isWithdrawing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("analyst_applications.withdraw_app")}
             </Button>
           )}
           {application.status === "accepted" && (
             application.projectStatus === "completed" ? (
               <Button size="sm" disabled title="Project is completed">
-                Project Completed
+                {t("analyst_applications.project_completed")}
               </Button>
             ) : (
               <Link href={`/analyst/projects/${application.projectId}`}>
                 <Button size="sm" data-testid={`button-start-project-${application.id}`}>
-                  Start Project
+                  {t("analyst_applications.start_project")}
                 </Button>
               </Link>
             )
@@ -142,10 +145,28 @@ function ApplicationCard({ application }: { application: EnrichedApplication }) 
   );
 }
 
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
 export default function AnalystApplicationsPage() {
   const { t } = useTranslation();
+  const { toast } = useToast();
+
   const { data: applications, isLoading } = useQuery<EnrichedApplication[]>({
     queryKey: ["/api/applications"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/applications/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      toast({ title: t("analyst_applications.withdrawn", { defaultValue: "Withdrawn" }), description: t("analyst_applications.withdraw_success", { defaultValue: "Application has been successfully withdrawn." }) });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("common.error", { defaultValue: "Error" }), description: err.message || t("analyst_applications.withdraw_failed", { defaultValue: "Failed to withdraw application." }), variant: "destructive" });
+    }
   });
 
   const pendingApps = applications?.filter(a => a.status === "pending") || [];
@@ -238,7 +259,7 @@ export default function AnalystApplicationsPage() {
           <TabsContent value="all" className="space-y-4 mt-4">
             {(applications || []).length > 0 ? (
               applications?.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} onWithdraw={(id) => deleteMutation.mutate(id)} isWithdrawing={deleteMutation.isPending && deleteMutation.variables === app.id} />
               ))
             ) : (
               <div className="text-center py-12 text-muted-foreground">
@@ -250,7 +271,7 @@ export default function AnalystApplicationsPage() {
           <TabsContent value="pending" className="space-y-4 mt-4">
             {pendingApps.length > 0 ? (
               pendingApps.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} onWithdraw={(id) => deleteMutation.mutate(id)} isWithdrawing={deleteMutation.isPending && deleteMutation.variables === app.id} />
               ))
             ) : (
               <Card>
@@ -265,7 +286,7 @@ export default function AnalystApplicationsPage() {
           <TabsContent value="accepted" className="space-y-4 mt-4">
             {acceptedApps.length > 0 ? (
               acceptedApps.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} onWithdraw={(id) => deleteMutation.mutate(id)} isWithdrawing={deleteMutation.isPending && deleteMutation.variables === app.id} />
               ))
             ) : (
               <Card>
@@ -280,7 +301,7 @@ export default function AnalystApplicationsPage() {
           <TabsContent value="rejected" className="space-y-4 mt-4">
             {rejectedApps.length > 0 ? (
               rejectedApps.map((app) => (
-                <ApplicationCard key={app.id} application={app} />
+                <ApplicationCard key={app.id} application={app} onWithdraw={(id) => deleteMutation.mutate(id)} isWithdrawing={deleteMutation.isPending && deleteMutation.variables === app.id} />
               ))
             ) : (
               <Card>

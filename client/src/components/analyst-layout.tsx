@@ -35,7 +35,6 @@ function AnalystSidebar() {
   const userName = user?.firstName || user?.email?.split("@")[0] || "Analyst";
 
   const menuItems = [
-    { title: t("nav.dashboard"), url: "/analyst/dashboard", icon: LayoutDashboard },
     { title: t("nav.browse"), url: "/analyst/browse", icon: Search },
     { title: t("nav.applications"), url: "/analyst/applications", icon: FileText },
     { title: t("nav.active_projects"), url: "/analyst/projects", icon: FolderKanban },

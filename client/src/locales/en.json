@@ -334,7 +334,9 @@
         "discover_talent": "Discover top talent for your data projects",
         "search_placeholder": "Search by name, skill, or title...",
         "no_analysts": "No analysts found",
-        "adjust_search": "Try adjusting your search terms"
+        "adjust_search": "Try adjusting your search terms",
+        "initial_empty_title": "Search for an Analyst",
+        "initial_empty_desc": "Type an analyst's name, phone number, or professional title in the search box to view their profile."
     },
     "impersonation": {
         "viewing_as": "Viewing as",
@@ -493,7 +495,9 @@
         "create_first": "Create your first dashboard to get started",
         "create_dashboard": "Create Dashboard",
         "public_showcase": "Public Showcase",
-        "remove_showcase": "Remove Showcase"
+        "remove_showcase": "Remove Showcase",
+        "not_owner_title": "Unauthorized",
+        "not_owner_desc": "You are not the owner of this dataset."
     },
     "analyst_dashboard_view": {
         "export": "Export",
@@ -677,5 +681,43 @@
         "submit_application": "Submit Application",
         "no_projects_found": "No projects found",
         "adjust_search": "Try adjusting your search or filters to find more projects"
+    },
+    "public_profile": {
+        "not_found": "Profile Not Found",
+        "not_found_desc": "This analyst profile is either private or does not exist.",
+        "go_back": "Go Back",
+        "back": "Back",
+        "data_analyst": "Data Analyst",
+        "contact_analyst": "Contact Analyst",
+        "showcase": "Showcase",
+        "track_record": "Track Record",
+        "reviews": "Reviews",
+        "featured": "Featured",
+        "charts": "charts",
+        "no_showcase": "No showcased dashboards yet.",
+        "no_projects": "No completed projects visible yet.",
+        "verified_review": "Verified Review",
+        "no_reviews": "No reviews yet.",
+        "no_comment": "No comment"
+    },
+    "project_detail": {
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "pending_review": "Pending Review",
+        "skills": "skills",
+        "approved": "Approved",
+        "under_review": "Under Review",
+        "changes_requested": "Changes Requested",
+        "draft": "Draft",
+        "approve": "Approve",
+        "reject": "Reject",
+        "reject_dashboard": "Reject Dashboard",
+        "provide_feedback": "Please provide feedback on why this dashboard needs changes.",
+        "enter_feedback": "Enter feedback...",
+        "cancel": "Cancel",
+        "uploaded": "Uploaded",
+        "download": "Download",
+        "remove_from_project": "Remove from Project",
+        "complete_project": "Complete Project"
     }
 }

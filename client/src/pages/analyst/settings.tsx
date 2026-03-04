@@ -199,15 +199,17 @@ export default function AnalystSettingsPage() {
               />
             </div>
             <div className="flex items-center space-x-2 pt-2">
+              {/** The button should move left when arabic translation is active */}
               <Switch
                 id="public-profile"
                 checked={isPublic}
                 onCheckedChange={setIsPublic}
+                className="ml-2"
               />
-              <Label htmlFor="public-profile">Public Profile</Label>
+              <Label htmlFor="public-profile">{t("analyst_settings.public_profile")}</Label>
               {isPublic && user && (
                 <Link href={`/analyst/public/${user.id}`} className="ml-auto text-sm text-primary flex items-center hover:underline">
-                  View Public Profile <ExternalLink className="h-3 w-3 ml-1" />
+                  {t("analyst_settings.view_public_profile")} <ExternalLink className="h-3 w-3 ml-1" />
                 </Link>
               )}
             </div>
@@ -252,12 +254,12 @@ export default function AnalystSettingsPage() {
                   </Badge>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground italic">No skills listed yet.</p>
+                <p className="text-sm text-muted-foreground italic">{t("analyst_settings.no_skills")}</p>
               )}
             </div>
             <div className="flex gap-2">
               <Input
-                placeholder="Add a skill..."
+                placeholder={t("analyst_settings.add_skill")}
                 className="max-w-xs"
                 value={newSkill}
                 onChange={(e) => setNewSkill(e.target.value)}
@@ -268,73 +270,6 @@ export default function AnalystSettingsPage() {
                 {t("analyst_settings.add_skill")}
               </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              {t("analyst_settings.preferences")}
-            </CardTitle>
-            <CardDescription>
-              {t("analyst_settings.notification_settings")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">New project matches</p>
-                <p className="text-sm text-muted-foreground">
-                  Get notified when projects match your skills
-                </p>
-              </div>
-              <Button variant="outline" size="sm" data-testid="button-toggle-project-matches">
-                Enabled
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Application updates</p>
-                <p className="text-sm text-muted-foreground">
-                  Updates on your project applications
-                </p>
-              </div>
-              <Button variant="outline" size="sm" data-testid="button-toggle-app-updates">
-                Enabled
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Client messages</p>
-                <p className="text-sm text-muted-foreground">
-                  Notifications for new messages
-                </p>
-              </div>
-              <Button variant="outline" size="sm" data-testid="button-toggle-messages">
-                Enabled
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Security
-            </CardTitle>
-            <CardDescription>
-              Manage your account security
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button variant="outline" data-testid="button-change-password">
-              Change Password
-            </Button>
-            <Button variant="outline" data-testid="button-enable-2fa">
-              Enable Two-Factor Authentication
-            </Button>
           </CardContent>
         </Card>
       </div>

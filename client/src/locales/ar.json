@@ -193,6 +193,7 @@
         "search_placeholder": "البحث في مجموعات البيانات...",
         "size": "الحجم",
         "uploaded": "تاريخ الرفع",
+        "delete": "حذف",
         "delete_confirm_title": "هل أنت متأكد تماماً؟",
         "delete_confirm_desc": "سيتم حذف مجموعة البيانات هذه نهائياً وإزالتها من جميع المشاريع. لا يمكن التراجع عن هذا الإجراء.",
         "ready_to_upload": "جاهز للرفع",
@@ -334,7 +335,9 @@
         "discover_talent": "اكتشف أفضل المواهب لمشاريع البيانات الخاصة بك",
         "search_placeholder": "ابحث بالاسم أو المهارة أو المسمى الوظيفي...",
         "no_analysts": "لم يتم العثور على محللين",
-        "adjust_search": "حاول تعديل مصطلحات البحث"
+        "adjust_search": "حاول تعديل مصطلحات البحث",
+        "initial_empty_title": "ابحث عن محلل",
+        "initial_empty_desc": "اكتب اسم المحلل، رقم الهاتف، أو المسمى الوظيفي في صندوق البحث أعلاه لعرض ملفه الشخصي."
     },
     "impersonation": {
         "viewing_as": "عرض كـ",
@@ -390,7 +393,9 @@
         "notification_settings": "إعدادات الإشعارات",
         "email_notifs": "إشعارات البريد الإلكتروني",
         "security_settings": "إعدادات الأمان",
-        "share_experience": "شارك خبراتك وتجاربك..."
+        "share_experience": "شارك خبراتك وتجاربك...",
+        "no_skills": "لا توجد مهارات مسجلة بعد.",
+        "view_public_profile": "عرض الملف الشخصي العام"
     },
     "analyst_dashboard": {
         "title": "لوحة تحكم المحلل",
@@ -470,7 +475,9 @@
         "no_apps_desc": "ابدأ بتصفح المشاريع المتاحة والتقديم عليها",
         "browse_projects": "تصفح المشاريع",
         "all": "الكل",
-        "actions": "الإجراءات"
+        "actions": "الإجراءات",
+        "start_project": "بدء المشروع",
+        "project_completed": "تم إكمال المشروع"
     },
     "analyst_management": {
         "datasets_title": "إدارة البيانات",
@@ -497,7 +504,9 @@
         "create_first": "أنشئ لوحة المعلومات الأولى للبدء",
         "create_dashboard": "إنشاء لوحة معلومات",
         "public_showcase": "عرض عام",
-        "remove_showcase": "إزالة من العرض العام"
+        "remove_showcase": "إزالة من العرض العام",
+        "not_owner_title": "غير مصرح",
+        "not_owner_desc": "أنت لست مالك مجموعة البيانات هذه."
     },
     "analyst_dashboard_view": {
         "export": "تصدير",
@@ -681,5 +690,43 @@
         "submit_application": "إرسال الطلب",
         "no_projects_found": "لم يتم العثور على مشاريع",
         "adjust_search": "حاول تعديل البحث أو الفلاتر للعثور على المزيد من المشاريع"
+    },
+    "public_profile": {
+        "not_found": "الملف الشخصي غير موجود",
+        "not_found_desc": "الملف الشخصي لهذا المحلل إما خاص أو غير موجود.",
+        "go_back": "العودة",
+        "back": "رجوع",
+        "data_analyst": "محلل بيانات",
+        "contact_analyst": "التواصل مع المحلل",
+        "showcase": "معرض الأعمال",
+        "track_record": "سجل الإنجازات",
+        "reviews": "التقييمات",
+        "featured": "مميز",
+        "charts": "رسومات بيانية",
+        "no_showcase": "لم يتم عرض لوحات معلومات بعد.",
+        "no_projects": "لم يتم إكمال أي مشاريع بعد.",
+        "verified_review": "تقييم موثق",
+        "no_reviews": "لا توجد تقييمات بعد.",
+        "no_comment": "لا يوجد تعليق"
+    },
+    "project_detail": {
+        "accepted": "مقبول",
+        "rejected": "مرفوض",
+        "pending_review": "قيد المراجعة",
+        "skills": "مهارات",
+        "approved": "معتمد",
+        "under_review": "قيد المراجعة",
+        "changes_requested": "التعديلات مطلوبة",
+        "draft": "مسودة",
+        "approve": "اعتماد",
+        "reject": "رفض",
+        "reject_dashboard": "رفض لوحة التحكم",
+        "provide_feedback": "يرجى تقديم ملاحظات حول سبب حاجة لوحة التحكم هذه إلى التعديلات.",
+        "enter_feedback": "أدخل ملاحظاتك...",
+        "cancel": "إلغاء",
+        "uploaded": "تم الرفع",
+        "download": "تنزيل",
+        "remove_from_project": "إزالة من المشروع",
+        "complete_project": "إكمال المشروع"
     }
 }

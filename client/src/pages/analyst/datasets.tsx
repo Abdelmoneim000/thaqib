@@ -59,10 +59,12 @@ interface EnrichedDataset extends Dataset {
 }
 
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AnalystDatasetsPage() {
     const { t } = useTranslation();
     const { toast } = useToast();
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -84,6 +86,7 @@ export default function AnalystDatasetsPage() {
 
     // Delete Mutation
     const deleteMutation = useMutation({
+        // Only delete the dataset if the analyst is the owner
         mutationFn: async (id: string) => {
             await apiRequest("DELETE", `/api/datasets/${id}`);
         },
@@ -283,36 +286,23 @@ export default function AnalystDatasetsPage() {
                                                         <DropdownMenuLabel>{t("analyst_applications.actions")}</DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem
-                                                            className="cursor-pointer"
-                                                            onClick={async () => {
-                                                                try {
-                                                                    const res = await fetch(`/api/datasets/${dataset.id}/download-link`);
-                                                                    if (!res.ok) throw new Error("Failed to get download link");
-                                                                    const { downloadUrl } = await res.json();
-                                                                    window.open(downloadUrl, '_blank');
-                                                                } catch (err) {
-                                                                    toast({
-                                                                        title: t("analyst_management.download_error"),
-                                                                        description: t("analyst_management.download_error_desc"),
-                                                                        variant: "destructive"
-                                                                    });
-                                                                }
-                                                            }}
-                                                        >
-                                                            <Download className="h-4 w-4 mr-2" />
-                                                            {t("dataset_upload.uploading")}
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
                                                             className="cursor-pointer text-destructive focus:text-destructive"
                                                             onClick={() => {
+                                                                if (dataset.uploadedBy !== user?.id) {
+                                                                    toast({
+                                                                        title: t("analyst_management.not_owner_title"),
+                                                                        description: t("analyst_management.not_owner_desc"),
+                                                                        variant: "destructive"
+                                                                    });
+                                                                    return;
+                                                                }
                                                                 setDatasetToDelete(dataset.id);
                                                                 setIsDeleteOpen(true);
                                                             }}
                                                             data-testid={`menu-delete-${dataset.id}`}
                                                         >
                                                             <Trash2 className="h-4 w-4 mr-2" />
-                                                            {t("dataset_upload.delete")}
+                                                            {t("datasets.delete")}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -331,7 +321,7 @@ export default function AnalystDatasetsPage() {
                 }}>
                     <AlertDialogContent data-testid="dialog-delete-dataset">
                         <AlertDialogHeader>
-                            <AlertDialogTitle>{t("dataset_upload.delete_confirm")}</AlertDialogTitle>
+                            <AlertDialogTitle>{t("datasets.delete_confirm")}</AlertDialogTitle>
                             <AlertDialogDescription>
                                 {t("analyst_management.delete_confirm")}
                             </AlertDialogDescription>
@@ -345,7 +335,7 @@ export default function AnalystDatasetsPage() {
                                 disabled={deleteMutation.isPending}
                             >
                                 {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {t("dataset_upload.delete")}
+                                {t("datasets.delete")}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

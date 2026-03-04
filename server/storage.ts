@@ -104,6 +104,7 @@ export interface IStorage {
   getApplicationsByAnalyst(analystId: string): Promise<Application[]>;
   createApplication(application: InsertApplication): Promise<Application>;
   updateApplication(id: string, updates: Partial<Application>): Promise<Application | undefined>;
+  deleteApplication(id: string): Promise<boolean>;
 
   // Admin-specific methods
   getAdminStats(): Promise<AdminStats>;
@@ -464,6 +465,11 @@ export class DatabaseStorage implements IStorage {
     return app;
   }
 
+  async deleteApplication(id: string): Promise<boolean> {
+    const result = await db.delete(applicationsTable).where(eq(applicationsTable.id, id)).returning();
+    return result.length > 0;
+  }
+
   // Admin-specific methods
   async getAdminStats(): Promise<AdminStats> {
     const today = new Date();
@@ -572,7 +578,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchPublicAnalysts(search?: string): Promise<User[]> {
-    let conditions = [eq(usersTable.isPublic, true), eq(usersTable.role, "analyst")];
+    // If an analyst has not explicitly set isPublic to false, they should be public.
+    const conditions = [
+      eq(usersTable.role, "analyst"),
+      or(eq(usersTable.isPublic, true), sql`${usersTable.isPublic} IS NULL`) as any
+    ];
 
     if (search) {
       const searchLower = `%${search.toLowerCase()}%`;

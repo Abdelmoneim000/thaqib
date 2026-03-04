@@ -64,6 +64,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Extended Application type with enriched data from API
 interface EnrichedApplication extends Application {
@@ -78,6 +79,7 @@ function ApplicantCard({
 }: {
   applicant: EnrichedApplication;
 }) {
+  const { t } = useTranslation();
   const skills = applicant.analystSkills ? applicant.analystSkills.split(',').map(s => s.trim()) : [];
 
   return (
@@ -93,13 +95,13 @@ function ApplicantCard({
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-medium truncate">{applicant.analystName}</h3>
               {applicant.status === "accepted" && (
-                <Badge className="bg-chart-2/10 text-chart-2 border-0">Accepted</Badge>
+                <Badge className="bg-chart-2/10 text-chart-2 border-0">{t("project_detail.accepted")}</Badge>
               )}
               {applicant.status === "rejected" && (
-                <Badge className="bg-destructive/10 text-destructive border-0">Rejected</Badge>
+                <Badge className="bg-destructive/10 text-destructive border-0">{t("project_detail.rejected")}</Badge>
               )}
               {applicant.status === "pending" && (
-                <Badge className="bg-chart-4/10 text-chart-4 border-0">Pending Review</Badge>
+                <Badge className="bg-chart-4/10 text-chart-4 border-0">{t("project_detail.pending_review")}</Badge>
               )}
             </div>
             <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
@@ -107,7 +109,7 @@ function ApplicantCard({
                 <Star className="h-3.5 w-3.5 text-chart-4 fill-chart-4" />
                 {applicant.analystRating || "N/A"}
               </span>
-              <span>{skills.length} skills</span>
+              <span>{skills.length} {t("project_detail.skills")}</span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {skills.slice(0, 3).map((skill) => (
@@ -121,7 +123,7 @@ function ApplicantCard({
                 </Badge>
               )}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Applicant selection is managed by platform administrators.</p>
+            <p className="mt-2 text-xs text-muted-foreground">{applicant.coverLetter}</p>
           </div>
         </div>
       </CardContent>
@@ -134,7 +136,7 @@ function ApplicantCard({
 function DashboardCard({ dashboard, onReview }: { dashboard: Dashboard; onReview: (id: string, status: 'approved' | 'rejected', feedback?: string) => void }) {
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
-
+  const { t } = useTranslation();
   return (
     <>
       <Card className="border-card-border bg-card hover-elevate cursor-pointer">
@@ -151,9 +153,9 @@ function DashboardCard({ dashboard, onReview }: { dashboard: Dashboard; onReview
                     dashboard.status === "submitted" ? "secondary" :
                       "outline"
                 }>
-                  {dashboard.status === "approved" ? "Approved" :
-                    dashboard.status === "submitted" ? "Under Review" :
-                      dashboard.status === "rejected" ? "Changes Requested" : "Draft"}
+                  {dashboard.status === "approved" ? t("project_detail.approved") :
+                    dashboard.status === "submitted" ? t("project_detail.under_review") :
+                      dashboard.status === "rejected" ? t("project_detail.changes_requested") : t("project_detail.draft")}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -176,11 +178,11 @@ function DashboardCard({ dashboard, onReview }: { dashboard: Dashboard; onReview
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => onReview(dashboard.id, 'approved')}>
                       <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                      Approve
+                      {t("project_detail.approve")}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsRejectOpen(true)}>
                       <XCircle className="mr-2 h-4 w-4 text-destructive" />
-                      Reject
+                      {t("project_detail.reject")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -193,20 +195,20 @@ function DashboardCard({ dashboard, onReview }: { dashboard: Dashboard; onReview
       <Dialog open={isRejectOpen} onOpenChange={setIsRejectOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Dashboard</DialogTitle>
+            <DialogTitle>{t("project_detail.reject_dashboard")}</DialogTitle>
             <DialogDescription>
-              Please provide feedback on why this dashboard needs changes.
+              {t("project_detail.provide_feedback")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Enter feedback..."
+              placeholder={t("project_detail.enter_feedback")}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRejectOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsRejectOpen(false)}>{t("project_detail.cancel")}</Button>
             <Button
               variant="destructive"
               onClick={() => {
@@ -214,7 +216,7 @@ function DashboardCard({ dashboard, onReview }: { dashboard: Dashboard; onReview
                 setIsRejectOpen(false);
               }}
             >
-              Reject
+              {t("project_detail.reject")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -224,6 +226,7 @@ function DashboardCard({ dashboard, onReview }: { dashboard: Dashboard; onReview
 }
 
 function DatasetCard({ dataset, onDelete }: { dataset: Dataset; onDelete: (id: string) => void }) {
+  const { t } = useTranslation();
   return (
     <Card className="border-card-border bg-card">
       <CardContent className="p-4">
@@ -235,7 +238,7 @@ function DatasetCard({ dataset, onDelete }: { dataset: Dataset; onDelete: (id: s
             <div className="min-w-0">
               <p className="font-medium truncate">{dataset.name}</p>
               <p className="text-sm text-muted-foreground">
-                {dataset.fileSize ? `${(dataset.fileSize / 1024).toFixed(1)} KB` : 'Unknown size'} • Uploaded {dataset.createdAt ? new Date(dataset.createdAt).toLocaleDateString() : 'Unknown date'}
+                {dataset.fileSize ? `${(dataset.fileSize / 1024).toFixed(1)} KB` : 'Unknown size'} • {t("project_detail.uploaded")} {dataset.createdAt ? new Date(dataset.createdAt).toLocaleDateString() : 'Unknown date'}
               </p>
             </div>
           </div>
@@ -249,11 +252,27 @@ function DatasetCard({ dataset, onDelete }: { dataset: Dataset; onDelete: (id: s
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/datasets/${dataset.id}/download-link`);
+                      if (!res.ok) throw new Error("Failed to get download link");
+                      const { downloadUrl } = await res.json();
+                      window.open(downloadUrl, '_blank');
+                    } catch (err) {
+                      console.error("Download failed:", err);
+                    }
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {t("project_detail.download")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => onDelete(dataset.id)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Remove from Project
+                  {t("project_detail.remove_from_project")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -269,6 +288,7 @@ function DatasetCard({ dataset, onDelete }: { dataset: Dataset; onDelete: (id: s
 export default function ClientProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
 
   // Fetch Project
   const { data: project, isLoading: isProjectLoading } = useQuery<Project>({
@@ -514,48 +534,50 @@ export default function ClientProjectDetailPage() {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>
-                <Dialog open={isEditOpen} onOpenChange={onEditOpenChange}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Project Details</DialogTitle>
-                      <DialogDescription>
-                        Update your project title and description.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="title">Title</Label>
-                        <input
-                          id="title"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                          id="description"
-                          value={editDescription}
-                          onChange={(e) => setEditDescription(e.target.value)}
-                          rows={5}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                      <Button onClick={handleUpdateProject} disabled={updateProjectMutation.isPending}>
-                        {updateProjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Changes
+                {(project.status === "draft" || project.status === "open") && (
+                  <Dialog open={isEditOpen} onOpenChange={onEditOpenChange}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                        <Edit className="h-4 w-4" />
                       </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Project Details</DialogTitle>
+                        <DialogDescription>
+                          Update your project title and description.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="title">Title</Label>
+                          <input
+                            id="title"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={editDescription}
+                            onChange={(e) => setEditDescription(e.target.value)}
+                            rows={5}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                        <Button onClick={handleUpdateProject} disabled={updateProjectMutation.isPending}>
+                          {updateProjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Save Changes
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
                 {getStatusBadge(project.status)}
               </div>
               <p className="text-muted-foreground max-w-2xl">
@@ -577,7 +599,7 @@ export default function ClientProjectDetailPage() {
                     <DialogTrigger asChild>
                       <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700">
                         <CheckCircle2 className="h-4 w-4" />
-                        Complete Project
+                        {t("project_detail.complete_project")}
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -713,12 +735,14 @@ export default function ClientProjectDetailPage() {
                       <p className="text-sm text-muted-foreground mb-4">
                         Upload your data files to get started.
                       </p>
-                      <Link href={`/client/projects/${project.id}/upload`}>
-                        <Button data-testid="button-upload-empty">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Dataset
-                        </Button>
-                      </Link>
+                      {(project.status === "draft" || project.status === "open") && (
+                        <Link href={`/client/projects/${project.id}/upload`}>
+                          <Button data-testid="button-upload-empty">
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload Dataset
+                          </Button>
+                        </Link>
+                      )}
                     </CardContent>
                   </Card>
                 )}

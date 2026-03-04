@@ -157,7 +157,6 @@ export default function AnalystDashboardViewPage() {
     }, []);
 
     const isClient = user?.role === "client";
-    const readOnly = isViewOnly || isClient;
     const Layout = isClient ? ClientLayout : AnalystLayout;
 
     // Fetch Dashboard Metadata
@@ -239,9 +238,9 @@ export default function AnalystDashboardViewPage() {
                     <LayoutDashboard className="h-12 w-12 text-muted-foreground mb-4" />
                     <h2 className="text-xl font-semibold">Dashboard not found</h2>
                     <Button asChild className="mt-4" variant="outline">
-                        <Link href={isClient ? "/client/find-analysts" : "/analyst/dashboards"}>
+                        <Link href={isClient ? "/client/projects" : "/analyst/dashboards"}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            {isClient ? "Back to Browse" : "Back to Dashboards"}
+                            {isClient ? "Back to Projects" : "Back to Dashboards"}
                         </Link>
                     </Button>
                 </div>
@@ -249,13 +248,18 @@ export default function AnalystDashboardViewPage() {
         );
     }
 
+    // A dashboard is read-only if the user is a client OR if it has been submitted/approved.
+    const readOnly = isViewOnly || isClient || dashboard.status === "submitted" || dashboard.status === "approved";
+    // In case the dashboard hasn't loaded when computing readOnly earlier, re-compute
+    const finalReadOnly = readOnly;
+
     return (
         <Layout>
             <div className="p-6 space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <Link href={isClient ? `/analyst/public/${dashboard.createdBy}` : "/analyst/dashboards"}>
+                            <Link href={isClient ? (dashboard.projectId ? `/client/projects/${dashboard.projectId}` : "/client/projects") : "/analyst/dashboards"}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2">
                                     <ArrowLeft className="h-4 w-4" />
                                 </Button>
@@ -277,24 +281,26 @@ export default function AnalystDashboardViewPage() {
                             </p>
                         )}
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboards", id] })}>
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {t("analyst_dashboard_view.refresh")}
-                        </Button>
-                        <Link href={`/analyst/dashboard-view/${id}`}>
-                            <Button variant="outline" size="sm">
-                                <LayoutDashboard className="h-4 w-4 mr-2" />
-                                {t("account.edit_profile", { defaultValue: "Edit Layout" })}
+                    {!isClient && !finalReadOnly && (
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboards", id] })}>
+                                <Calendar className="h-4 w-4 mr-2" />
+                                {t("analyst_dashboard_view.refresh")}
                             </Button>
-                        </Link>
-                        <Button size="sm" onClick={handleShare}>
-                            <Send className="h-4 w-4 mr-2" />
-                            {t("analyst_dashboard_view.share")}
-                        </Button>
-                    </div>
+                            <Link href={`/analyst/dashboard-view/${id}`}>
+                                <Button variant="outline" size="sm">
+                                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                                    {t("account.edit_profile", { defaultValue: "Edit Layout" })}
+                                </Button>
+                            </Link>
+                            <Button size="sm" onClick={handleShare}>
+                                <Send className="h-4 w-4 mr-2" />
+                                {t("analyst_dashboard_view.share")}
+                            </Button>
+                        </div>
+                    )}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {!readOnly && (
+                        {!finalReadOnly && (
                             <>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -351,13 +357,22 @@ export default function AnalystDashboardViewPage() {
                                 ) : null}
                             </>
                         )}
+                        {/* Always show the status badge if it is readOnly but belongs to a project */}
+                        {finalReadOnly && !isClient && dashboard.projectId && (
+                            <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md">
+                                <CheckCircle2 className="h-4 w-4 text-primary" />
+                                <span className="font-medium">
+                                    {dashboard.status === "submitted" ? "Submitted" : "Approved"}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                     {visualizations?.map((viz) => (
                         <div key={viz.id} className="min-h-[350px]">
-                            <DashboardChart viz={viz} onDelete={(id) => deleteVizMutation.mutate(id)} readOnly={readOnly} />
+                            <DashboardChart viz={viz} onDelete={(id) => deleteVizMutation.mutate(id)} readOnly={finalReadOnly} />
                         </div>
                     ))}
                 </div>
@@ -365,7 +380,7 @@ export default function AnalystDashboardViewPage() {
                 {visualizations?.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 border rounded-lg border-dashed">
                         <p className="text-muted-foreground mb-4">This dashboard has no visualizations yet.</p>
-                        {!readOnly && (
+                        {!finalReadOnly && (
                             <Button asChild>
                                 <Link href={`/analyst/visualization-builder?dashboardId=${dashboard.id}&projectId=${dashboard.projectId || ""}`}>
                                     Create Visualization

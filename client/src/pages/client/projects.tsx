@@ -257,6 +257,7 @@ function CreateProjectDialog() {
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
               type="date"
+              min={new Date().toISOString().split("T")[0]}
               data-testid="input-project-deadline"
             />
           </div>
@@ -374,12 +375,14 @@ function ProjectCard({ project }: { project: UIProject }) {
                 <DropdownMenuItem data-testid={`menu-view-${project.id}`}>
                   {t("client_projects.view_details")}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  data-testid={`menu-delete-${project.id}`}
-                >
-                  {t("common.delete")}
-                </DropdownMenuItem>
+                {project.status !== "in_progress" && (
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    data-testid={`menu-delete-${project.id}`}
+                  >
+                    {t("common.delete")}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

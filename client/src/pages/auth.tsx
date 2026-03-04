@@ -39,11 +39,11 @@ export default function AuthPage() {
           </div>
 
           <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-            Data Analytics<br />
-            <span className="text-blue-400">Marketplace</span>
+            {t("landing.hero_title_1")}<br />
+            {t("landing.hero_title_2")}
           </h1>
           <p className="text-lg text-blue-200/80 max-w-md">
-            Connect with top data analysts or find your next data project. Thaqib brings clients and analysts together.
+            {t("landing.hero_description")}
           </p>
 
           <div className="mt-12 space-y-6">
@@ -52,8 +52,8 @@ export default function AuthPage() {
                 <Briefcase className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Post Projects</h3>
-                <p className="text-blue-200/60 text-sm">Upload datasets and find the right analyst for your business needs</p>
+                <h3 className="text-white font-semibold">{t("landing.step1_title")}</h3>
+                <p className="text-blue-200/60 text-sm">{t("landing.step1_desc")}</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -61,8 +61,8 @@ export default function AuthPage() {
                 <Users className="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Expert Analysts</h3>
-                <p className="text-blue-200/60 text-sm">Browse and apply to data projects that match your expertise</p>
+                <h3 className="text-white font-semibold">{t("landing.step2_title")}</h3>
+                <p className="text-blue-200/60 text-sm">{t("landing.step2_desc")}</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -70,15 +70,15 @@ export default function AuthPage() {
                 <BarChart3 className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Interactive Dashboards</h3>
-                <p className="text-blue-200/60 text-sm">Build, visualize, and share data insights with powerful tools</p>
+                <h3 className="text-white font-semibold">{t("landing.step3_title")}</h3>
+                <p className="text-blue-200/60 text-sm">{t("landing.step3_desc")}</p>
               </div>
             </div>
           </div>
         </div>
 
         <p className="relative z-10 text-blue-200/40 text-sm">
-          © {new Date().getFullYear()} Thaqib. All rights reserved.
+          © {new Date().getFullYear()} {t("landing.footer_rights")}
         </p>
       </div>
 

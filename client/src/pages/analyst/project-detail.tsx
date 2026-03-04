@@ -258,9 +258,9 @@ export default function AnalystProjectDetailPage() {
                                 dashboard.status === "submitted" ? "secondary" :
                                   "outline"
                             }>
-                              {dashboard.status === "approved" ? t("analyst_project_detail.approved") :
-                                dashboard.status === "submitted" ? t("analyst_project_detail.under_review") :
-                                  dashboard.status === "rejected" ? t("analyst_project_detail.changes_requested") : t("analyst_project_detail.draft")}
+                              {dashboard.status === "approved" ? t("project_detail.approved") :
+                                dashboard.status === "submitted" ? t("project_detail.under_review") :
+                                  dashboard.status === "rejected" ? t("project_detail.changes_requested") : t("project_detail.draft")}
                             </Badge>
                           </div>
                           {dashboard.description && (

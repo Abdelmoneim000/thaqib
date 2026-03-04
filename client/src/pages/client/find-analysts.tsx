@@ -23,7 +23,8 @@ export default function FindAnalystsPage() {
             const res = await fetch(`/api/public/analysts?${params.toString()}`);
             if (!res.ok) throw new Error("Failed to fetch analysts");
             return res.json();
-        }
+        },
+        enabled: !!searchQuery.trim(),
     });
 
     const filteredAnalysts = analysts || [];
@@ -49,15 +50,25 @@ export default function FindAnalystsPage() {
                     </div>
                 </div>
 
-                {isLoading ? (
+                {isLoading && !!searchQuery.trim() ? (
                     <div className="flex justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
+                ) : !searchQuery.trim() ? (
+                    <div className="flex flex-col items-center justify-center py-20 bg-gradient-to-br from-primary/5 via-background to-secondary/5 rounded-xl border border-border/50 shadow-sm text-center px-4">
+                        <div className="bg-background p-4 rounded-full shadow-sm mb-6 border">
+                            <Search className="h-10 w-10 text-primary" />
+                        </div>
+                        <h2 className="text-2xl font-bold mb-3">{t("find_analysts.initial_empty_title")}</h2>
+                        <p className="text-muted-foreground max-w-md text-base leading-relaxed">
+                            {t("find_analysts.initial_empty_desc")}
+                        </p>
+                    </div>
                 ) : filteredAnalysts.length === 0 ? (
-                    <div className="text-center py-12 bg-muted/20 rounded-lg border border-dashed">
-                        <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
-                        <h3 className="text-lg font-medium">{t("find_analysts.no_analysts")}</h3>
-                        <p className="text-muted-foreground">{t("find_analysts.adjust_search")}</p>
+                    <div className="text-center py-16 bg-muted/20 rounded-xl border border-dashed text-muted-foreground">
+                        <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <h3 className="text-lg font-medium text-foreground">{t("find_analysts.no_analysts")}</h3>
+                        <p className="mt-1">{t("find_analysts.adjust_search")}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

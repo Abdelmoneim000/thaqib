@@ -164,23 +164,27 @@ export default function DashboardsPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>{t("analyst_applications.actions")}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => toggleShowcase(dashboard)} className="cursor-pointer">
-                                {dashboard.isShowcase ? (
-                                  <><StarOff className="h-4 w-4 mr-2" /> {t("analyst_management.remove_showcase")}</>
-                                ) : (
-                                  <><Star className="h-4 w-4 mr-2" /> {t("common.make_public", { defaultValue: "Make Public" })} </>
-                                )}
-                              </DropdownMenuItem>
+                              {dashboard.status !== "submitted" && dashboard.status !== "approved" && (
+                                <DropdownMenuItem onClick={() => toggleShowcase(dashboard)} className="cursor-pointer">
+                                  {dashboard.isShowcase ? (
+                                    <><StarOff className="h-4 w-4 mr-2" /> {t("analyst_management.remove_showcase")}</>
+                                  ) : (
+                                    <><Star className="h-4 w-4 mr-2" /> {t("common.make_public", { defaultValue: "Make Public" })} </>
+                                  )}
+                                </DropdownMenuItem>
+                              )}
                               <Link href={`/analyst/dashboards/${dashboard.id}`}>
                                 <DropdownMenuItem className="cursor-pointer">
                                   <Eye className="h-4 w-4 mr-2" /> {t("analyst_projects.view_details")}
                                 </DropdownMenuItem>
                               </Link>
-                              <Link href={`/analyst/dashboard-view/${dashboard.id}`}>
-                                <DropdownMenuItem className="cursor-pointer">
-                                  <Edit className="h-4 w-4 mr-2" /> {t("account.edit")}
-                                </DropdownMenuItem>
-                              </Link>
+                              {dashboard.status !== "submitted" && dashboard.status !== "approved" && (
+                                <Link href={`/analyst/dashboard-view/${dashboard.id}`}>
+                                  <DropdownMenuItem className="cursor-pointer">
+                                    <Edit className="h-4 w-4 mr-2" /> {t("account.edit")}
+                                  </DropdownMenuItem>
+                                </Link>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
