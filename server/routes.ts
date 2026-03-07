@@ -1045,6 +1045,7 @@ export async function registerRoutes(
       if (updates.analysisType !== undefined) allowedUpdates.analysisType = updates.analysisType;
       if (updates.analysisField !== undefined) allowedUpdates.analysisField = updates.analysisField;
       if (updates.customAnalysisField !== undefined) allowedUpdates.customAnalysisField = updates.customAnalysisField;
+      if (updates.rejectionReason !== undefined) allowedUpdates.rejectionReason = updates.rejectionReason;
 
       const updatedProject = await storage.updateProject(projectId, allowedUpdates);
       res.json(updatedProject);

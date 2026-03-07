@@ -76,6 +76,7 @@ function getStatusBadge(status: string) {
   const variants: Record<string, { label: string; className: string }> = {
     draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
     pending_approval: { label: t("client_projects.pending_approval"), className: "bg-orange-500/10 text-orange-600 border-orange-200" },
+    awaiting_client_approval: { label: t("client_projects.awaiting_client_approval", { defaultValue: "Awaiting Your Approval" }), className: "bg-cyan-500/10 text-cyan-600 border-cyan-200" },
     open: { label: t("common.open"), className: "bg-chart-2/10 text-chart-2" },
     in_progress: { label: t("common.in_progress"), className: "bg-chart-4/10 text-chart-4" },
     completed: { label: t("common.completed"), className: "bg-chart-1/10 text-chart-1" },
@@ -394,14 +395,6 @@ function ProjectCard({ project }: { project: UIProject }) {
                 <DropdownMenuItem data-testid={`menu-view-${project.id}`}>
                   {t("client_projects.view_details")}
                 </DropdownMenuItem>
-                {project.status !== "in_progress" && (
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    data-testid={`menu-delete-${project.id}`}
-                  >
-                    {t("common.delete")}
-                  </DropdownMenuItem>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

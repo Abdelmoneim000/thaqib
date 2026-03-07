@@ -29,6 +29,13 @@
       "when": 1772657558451,
       "tag": "0003_far_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772686157841,
+      "tag": "0004_modern_shaman",
+      "breakpoints": true
     }
   ]
 }

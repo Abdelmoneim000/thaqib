@@ -38,6 +38,7 @@ export const projects = pgTable("projects", {
   customAnalysisField: text("custom_analysis_field"), // when analysisField = "others"
   deadline: timestamp("deadline"),
   submittedAt: timestamp("submitted_at"),
+  rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

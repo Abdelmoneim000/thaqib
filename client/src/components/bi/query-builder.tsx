@@ -36,28 +36,28 @@ interface QueryBuilderProps {
   query: VisualQuery;
 }
 
-const aggregationOptions: { value: AggregationType; label: string }[] = [
-  { value: "none", label: "No aggregation" },
-  { value: "sum", label: "Sum" },
-  { value: "count", label: "Count" },
-  { value: "avg", label: "Average" },
-  { value: "min", label: "Minimum" },
-  { value: "max", label: "Maximum" },
-];
-
-const operatorOptions = [
-  { value: "=", label: "equals" },
-  { value: "!=", label: "not equals" },
-  { value: ">", label: "greater than" },
-  { value: "<", label: "less than" },
-  { value: ">=", label: "greater or equal" },
-  { value: "<=", label: "less or equal" },
-  { value: "contains", label: "contains" },
-];
-
 export function QueryBuilder({ datasets, onQueryChange, onRunQuery, query }: QueryBuilderProps) {
   const { datasetId: selectedDatasetId, columns: rawColumns, filters, groupBy } = query;
   const { t } = useTranslation();
+
+  const aggregationOptions = [
+    { value: "none", label: t("bi.agg_none", { defaultValue: "No aggregation" }) },
+    { value: "sum", label: t("bi.agg_sum", { defaultValue: "Sum" }) },
+    { value: "count", label: t("bi.agg_count", { defaultValue: "Count" }) },
+    { value: "avg", label: t("bi.agg_avg", { defaultValue: "Average" }) },
+    { value: "min", label: t("bi.agg_min", { defaultValue: "Minimum" }) },
+    { value: "max", label: t("bi.agg_max", { defaultValue: "Maximum" }) },
+  ];
+
+  const operatorOptions = [
+    { value: "=", label: t("bi.op_equals", { defaultValue: "equals" }) },
+    { value: "!=", label: t("bi.op_not_equals", { defaultValue: "not equals" }) },
+    { value: ">", label: t("bi.op_greater_than", { defaultValue: "greater than" }) },
+    { value: "<", label: t("bi.op_less_than", { defaultValue: "less than" }) },
+    { value: ">=", label: t("bi.op_greater_equal", { defaultValue: "greater or equal" }) },
+    { value: "<=", label: t("bi.op_less_equal", { defaultValue: "less or equal" }) },
+    { value: "contains", label: t("bi.op_contains", { defaultValue: "contains" }) },
+  ];
 
   // Ensure columns is treated as QueryColumn[]
   const columns = (rawColumns as QueryColumn[]) || [];

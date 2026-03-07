@@ -278,16 +278,40 @@ export default function VisualizationBuilderPage() {
       }
     }
 
+    let queryPayload: Record<string, any>;
+    let configPayload: Record<string, any> = { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting };
+
+    if (textContent) {
+      configPayload.description = textContent;
+    }
+
+    let actualQueryMode = queryMode;
+    if (actualQueryMode === "text" && queryResults.length > 0) {
+      actualQueryMode = sqlQuery.trim().length > 0 && queryMode !== "visual" ? "sql" : "visual";
+    }
+
+    if (actualQueryMode === "visual") {
+      queryPayload = {
+        type: "visual",
+        columns: columnNames,
+        filters: visualQuery.filters.map(f => ({ ...f, value: String(f.value) })),
+        groupBy: visualQuery.groupBy?.[0],
+        aggregation
+      };
+    } else if (actualQueryMode === "sql") {
+      queryPayload = { type: "sql", sql: sqlQuery };
+    } else {
+      queryPayload = { type: "text" };
+    }
+
+    const finalChartType = queryPayload.type === "text" ? "text" : chartType;
+
     saveMutation.mutate({
       name: vizName,
-      datasetId: visualQuery.datasetId,
-      chartType: chartType,
-      query: queryMode === "visual"
-        ? { type: "visual", columns: columnNames, filters: visualQuery.filters.map(f => ({ ...f, value: String(f.value) })), groupBy: visualQuery.groupBy?.[0], aggregation }
-        : queryMode === "sql"
-          ? { type: "sql", sql: sqlQuery }
-          : { type: "text", text: textContent },
-      config: { xAxis, yAxis, categoryField: xAxis, valueField: yAxis, colors, formatting },
+      datasetId: actualQueryMode === "text" ? null : visualQuery.datasetId,
+      chartType: finalChartType,
+      query: JSON.stringify(queryPayload) as any,
+      config: JSON.stringify(configPayload) as any,
       dashboardId: selectedDashboardId,
     });
   };

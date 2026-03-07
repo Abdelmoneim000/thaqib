@@ -463,6 +463,8 @@ export default function ClientProjectDetailPage() {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { label: string; className: string }> = {
       draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
+      pending_approval: { label: t("client_projects.pending_approval"), className: "bg-orange-500/10 text-orange-600 border-orange-200" },
+      awaiting_client_approval: { label: t("client_projects.awaiting_client_approval", { defaultValue: "Awaiting Your Approval" }), className: "bg-cyan-500/10 text-cyan-600 border-cyan-200" },
       open: { label: "Open", className: "bg-chart-2/10 text-chart-2" },
       in_progress: { label: "In Progress", className: "bg-chart-4/10 text-chart-4" },
       completed: { label: "Completed", className: "bg-chart-1/10 text-chart-1" },
@@ -471,6 +473,24 @@ export default function ClientProjectDetailPage() {
     const { label, className } = variants[status] || variants.draft;
     return <Badge variant="outline" className={className}>{label}</Badge>;
   };
+
+  const [isRejectBudgetOpen, setIsRejectBudgetOpen] = useState(false);
+  const [budgetRejectionReason, setBudgetRejectionReason] = useState("");
+
+  const reviewBudgetMutation = useMutation({
+    mutationFn: async ({ status, rejectionReason }: { status: "open" | "pending_approval", rejectionReason?: string }) => {
+      await apiRequest("PATCH", `/api/projects/${id}`, { status, rejectionReason: rejectionReason || null });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({ title: t("project_detail.budget_reviewed", { defaultValue: "Budget reviewed successfully" }) });
+      setIsRejectBudgetOpen(false);
+    },
+    onError: () => {
+      toast({ title: t("project_detail.budget_review_failed", { defaultValue: "Failed to review budget" }), variant: "destructive" });
+    }
+  });
 
   // File upload ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -588,6 +608,75 @@ export default function ClientProjectDetailPage() {
               <p className="text-muted-foreground max-w-2xl">
                 {project.description}
               </p>
+
+              {/* Client Budget Review Action Banner */}
+              {project.status === "awaiting_client_approval" && (
+                <div className="bg-cyan-50 border border-cyan-200 rounded-md p-4 mt-4 max-w-2xl space-y-3">
+                  <h4 className="font-medium text-sm text-cyan-900 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    {t("project_detail.budget_proposed", { defaultValue: "Admin Proposed Budget" })}
+                  </h4>
+                  <p className="text-sm text-cyan-800">
+                    {t("project_detail.budget_proposed_desc", { defaultValue: "The administration has reviewed your project and set the following budget constraint. Please accept the budget to publish the project to analysts, or reject it with feedback." })}
+                  </p>
+                  <div className="flex items-center gap-2 font-semibold text-lg text-emerald-700">
+                    <DollarSign className="h-5 w-5" />
+                    {project.budget?.toLocaleString() || "0"}
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      onClick={() => reviewBudgetMutation.mutate({ status: "open" })}
+                      disabled={reviewBudgetMutation.isPending}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {reviewBudgetMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      {t("project_detail.accept_publish", { defaultValue: "Accept Budget & Publish" })}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => setIsRejectBudgetOpen(true)}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      {t("project_detail.reject_feedback", { defaultValue: "Reject with Feedback" })}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Budget Rejection Dialog */}
+              <Dialog open={isRejectBudgetOpen} onOpenChange={setIsRejectBudgetOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t("project_detail.reject_budget_title", { defaultValue: "Reject Proposed Budget" })}</DialogTitle>
+                    <DialogDescription>
+                      {t("project_detail.reject_budget_desc", { defaultValue: "Please explain why the proposed budget does not meet your expectations. The project will be sent back to the admin for review." })}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Textarea
+                      value={budgetRejectionReason}
+                      onChange={(e) => setBudgetRejectionReason(e.target.value)}
+                      placeholder={t("project_detail.enter_rejection_reason", { defaultValue: "The budget is too low for the scope of..." })}
+                      rows={4}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsRejectBudgetOpen(false)}>
+                      {t("project_detail.cancel")}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      disabled={!budgetRejectionReason.trim() || reviewBudgetMutation.isPending}
+                      onClick={() => reviewBudgetMutation.mutate({ status: "pending_approval", rejectionReason: budgetRejectionReason })}
+                    >
+                      {reviewBudgetMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {t("project_detail.submit_rejection", { defaultValue: "Submit Rejection" })}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="flex flex-col gap-2 items-end">
               <div className="flex gap-2">

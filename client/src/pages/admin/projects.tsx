@@ -113,7 +113,7 @@ export default function AdminProjectsPage() {
 
     const publishProjectMutation = useMutation({
         mutationFn: async ({ projectId, budget }: { projectId: string; budget: number }) => {
-            await apiRequest("PATCH", `/api/admin/projects/${projectId}`, { status: "open", budget });
+            await apiRequest("PATCH", `/api/admin/projects/${projectId}`, { status: "awaiting_client_approval", budget });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
@@ -141,6 +141,8 @@ export default function AdminProjectsPage() {
                 return "bg-green-100 text-green-800";
             case "deleted":
                 return "bg-red-100 text-red-800";
+            case "awaiting_client_approval":
+                return "bg-cyan-100 text-cyan-800";
             default:
                 return "bg-gray-100 text-gray-800";
         }
@@ -319,6 +321,17 @@ export default function AdminProjectsPage() {
                                     <div className="text-sm">
                                         <span className="text-muted-foreground block mb-1">{t("projects.description")}:</span>
                                         <p className="text-xs bg-muted rounded p-2">{selectedProject.description}</p>
+                                    </div>
+                                )}
+
+                                {selectedProject.rejectionReason && selectedProject.status === "pending_approval" && (
+                                    <div className="bg-red-50 border border-red-200 rounded-md p-3 space-y-1">
+                                        <h4 className="font-medium text-sm text-red-900 flex items-center gap-1">
+                                            <XCircle className="h-4 w-4" />
+                                            Client Rejected Proposed Budget
+                                        </h4>
+                                        <p className="text-xs text-red-700 font-medium">Reason:</p>
+                                        <p className="text-xs text-red-700 bg-red-100/50 p-2 rounded">{selectedProject.rejectionReason}</p>
                                     </div>
                                 )}
 

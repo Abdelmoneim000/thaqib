@@ -18,7 +18,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Loader2, Calendar, LayoutDashboard, Send, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, MoveHorizontal, Loader2, Calendar, LayoutDashboard, Send, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { ChartRenderer } from "@/components/bi/chart-renderer";
 import type { Dashboard, Visualization, VisualizationConfig } from "@shared/schema";
 import type { ChartType, ChartColors, ChartFormatting } from "@/lib/bi-types";
@@ -28,7 +28,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 
 // Wrapper component to handle data fetching for a single visualization
-function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualization; onDelete: (id: string) => void, onRename?: (id: string, newName: string) => Promise<void>, readOnly?: boolean }) {
+function DashboardChart({ viz, onDelete, onRename, readOnly, isEditLayout, onMoveLeft, onMoveRight }: { viz: Visualization; onDelete: (id: string) => void, onRename?: (id: string, newName: string) => Promise<void>, readOnly?: boolean, isEditLayout?: boolean, onMoveLeft?: () => void, onMoveRight?: () => void }) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(viz.name);
@@ -48,19 +48,62 @@ function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualizat
         }
     }
 
+    const parsedQuery = useMemo(() => {
+        if (!viz.query) return {};
+        if (typeof viz.query === 'string') {
+            try {
+                return JSON.parse(viz.query);
+            } catch (e) {
+                console.error("Failed to parse visual query", e);
+                return {};
+            }
+        }
+        return viz.query;
+    }, [viz.query]);
+
     const { data: queryResult, isLoading, error } = useQuery<{ data: any[] }>({
-        queryKey: ["/api/query", viz.datasetId, JSON.stringify(viz.query)],
+        queryKey: ["/api/query", viz.datasetId, JSON.stringify(parsedQuery)],
         queryFn: async () => {
             if (!viz.datasetId) return { data: [] };
             const res = await fetch("/api/query", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ datasetId: viz.datasetId, query: viz.query }),
+                body: JSON.stringify({ datasetId: viz.datasetId, query: parsedQuery }),
             });
             if (!res.ok) throw new Error("Failed to fetch data");
             return res.json();
         },
         enabled: !!viz.datasetId && viz.chartType !== "text",
+    });
+
+    // Cast config to correct type, handle potential stringified JSON from DB
+    let configStr = viz.config;
+    if (typeof configStr === 'string') {
+        try {
+            configStr = JSON.parse(configStr);
+        } catch (e) {
+            console.error("Failed to parse visual config", e);
+            configStr = {};
+        }
+    }
+    const config = (configStr || {}) as VisualizationConfig & { description?: string; width?: number; height?: number; };
+
+    if (config.description && !textContent) {
+        textContent = config.description;
+    }
+
+    // Set initial size from config or default to something reasonable
+    const [mapSize, setMapSize] = useState({
+        width: typeof config.width === 'number' ? config.width : 400,
+        height: typeof config.height === 'number' ? config.height : 350
+    });
+
+    const updateSizeMutation = useMutation({
+        mutationFn: async (newConfig: any) => {
+            await apiRequest("PATCH", `/api/visualizations/${viz.id}`, {
+                config: newConfig
+            });
+        }
     });
 
     const handleDelete = () => {
@@ -105,15 +148,33 @@ function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualizat
         );
     }
 
-    // Cast config to correct type
-    const config = (viz.config as unknown) as VisualizationConfig & { description?: string };
+    const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (readOnly) return;
+        const target = e.currentTarget;
+        if (target) {
+            const newWidth = target.offsetWidth;
+            const newHeight = target.offsetHeight;
 
-    if (config.description) {
-        textContent = config.description;
-    }
+            if (newWidth !== mapSize.width || newHeight !== mapSize.height) {
+                setMapSize({ width: newWidth, height: newHeight });
+                updateSizeMutation.mutate({ ...config, width: newWidth, height: newHeight });
+            }
+        }
+    };
 
     return (
-        <Card className="h-full flex flex-col min-h-[350px] relative group">
+        <Card
+            className="flex flex-col relative group"
+            style={{
+                width: mapSize.width,
+                height: mapSize.height,
+                resize: readOnly ? 'none' : 'both',
+                overflow: 'hidden',
+                minWidth: '300px',
+                minHeight: '250px'
+            }}
+            onMouseUp={handleMouseUp}
+        >
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0 min-h-[60px]">
                 {isEditing ? (
                     <div className="flex items-center gap-2 flex-1 mr-4">
@@ -144,7 +205,7 @@ function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualizat
                 ) : (
                     <CardTitle className="text-base font-medium flex-1 flex items-center pr-4">
                         <span className="truncate">{viz.name}</span>
-                        {!readOnly && (
+                        {!readOnly && !isEditLayout && (
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -154,9 +215,19 @@ function DashboardChart({ viz, onDelete, onRename, readOnly }: { viz: Visualizat
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></svg>
                             </Button>
                         )}
+                        {isEditLayout && (
+                            <div className="flex items-center gap-1 ml-4 flex-shrink-0">
+                                <Button variant="outline" size="icon" className="h-6 w-6" onClick={onMoveLeft} disabled={!onMoveLeft}>
+                                    <ArrowLeft className="h-3 w-3" />
+                                </Button>
+                                <Button variant="outline" size="icon" className="h-6 w-6" onClick={onMoveRight} disabled={!onMoveRight}>
+                                    <ArrowRight className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        )}
                     </CardTitle>
                 )}
-                {!readOnly && !isEditing && (
+                {!readOnly && !isEditing && !isEditLayout && (
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -210,6 +281,8 @@ export default function AnalystDashboardViewPage() {
     const { toast } = useToast();
     const { user } = useAuth();
     const [isDeletingDashboard, setIsDeletingDashboard] = useState(false);
+    const [isEditLayout, setIsEditLayout] = useState(false);
+    const [visualsOrder, setVisualsOrder] = useState<string[]>([]);
 
     // Parse query params for viewOnly
     const [isViewOnly, setIsViewOnly] = useState(false);
@@ -227,11 +300,53 @@ export default function AnalystDashboardViewPage() {
         enabled: !!id,
     });
 
-    // Fetch Visualizations for this Dashboard
     const { data: visualizations, isLoading: isVizLoading } = useQuery<Visualization[]>({
         queryKey: [`/api/visualizations`, { dashboardId: id }],
         enabled: !!id,
     });
+
+    useEffect(() => {
+        if (visualizations && visualsOrder.length === 0) {
+            const layoutItems = dashboard?.layout?.items || [];
+            const orderedIds = layoutItems.map((item: any) => item.visualizationId);
+            const missing = visualizations.filter(v => !orderedIds.includes(v.id)).map(v => v.id);
+            setVisualsOrder([...orderedIds, ...missing]);
+        }
+    }, [visualizations, dashboard]);
+
+    const saveLayoutMutation = useMutation({
+        mutationFn: async () => {
+            const items = visualsOrder.map(vizId => ({ visualizationId: vizId }));
+            await apiRequest("PATCH", `/api/dashboards/${id}`, {
+                layout: { items }
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`/api/dashboards/${id}`] });
+            setIsEditLayout(false);
+            toast({ title: t("dashboard_view.saved") || "Layout saved" });
+        }
+    });
+
+    const moveVisual = (index: number, direction: -1 | 1) => {
+        const newOrder = [...visualsOrder];
+        const swapIndex = index + direction;
+        if (swapIndex >= 0 && swapIndex < newOrder.length) {
+            const temp = newOrder[index];
+            newOrder[index] = newOrder[swapIndex];
+            newOrder[swapIndex] = temp;
+            setVisualsOrder(newOrder);
+        }
+    };
+
+    const sortedVisualizations = useMemo(() => {
+        if (!visualizations) return [];
+        return [...visualizations].sort((a, b) => {
+            const indexA = visualsOrder.indexOf(a.id);
+            const indexB = visualsOrder.indexOf(b.id);
+            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+        });
+    }, [visualizations, visualsOrder]);
 
     const submitMutation = useMutation({
         mutationFn: async () => {
@@ -415,6 +530,18 @@ export default function AnalystDashboardViewPage() {
                                         </span>
                                     </div>
                                 ) : null}
+
+                                {isEditLayout ? (
+                                    <Button size="sm" onClick={() => saveLayoutMutation.mutate()} disabled={saveLayoutMutation.isPending}>
+                                        {saveLayoutMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        {"Save Layout"}
+                                    </Button>
+                                ) : (
+                                    <Button size="sm" variant="outline" onClick={() => setIsEditLayout(true)}>
+                                        <MoveHorizontal className="mr-2 h-4 w-4" />
+                                        {"Edit Layout"}
+                                    </Button>
+                                )}
                             </>
                         )}
                         {/* Always show the status badge if it is readOnly but belongs to a project */}
@@ -429,8 +556,8 @@ export default function AnalystDashboardViewPage() {
                     </div>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-                    {visualizations?.map((viz) => (
+                <div className="flex flex-wrap gap-6 items-start">
+                    {sortedVisualizations?.map((viz, index) => (
                         <div key={viz.id} className="min-h-[350px]">
                             <DashboardChart
                                 viz={viz}
@@ -439,6 +566,9 @@ export default function AnalystDashboardViewPage() {
                                     await renameVizMutation.mutateAsync({ vizId: id, newName });
                                 }}
                                 readOnly={finalReadOnly}
+                                isEditLayout={isEditLayout}
+                                onMoveLeft={index > 0 ? () => moveVisual(index, -1) : undefined}
+                                onMoveRight={index < sortedVisualizations.length - 1 ? () => moveVisual(index, 1) : undefined}
                             />
                         </div>
                     ))}

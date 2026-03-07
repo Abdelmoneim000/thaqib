@@ -240,7 +240,11 @@
         "create_failed": "Failed to create dashboard",
         "saved_visualizations": "Saved Visualizations",
         "no_saved_visualizations": "No saved visualizations found. create one from the builder.",
-        "chart_visuals": "Visualizations"
+        "chart_visuals": "Visualizations",
+        "add_first_chart": "Add your first chart to get started.",
+        "dashboard_name_placeholder": "e.g. Q3 Sales Report",
+        "add_chart": "Add Chart",
+        "save_dashboard": "Save Dashboard"
     },
     "settings": {
         "title": "Settings",
@@ -356,6 +360,7 @@
         "approved": "approved",
         "showcase": "showcase",
         "published": "published",
+        "publish": "Publish",
         "open": "open"
     },
     "find_analysts": {
@@ -415,6 +420,7 @@
         "sql_query": "SQL Query",
         "run_sql_query": "Run SQL Query",
         "chart_type": "Chart Type",
+        "filters": "Filters",
         "X_axis": "X-axis",
         "Y_axis": "Y-axis",
         "colors": "Colors",
