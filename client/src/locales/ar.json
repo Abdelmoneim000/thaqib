@@ -717,6 +717,7 @@
         "status_all": "جميع الحالات",
         "status_draft": "مسودة",
         "pending_approval": "قيد موافقة الإدارة",
+        "awaiting_client_approval": "بانتظار موافقتك",
         "status_open": "مفتوح",
         "status_in_progress": "قيد التنفيذ",
         "status_completed": "مكتمل",
@@ -853,6 +854,9 @@
         "approve": "اعتماد",
         "reject": "رفض",
         "reject_dashboard": "رفض لوحة التحكم",
+        "analyst_payment": "مستحقات المحلل",
+        "commission_fee": "رسوم الخدمة/العمولة",
+        "total_payment": "المبلغ الإجمالي",
         "provide_feedback": "يرجى تقديم ملاحظات حول سبب حاجة لوحة التحكم هذه إلى التعديلات.",
         "enter_feedback": "أدخل ملاحظاتك...",
         "cancel": "إلغاء",
@@ -903,6 +907,9 @@
         "project_update_failed": "فشل تحديث المشروع",
         "save_changes": "حفظ التغييرات",
         "project_created": "تم إرسال المشروع للمراجعة",
-        "project_creation_failed": "فشل إرسال المشروع للمراجعة"
+        "project_creation_failed": "فشل إرسال المشروع للمراجعة",
+        "budget_reviewed": "تمت مراجعة الميزانية بنجاح",
+        "budget_review_failed": "فشل مراجعة الميزانية",
+        "budget_review_failed_desc": "فشل مراجعة الميزانية"
     }
 }

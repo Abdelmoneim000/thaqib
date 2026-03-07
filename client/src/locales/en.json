@@ -710,6 +710,7 @@
         "status_all": "All Status",
         "status_draft": "Draft",
         "pending_approval": "Pending Approval",
+        "awaiting_client_approval": "Awaiting Approval",
         "status_open": "Open",
         "status_in_progress": "In Progress",
         "status_completed": "Completed",
@@ -849,6 +850,9 @@
         "approve": "Approve",
         "reject": "Reject",
         "reject_dashboard": "Reject Dashboard",
+        "analyst_payment": "Analyst Payment",
+        "commission_fee": "Commission Fee",
+        "total_payment": "Total Amount",
         "provide_feedback": "Please provide feedback on why this dashboard needs changes.",
         "enter_feedback": "Enter feedback...",
         "cancel": "Cancel",
@@ -898,6 +902,9 @@
         "project_updated": "Project updated successfully",
         "project_update_failed": "Failed to update project",
         "project_created": "Project created successfully",
-        "project_creation_failed": "Failed to create project"
+        "project_creation_failed": "Failed to create project",
+        "budget_reviewed": "Budget reviewed successfully",
+        "budget_review_failed": "Failed to review budget",
+        "budget_review_failed_desc": "Failed to review budget"
     }
 }

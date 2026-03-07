@@ -46,6 +46,7 @@ interface ApplicationWithDetails extends Application {
 export default function AdminProjectsPage() {
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const [budgetInput, setBudgetInput] = useState<string>("");
+    const [platformFeeInput, setPlatformFeeInput] = useState<string>("");
     const { toast } = useToast();
     const { t } = useTranslation();
 
@@ -112,13 +113,14 @@ export default function AdminProjectsPage() {
     });
 
     const publishProjectMutation = useMutation({
-        mutationFn: async ({ projectId, budget }: { projectId: string; budget: number }) => {
-            await apiRequest("PATCH", `/api/admin/projects/${projectId}`, { status: "awaiting_client_approval", budget });
+        mutationFn: async ({ projectId, budget, platformFee }: { projectId: string; budget: number; platformFee: number }) => {
+            await apiRequest("PATCH", `/api/admin/projects/${projectId}`, { status: "awaiting_client_approval", budget, platformFee });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
             toast({ title: "Project published successfully" });
             setBudgetInput("");
+            setPlatformFeeInput("");
         },
         onError: () => {
             toast({ title: "Failed to publish project", variant: "destructive" });
@@ -342,16 +344,28 @@ export default function AdminProjectsPage() {
                                         <p className="text-xs text-orange-700">
                                             {t("admin.set_budget_publish_desc", { defaultValue: "Specify the project budget before publishing it to analysts." })}
                                         </p>
-                                        <div className="flex gap-2">
-                                            <div className="relative flex-1">
-                                                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                <input
-                                                    type="number"
-                                                    placeholder={t("admin.enter_budget", { defaultValue: "Enter amount..." })}
-                                                    className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                                    value={budgetInput}
-                                                    onChange={(e) => setBudgetInput(e.target.value)}
-                                                />
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex gap-2">
+                                                <div className="relative flex-1">
+                                                    <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <input
+                                                        type="number"
+                                                        placeholder={t("admin.enter_budget", { defaultValue: "Analyst payment amount..." })}
+                                                        className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                        value={budgetInput}
+                                                        onChange={(e) => setBudgetInput(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="relative flex-1">
+                                                    <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <input
+                                                        type="number"
+                                                        placeholder={t("admin.enter_commission", { defaultValue: "Commission fee..." })}
+                                                        className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                        value={platformFeeInput}
+                                                        onChange={(e) => setPlatformFeeInput(e.target.value)}
+                                                    />
+                                                </div>
                                             </div>
                                             <Button
                                                 size="sm"
@@ -359,9 +373,11 @@ export default function AdminProjectsPage() {
                                                 onClick={() => {
                                                     publishProjectMutation.mutate({
                                                         projectId: selectedProject.id,
-                                                        budget: Number(budgetInput)
+                                                        budget: Number(budgetInput),
+                                                        platformFee: Number(platformFeeInput) || 0
                                                     });
                                                 }}
+                                                className="w-full"
                                             >
                                                 {publishProjectMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                                                 {t("common.publish", { defaultValue: "Publish" })}
