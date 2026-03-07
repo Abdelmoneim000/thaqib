@@ -426,7 +426,9 @@
         "colors": "Colors",
         "formatting": "Formatting",
         "category": "Category",
-        "value": "Value"
+        "value": "Value",
+        "add_visual": "Add Visualization",
+        "add_visual_desc": "Add a new visualization to this dashboard."
     },
     "dashboard_view": {
         "edit_dashboard": "Edit Dashboard",
@@ -457,7 +459,12 @@
         "status_changes_requested": "Changes Requested",
         "status_draft": "Draft",
         "delete_dashboard_button": "Delete Dashboard",
-        "delete_dashboard_confirm_title": "Are you sure?"
+        "delete_dashboard_confirm_title": "Are you sure?",
+        "delete_dashboard_confirm_desc": "Are you sure you want to delete this dashboard? This action cannot be undone.",
+        "delete_dashboard_cancel": "Cancel",
+        "delete_dashboard_confirm": "Delete",
+        "add_visualization": "Add Visualization",
+        "add_visualization_desc": "Add a new visualization to this dashboard."
     },
     "admin_chats": {
         "title": "Chat Support",

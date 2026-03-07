@@ -407,8 +407,8 @@
         "data_source": "مصدر البيانات",
         "Description_title": "شرح بصيغة ماركداون",
         "Description_placeholder": "أدخل وصفًا للوحة المعلومات بصيغة ماركداون",
-        "add_visual": "إضافة مرئي",
-        "add_visual_desc": "أضف مرئيًا جديدًا إلى لوحة المعلومات هذه.",
+        "add_visual": "إضافة مرئية",
+        "add_visual_desc": "أضف مرئية جديدة إلى لوحة المعلومات هذه.",
         "select_dataset_desc": "اختر مجموعة البيانات لعرض Schema",
         "schema_reference": "Schema Reference",
         "table": "Table",
@@ -440,7 +440,7 @@
     "dashboard_view": {
         "edit_dashboard": "تعديل لوحة المعلومات",
         "view_dashboard": "عرض لوحة المعلومات",
-        "create_viz": "إنشاء مرئي",
+        "create_viz": "إنشاء مرئية",
         "save_changes": "حفظ التغييرات",
         "cancel": "إلغاء",
         "delete": "حذف",
@@ -453,7 +453,7 @@
         "rename": "إعادة تسمية",
         "save": "حفظ",
         "empty_title": "لا يوجد مرئيات بعد",
-        "empty_desc": "ابدأ بإضافة مرثية إلى لوحة المعلومات هذه.",
+        "empty_desc": "ابدأ بإضافة مرئية إلى لوحة المعلومات هذه.",
         "dashboard_deleted_title": "تم حذف لوحة المعلومات",
         "dashboard_deleted_desc": "تمت إزالة لوحة المعلومات نهائياً.",
         "error_title": "خطأ",
@@ -468,9 +468,9 @@
         "delete_dashboard_button": "حذف لوحة المعلومات",
         "delete_dashboard_confirm_title": "هل أنت متأكد؟",
         "no_visualizations": "لا يوجد مرئيات بعد",
-        "create_visualization": "إنشاء مرئي",
+        "create_visualization": "إنشاء مرئية",
         "status_submitted": "تم الإرسال",
-        "add_visualization": "إضافة مرئي",
+        "add_visualization": "إضافة مرئية",
         "delete_dashboard_confirm_desc": "هل أنت متأكد من حذف لوحة المعلومات هذه؟ لا يمكن التراجع عن هذا الإجراء.",
         "delete_dashboard_cancel": "إلغاء",
         "delete_dashboard_confirm": "حذف"
@@ -787,7 +787,11 @@
         "dashboard_submitted": "تم إرسال لوحة المعلومات",
         "dashboard_submitted_desc": "تم إرسال لوحة المعلومات لمراجعة العميل.",
         "submission_failed": "فشل الإرسال",
-        "submission_failed_desc": "تعذر إرسال لوحة المعلومات."
+        "submission_failed_desc": "تعذر إرسال لوحة المعلومات.",
+        "delete_dashboard_button": "حذف لوحة المعلومات",
+        "delete_dashboard_confirm_desc": "هل أنت متأكد من حذف لوحة المعلومات هذه؟ لا يمكن التراجع عن هذا الإجراء.",
+        "delete_dashboard_cancel": "إلغاء",
+        "delete_dashboard_confirm": "حذف"
     },
     "analyst_browse": {
         "title": "تصفح المشاريع",
