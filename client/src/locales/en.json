@@ -731,6 +731,7 @@
         "datasets": "Datasets",
         "applicants": "Applicants",
         "success": "Project Created",
+        "project_created": "Project created successfully",
         "success_desc": "Your new project has been created successfully.",
         "error": "Creation Failed",
         "error_desc": "Could not create the project. Please try again.",

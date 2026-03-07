@@ -132,7 +132,7 @@ function CreateProjectDialog() {
 
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/datasets"] });
-      toast({ title: "Project created", description: t("project_detail.project_created") });
+      toast({ title: t("client_projects.success"), description: t("project_detail.project_created") });
       setOpen(false);
       resetForm();
     },
