@@ -912,6 +912,16 @@
         "project_creation_failed": "فشل إرسال المشروع للمراجعة",
         "budget_reviewed": "تمت مراجعة الميزانية بنجاح",
         "budget_review_failed": "فشل مراجعة الميزانية",
-        "budget_review_failed_desc": "فشل مراجعة الميزانية"
+        "budget_review_failed_desc": "فشل مراجعة الميزانية",
+        "budget_proposed": "تم اقتراح الميزانية",
+        "budget_proposed_desc": "تمت مراجعة المشروع من قبل احد المسؤولين وتقديم الميزانية التالية. يرجى الموافقة عليها أو رفضها مع تقديم تعليق في حال الرفض",
+        "budget_approved": "تمت الموافقة على الميزانية",
+        "budget_approved_desc": "تمت الموافقة على الميزانية",
+        "budget_rejected": "تم رفض الميزانية",
+        "budget_rejected_desc": "تم رفض الميزانية",
+        "reject_budget_title": "رفض الميزانية",
+        "reject_budget_desc": "يرجى تقديم ملاحظات حول سبب رفض الميزانية.",
+        "enter_rejection_reason": "أدخل سبب الرفض...",
+        "submit_rejection": "إرسال الرفض"
     }
 }

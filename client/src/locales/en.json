@@ -914,6 +914,16 @@
         "project_creation_failed": "Failed to create project",
         "budget_reviewed": "Budget reviewed successfully",
         "budget_review_failed": "Failed to review budget",
-        "budget_review_failed_desc": "Failed to review budget"
+        "budget_review_failed_desc": "Failed to review budget",
+        "budget_proposed": "Admin Proposed Budget",
+        "budget_proposed_desc": "The administration has reviewed your project and set the following budget constraint. Please accept the budget to publish the project to analysts, or reject it with feedback.",
+        "budget_approved": "Budget Approved",
+        "budget_approved_desc": "The budget has been approved by the admin. The project is now published to analysts.",
+        "budget_rejected": "Budget Rejected",
+        "budget_rejected_desc": "The budget has been rejected by the admin.",
+        "reject_budget_title": "Reject Proposed Budget",
+        "reject_budget_desc": "Please explain why the proposed budget does not meet your expectations. The project will be sent back to the admin for review.",
+        "enter_rejection_reason": "Enter rejection reason...",
+        "submit_rejection": "Submit Rejection"
     }
 }
