@@ -435,6 +435,8 @@
         "view_dashboard": "View Dashboard",
         "create_viz": "Create Visualization",
         "save_changes": "Save Changes",
+        "edit_layout": "Edit Layout",
+        "save_layout": "Save Layout",
         "cancel": "Cancel",
         "delete": "Delete",
         "back_to_dashboards": "Back to Dashboards",

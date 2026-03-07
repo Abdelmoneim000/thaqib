@@ -442,6 +442,8 @@
         "view_dashboard": "عرض لوحة المعلومات",
         "create_viz": "إنشاء مرئية",
         "save_changes": "حفظ التغييرات",
+        "edit_layout": "تعديل التخطيط",
+        "save_layout": "حفظ التخطيط",
         "cancel": "إلغاء",
         "delete": "حذف",
         "back_to_dashboards": "العودة إلى لوحات المعلومات",

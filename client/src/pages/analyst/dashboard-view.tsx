@@ -149,7 +149,7 @@ function DashboardChart({ viz, onDelete, onRename, readOnly, isEditLayout, onMov
     }
 
     const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (readOnly) return;
+        if (readOnly || !isEditLayout) return;
         const target = e.currentTarget;
         if (target) {
             const newWidth = target.offsetWidth;
@@ -168,7 +168,7 @@ function DashboardChart({ viz, onDelete, onRename, readOnly, isEditLayout, onMov
             style={{
                 width: mapSize.width,
                 height: mapSize.height,
-                resize: readOnly ? 'none' : 'both',
+                resize: (!readOnly && isEditLayout) ? 'both' : 'none',
                 overflow: 'hidden',
                 minWidth: '300px',
                 minHeight: '250px'
@@ -534,12 +534,12 @@ export default function AnalystDashboardViewPage() {
                                 {isEditLayout ? (
                                     <Button size="sm" onClick={() => saveLayoutMutation.mutate()} disabled={saveLayoutMutation.isPending}>
                                         {saveLayoutMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                        {"Save Layout"}
+                                        {t("dashboard_view.save_layout", { defaultValue: "Save Layout" })}
                                     </Button>
                                 ) : (
                                     <Button size="sm" variant="outline" onClick={() => setIsEditLayout(true)}>
                                         <MoveHorizontal className="mr-2 h-4 w-4" />
-                                        {"Edit Layout"}
+                                        {t("dashboard_view.edit_layout", { defaultValue: "Edit Layout" })}
                                     </Button>
                                 )}
                             </>

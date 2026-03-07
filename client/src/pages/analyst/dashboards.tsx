@@ -181,7 +181,7 @@ export default function DashboardsPage() {
                               {dashboard.status !== "submitted" && dashboard.status !== "approved" && (
                                 <Link href={`/analyst/dashboard/${dashboard.id}`}>
                                   <DropdownMenuItem className="cursor-pointer">
-                                    <Edit className="h-4 w-4 mr-2" /> {t("account.edit_profile", { defaultValue: "Edit Layout" })}
+                                    <Edit className="h-4 w-4 mr-2" /> {t("dashboard_view.edit_layout", { defaultValue: "Edit Layout" })}
                                   </DropdownMenuItem>
                                 </Link>
                               )}
