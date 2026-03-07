@@ -378,6 +378,7 @@
     "bi": {
         "no_data": "No data",
         "unknown_chart": "Unknown chart type",
+        "data_source": "Data Source",
         "create_dashboard": "Create New Dashboard",
         "dashboard_name": "Dashboard Name",
         "empty_dashboard": "Empty Dashboard",
@@ -466,7 +467,12 @@
         "delete_dashboard_cancel": "Cancel",
         "delete_dashboard_confirm": "Delete",
         "add_visualization": "Add Visualization",
-        "add_visualization_desc": "Add a new visualization to this dashboard."
+        "add_visualization_desc": "Add a new visualization to this dashboard.",
+        "no_visualizations": "No visualizations yet",
+        "no_visualizations_desc": "Get started by adding a visualization to this dashboard.",
+        "create_visualization": "Create Visualization",
+        "create_visualization_desc": "Create a new visualization to this dashboard.",
+        "status_submitted": "Submitted"
     },
     "admin_chats": {
         "title": "Chat Support",
