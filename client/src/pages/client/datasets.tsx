@@ -85,57 +85,60 @@ export default function ClientDatasetsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/datasets"] });
-            toast({ title: "Dataset deleted", description: "The dataset has been permanently removed." });
+            toast({ title: t("datasets.dataset_deleted"), description: t("datasets.dataset_deleted_desc") });
             setDatasetToDelete(null);
         },
         onError: () => {
-            toast({ title: "Delete failed", description: "Could not delete the dataset.", variant: "destructive" });
+            toast({ title: t("datasets.delete_failed"), description: t("datasets.delete_failed_desc"), variant: "destructive" });
         }
     });
 
     const uploadMutation = useMutation({
-        mutationFn: async (formData: FormData) => {
-            // Need to send to /api/datasets
-            const res = await fetch("/api/datasets", {
-                method: "POST",
-                body: formData,
-            });
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.error || "Failed to upload dataset");
+        mutationFn: async ({ files, projectId }: { files: File[], projectId: string }) => {
+            const results = [];
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("projectId", projectId);
+
+                const res = await fetch("/api/datasets", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.error || `Failed to upload dataset: ${file.name}`);
+                }
+                results.push(await res.json());
             }
-            return res.json();
+            return results;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/datasets"] });
             // Also invalidate project-specific queries if possible, but global is enough for this page
-            toast({ title: "Dataset uploaded", description: "Your dataset has been processed successfully." });
+            toast({ title: t("datasets.dataset_uploaded"), description: t("datasets.dataset_uploaded_desc") });
             setIsUploadOpen(false);
             setSelectedProjectId("");
             if (fileInputRef.current) fileInputRef.current.value = "";
         },
         onError: (error: Error) => {
-            toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+            toast({ title: t("datasets.upload_failed"), description: error.message, variant: "destructive" });
         }
     });
 
     const handleUpload = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedProjectId) {
-            toast({ title: "Project required", description: "Please select a project", variant: "destructive" });
+            toast({ title: t("datasets.project_required"), description: t("datasets.project_required_desc"), variant: "destructive" });
             return;
         }
-        const file = fileInputRef.current?.files?.[0];
-        if (!file) {
-            toast({ title: "File required", description: "Please select a CSV file", variant: "destructive" });
+        const files = fileInputRef.current?.files;
+        if (!files || files.length === 0) {
+            toast({ title: t("datasets.file_required"), description: t("datasets.file_required_multiple_desc"), variant: "destructive" });
             return;
         }
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("projectId", selectedProjectId);
-
-        uploadMutation.mutate(formData);
+        uploadMutation.mutate({ files: Array.from(files), projectId: selectedProjectId });
     };
 
     const filteredDatasets = datasets?.filter(d =>
@@ -197,6 +200,7 @@ export default function ClientDatasetsPage() {
                                     <Input
                                         type="file"
                                         accept=".csv"
+                                        multiple
                                         ref={fileInputRef}
                                     />
                                     <p className="text-xs text-muted-foreground">
@@ -265,7 +269,7 @@ export default function ClientDatasetsPage() {
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" className="h-8 w-8 p-0">
-                                                            <span className="sr-only">Open menu</span>
+                                                            <span className="sr-only">{t("analyst_applications.open_menu", { defaultValue: "Open menu" })}</span>
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -280,8 +284,8 @@ export default function ClientDatasetsPage() {
                                                                     window.open(downloadUrl, '_blank');
                                                                 } catch (err) {
                                                                     toast({
-                                                                        title: "Download failed",
-                                                                        description: "Could not generate a download link for this dataset.",
+                                                                        title: t("datasets.download_failed"),
+                                                                        description: t("datasets.download_failed_desc"),
                                                                         variant: "destructive"
                                                                     });
                                                                 }

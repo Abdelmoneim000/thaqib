@@ -80,9 +80,7 @@ export default function AnalystDatasetsPage() {
     // Fetch Projects for Upload Dropdown (Ideally filter by assigned only, but API returns all? If so, we might list all open projects)
     // Assuming analyst can only upload to assigned projects or personal. 
     // If /api/projects return all, we might want to filter, but let's stick to simple for now.
-    const { data: projects } = useQuery<Project[]>({
-        queryKey: ["/api/projects"],
-    });
+
 
     // Delete Mutation
     const deleteMutation = useMutation({
@@ -92,11 +90,11 @@ export default function AnalystDatasetsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/datasets"] });
-            toast({ title: "Dataset deleted", description: "The dataset has been permanently removed." });
+            toast({ title: t("datasets.dataset_deleted"), description: t("datasets.dataset_deleted_desc") });
             setDatasetToDelete(null);
         },
         onError: () => {
-            toast({ title: "Delete failed", description: "Could not delete the dataset.", variant: "destructive" });
+            toast({ title: t("datasets.delete_failed"), description: t("datasets.delete_failed_desc"), variant: "destructive" });
         }
     });
 
@@ -114,13 +112,13 @@ export default function AnalystDatasetsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/datasets"] });
-            toast({ title: "Dataset uploaded", description: "Your dataset has been processed successfully." });
+            toast({ title: t("datasets.dataset_uploaded"), description: t("datasets.dataset_uploaded_desc") });
             setIsUploadOpen(false);
             setSelectedProjectId("personal");
             if (fileInputRef.current) fileInputRef.current.value = "";
         },
         onError: (error: Error) => {
-            toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+            toast({ title: t("datasets.upload_failed"), description: error.message, variant: "destructive" });
         }
     });
 
@@ -128,16 +126,13 @@ export default function AnalystDatasetsPage() {
         e.preventDefault();
         const file = fileInputRef.current?.files?.[0];
         if (!file) {
-            toast({ title: "File required", description: "Please select a CSV file", variant: "destructive" });
+            toast({ title: t("datasets.file_required"), description: t("datasets.file_required_desc"), variant: "destructive" });
             return;
         }
 
         const formData = new FormData();
         formData.append("file", file);
-        if (selectedProjectId && selectedProjectId !== "personal") {
-            formData.append("projectId", selectedProjectId);
-        }
-
+        // Not appending projectId creates it in personal library by default.
         uploadMutation.mutate(formData);
     };
 
@@ -183,28 +178,18 @@ export default function AnalystDatasetsPage() {
                                 </DialogHeader>
                                 <form onSubmit={handleUpload} className="space-y-4 py-4">
                                     <div className="space-y-2">
-                                        <Label>Target Location</Label>
-                                        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select target" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="personal">Personal Library (Private)</SelectItem>
-                                                {projects?.map(p => (
-                                                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <Label>{t("datasets.target_location")}</Label>
+                                        <Input disabled value="Personal Library (Private)" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>CSV File</Label>
+                                        <Label>{t("datasets.csv_file")}</Label>
                                         <Input
                                             type="file"
                                             accept=".csv"
                                             ref={fileInputRef}
                                         />
                                         <p className="text-xs text-muted-foreground">
-                                            Supported formats: .csv (Max 50MB)
+                                            {t("datasets.supported_formats")}
                                         </p>
                                     </div>
                                     <DialogFooter>
@@ -266,7 +251,7 @@ export default function AnalystDatasetsPage() {
                                             </TableCell>
                                             <TableCell>
                                                 {dataset.projectTitle === 'Personal Library' ? (
-                                                    <span className="text-muted-foreground italic">Personal Library</span>
+                                                    <span className="text-muted-foreground italic">{t("datasets.personal_library")}</span>
                                                 ) : (
                                                     dataset.projectTitle
                                                 )}
@@ -278,7 +263,7 @@ export default function AnalystDatasetsPage() {
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" className="h-8 w-8 p-0">
-                                                            <span className="sr-only">Open menu</span>
+                                                            <span className="sr-only">{t("analyst_applications.open_menu")}</span>
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>

@@ -619,25 +619,9 @@ export default function ClientProjectDetailPage() {
                   <p className="text-sm text-cyan-800">
                     {t("project_detail.budget_proposed_desc", { defaultValue: "The administration has reviewed your project and set the following budget constraint. Please accept the budget to publish the project to analysts, or reject it with feedback." })}
                   </p>
-                  <div className="bg-white/50 rounded-lg p-4 border border-cyan-100 flex flex-col gap-2 mt-4 mb-2 max-w-sm">
-                    <div className="flex justify-between items-center text-sm text-cyan-800">
-                      <span>{t("project_detail.analyst_payment", { defaultValue: "Analyst Payment" })}</span>
-                      <span className="font-semibold">{project.budget?.toLocaleString() || "0"} $</span>
-                    </div>
-                    {((project.platformFee ?? 0) > 0) && (
-                      <div className="flex justify-between items-center text-sm text-cyan-800">
-                        <span>{t("project_detail.commission_fee", { defaultValue: "Commission Fee" })}</span>
-                        <span className="font-semibold">{project.platformFee?.toLocaleString() || "0"} $</span>
-                      </div>
-                    )}
-                    <div className="w-full border-t border-cyan-200 my-1"></div>
-                    <div className="flex justify-between items-center font-bold text-lg text-emerald-700">
-                      <span>{t("project_detail.total_payment", { defaultValue: "Total Amount" })}</span>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
-                        <span>{((project.budget || 0) + (project.platformFee || 0)).toLocaleString()}</span>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2 font-semibold text-lg text-emerald-700">
+                    <DollarSign className="h-5 w-5" />
+                    {((project.budget || 0) + (project.platformFee || 0)).toLocaleString()} $
                   </div>
                   <div className="flex gap-3 pt-2">
                     <Button
@@ -772,7 +756,7 @@ export default function ClientProjectDetailPage() {
             {project.budget && (
               <div className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
                 <DollarSign className="h-4 w-4" />
-                <span>{project.budget.toLocaleString()}</span>
+                <span>{((project.budget || 0) + (project.platformFee || 0)).toLocaleString()}</span>
               </div>
             )}
             <div className="flex items-center gap-1.5">
