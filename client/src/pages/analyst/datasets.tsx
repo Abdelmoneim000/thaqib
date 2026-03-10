@@ -77,10 +77,10 @@ export default function AnalystDatasetsPage() {
         queryKey: ["/api/datasets"],
     });
 
-    // Fetch Projects for Upload Dropdown (Ideally filter by assigned only, but API returns all? If so, we might list all open projects)
-    // Assuming analyst can only upload to assigned projects or personal. 
-    // If /api/projects return all, we might want to filter, but let's stick to simple for now.
-
+    // Fetch Projects for Upload Dropdown
+    const { data: projects } = useQuery<Project[]>({
+        queryKey: ["/api/projects"],
+    });
 
     // Delete Mutation
     const deleteMutation = useMutation({
@@ -132,7 +132,10 @@ export default function AnalystDatasetsPage() {
 
         const formData = new FormData();
         formData.append("file", file);
-        // Not appending projectId creates it in personal library by default.
+        if (selectedProjectId !== "personal") {
+            formData.append("projectId", selectedProjectId);
+        }
+        
         uploadMutation.mutate(formData);
     };
 
@@ -179,7 +182,19 @@ export default function AnalystDatasetsPage() {
                                 <form onSubmit={handleUpload} className="space-y-4 py-4">
                                     <div className="space-y-2">
                                         <Label>{t("datasets.target_location")}</Label>
-                                        <Input disabled value="Personal Library (Private)" />
+                                        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={t("datasets.select_project")} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="personal">
+                                                    {t("datasets.personal_library")}
+                                                </SelectItem>
+                                                {projects?.map((p) => (
+                                                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <div className="space-y-2">
                                         <Label>{t("datasets.csv_file")}</Label>
