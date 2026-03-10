@@ -736,6 +736,7 @@
         "status_draft": "مسودة",
         "pending_approval": "قيد موافقة الإدارة",
         "awaiting_client_approval": "بانتظار موافقتك",
+        "accepted_by_client": "مقبول من العميل",
         "status_open": "مفتوح",
         "status_in_progress": "قيد التنفيذ",
         "status_completed": "مكتمل",

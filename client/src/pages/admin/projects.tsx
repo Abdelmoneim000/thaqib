@@ -113,8 +113,11 @@ export default function AdminProjectsPage() {
     });
 
     const publishProjectMutation = useMutation({
-        mutationFn: async ({ projectId, budget, platformFee }: { projectId: string; budget: number; platformFee: number }) => {
-            await apiRequest("PATCH", `/api/admin/projects/${projectId}`, { status: "awaiting_client_approval", budget, platformFee });
+        mutationFn: async ({ projectId, status, clientBudget, budget }: { projectId: string; status: string; clientBudget?: number; budget?: number }) => {
+            const payload: any = { status };
+            if (clientBudget !== undefined) payload.clientBudget = clientBudget;
+            if (budget !== undefined) payload.budget = budget;
+            await apiRequest("PATCH", `/api/admin/projects/${projectId}`, payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
@@ -218,10 +221,14 @@ export default function AdminProjectsPage() {
                                                     </TableCell>
                                                     <TableCell className="font-medium text-emerald-600 dark:text-emerald-400">
                                                         <div className="flex items-center gap-1">
-                                                            {project.budget ? (
+                                                            {(project.clientBudget || project.budget) ? (
                                                                 <>
                                                                     <DollarSign className="h-3 w-3" />
-                                                                    <span>{project.budget.toLocaleString()}</span>
+                                                                    <span>
+                                                                        {project.clientBudget 
+                                                                            ? `${project.clientBudget.toLocaleString()} (Client)` 
+                                                                            : `${project.budget?.toLocaleString()}`}
+                                                                    </span>
                                                                 </>
                                                             ) : "—"}
                                                         </div>
@@ -303,9 +310,15 @@ export default function AdminProjectsPage() {
                                             <span>{selectedProject.analysisType}</span>
                                         </div>
                                     )}
+                                    {selectedProject.clientBudget && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">{t("projects.client_budget", { defaultValue: "Client Budget" })}:</span>
+                                            <span>${selectedProject.clientBudget.toLocaleString()}</span>
+                                        </div>
+                                    )}
                                     {selectedProject.budget && (
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">{t("projects.budget")}:</span>
+                                            <span className="text-muted-foreground">{t("projects.analyst_budget", { defaultValue: "Analyst Budget" })}:</span>
                                             <span>${selectedProject.budget.toLocaleString()}</span>
                                         </div>
                                     )}
@@ -337,35 +350,60 @@ export default function AdminProjectsPage() {
                                     </div>
                                 )}
 
-                                {/* Admin Action: Pending Approval Set Budget */}
+                                {/* Admin Action: Pending Approval Set Client Budget */}
                                 {selectedProject.status === "pending_approval" && (
                                     <div className="bg-orange-50 border border-orange-200 rounded-md p-4 space-y-3 mt-4">
-                                        <h4 className="font-medium text-sm text-orange-900">{t("admin.set_budget_publish", { defaultValue: "Set Budget & Publish" })}</h4>
+                                        <h4 className="font-medium text-sm text-orange-900">{t("admin.set_client_budget", { defaultValue: "Set Total Client Budget" })}</h4>
                                         <p className="text-xs text-orange-700">
-                                            {t("admin.set_budget_publish_desc", { defaultValue: "Specify the project budget before publishing it to analysts." })}
+                                            {t("admin.set_client_budget_desc", { defaultValue: "Specify the total budget to charge the client for their review." })}
                                         </p>
                                         <div className="flex flex-col gap-2">
-                                            <div className="flex gap-2">
-                                                <div className="relative flex-1">
-                                                    <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <input
-                                                        type="number"
-                                                        placeholder={t("admin.enter_budget", { defaultValue: "Analyst payment amount..." })}
-                                                        className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                                        value={budgetInput}
-                                                        onChange={(e) => setBudgetInput(e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className="relative flex-1">
-                                                    <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <input
-                                                        type="number"
-                                                        placeholder={t("admin.enter_commission", { defaultValue: "Commission fee..." })}
-                                                        className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                                        value={platformFeeInput}
-                                                        onChange={(e) => setPlatformFeeInput(e.target.value)}
-                                                    />
-                                                </div>
+                                            <div className="relative w-full">
+                                                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <input
+                                                    type="number"
+                                                    placeholder={t("admin.enter_client_budget", { defaultValue: "Client total budget amount..." })}
+                                                    className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                    value={platformFeeInput}
+                                                    onChange={(e) => setPlatformFeeInput(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                disabled={!platformFeeInput || isNaN(Number(platformFeeInput)) || publishProjectMutation.isPending}
+                                                onClick={() => {
+                                                    publishProjectMutation.mutate({
+                                                        projectId: selectedProject.id,
+                                                        status: "awaiting_client_approval",
+                                                        clientBudget: Number(platformFeeInput)
+                                                    });
+                                                }}
+                                                className="w-full"
+                                            >
+                                                {publishProjectMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                                {t("common.send_to_client", { defaultValue: "Send to Client" })}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Admin Action: Accepted by Client, Set Analyst Budget */}
+                                {selectedProject.status === "accepted_by_client" && (
+                                    <div className="bg-emerald-50 border border-emerald-200 rounded-md p-4 space-y-3 mt-4">
+                                        <h4 className="font-medium text-sm text-emerald-900">{t("admin.set_analyst_budget", { defaultValue: "Set Analyst Budget & Publish" })}</h4>
+                                        <p className="text-xs text-emerald-700">
+                                            {t("admin.set_analyst_budget_desc", { defaultValue: "The client accepted their budget. Specify the budget that will be presented to analysts." })}
+                                        </p>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="relative w-full">
+                                                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <input
+                                                    type="number"
+                                                    placeholder={t("admin.enter_analyst_budget", { defaultValue: "Analyst budget amount..." })}
+                                                    className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                    value={budgetInput}
+                                                    onChange={(e) => setBudgetInput(e.target.value)}
+                                                />
                                             </div>
                                             <Button
                                                 size="sm"
@@ -373,8 +411,8 @@ export default function AdminProjectsPage() {
                                                 onClick={() => {
                                                     publishProjectMutation.mutate({
                                                         projectId: selectedProject.id,
-                                                        budget: Number(budgetInput),
-                                                        platformFee: Number(platformFeeInput) || 0
+                                                        status: "open",
+                                                        budget: Number(budgetInput)
                                                     });
                                                 }}
                                                 className="w-full"

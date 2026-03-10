@@ -465,6 +465,7 @@ export default function ClientProjectDetailPage() {
       draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
       pending_approval: { label: t("client_projects.pending_approval"), className: "bg-orange-500/10 text-orange-600 border-orange-200" },
       awaiting_client_approval: { label: t("client_projects.awaiting_client_approval", { defaultValue: "Awaiting Your Approval" }), className: "bg-cyan-500/10 text-cyan-600 border-cyan-200" },
+      accepted_by_client: { label: t("client_projects.accepted_by_client", { defaultValue: "Accepted" }), className: "bg-emerald-500/10 text-emerald-600 border-emerald-200" },
       open: { label: "Open", className: "bg-chart-2/10 text-chart-2" },
       in_progress: { label: "In Progress", className: "bg-chart-4/10 text-chart-4" },
       completed: { label: "Completed", className: "bg-chart-1/10 text-chart-1" },
@@ -478,7 +479,7 @@ export default function ClientProjectDetailPage() {
   const [budgetRejectionReason, setBudgetRejectionReason] = useState("");
 
   const reviewBudgetMutation = useMutation({
-    mutationFn: async ({ status, rejectionReason }: { status: "open" | "pending_approval", rejectionReason?: string }) => {
+    mutationFn: async ({ status, rejectionReason }: { status: "accepted_by_client" | "pending_approval", rejectionReason?: string }) => {
       await apiRequest("PATCH", `/api/projects/${id}`, { status, rejectionReason: rejectionReason || null });
     },
     onSuccess: () => {
@@ -621,17 +622,17 @@ export default function ClientProjectDetailPage() {
                   </p>
                   <div className="flex items-center gap-2 font-semibold text-lg text-emerald-700">
                     <DollarSign className="h-5 w-5" />
-                    {((project.budget || 0) + (project.platformFee || 0)).toLocaleString()} $
+                    {project.clientBudget?.toLocaleString() || "0"} $
                   </div>
                   <div className="flex gap-3 pt-2">
                     <Button
-                      onClick={() => reviewBudgetMutation.mutate({ status: "open" })}
+                      onClick={() => reviewBudgetMutation.mutate({ status: "accepted_by_client" })}
                       disabled={reviewBudgetMutation.isPending}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       {reviewBudgetMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      {t("project_detail.accept_publish", { defaultValue: "Accept Budget & Publish" })}
+                      {t("project_detail.accept_publish", { defaultValue: "Accept Budget" })}
                     </Button>
                     <Button
                       variant="outline"
@@ -753,10 +754,10 @@ export default function ClientProjectDetailPage() {
                 <span>{t("project_detail.due")} {new Date(project.deadline).toLocaleDateString()}</span>
               </div>
             )}
-            {project.budget && (
+            {project.clientBudget && (
               <div className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
                 <DollarSign className="h-4 w-4" />
-                <span>{((project.budget || 0) + (project.platformFee || 0)).toLocaleString()}</span>
+                <span>{project.clientBudget?.toLocaleString() || "0"}</span>
               </div>
             )}
             <div className="flex items-center gap-1.5">

@@ -736,6 +736,7 @@
         "status_draft": "Draft",
         "pending_approval": "Pending Approval",
         "awaiting_client_approval": "Awaiting Approval",
+        "accepted_by_client": "Accepted by Client",
         "status_open": "Open",
         "status_in_progress": "In Progress",
         "status_completed": "Completed",

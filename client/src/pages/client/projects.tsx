@@ -77,6 +77,7 @@ function getStatusBadge(status: string) {
     draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
     pending_approval: { label: t("client_projects.pending_approval"), className: "bg-orange-500/10 text-orange-600 border-orange-200" },
     awaiting_client_approval: { label: t("client_projects.awaiting_client_approval", { defaultValue: "Awaiting Your Approval" }), className: "bg-cyan-500/10 text-cyan-600 border-cyan-200" },
+    accepted_by_client: { label: t("client_projects.accepted_by_client", { defaultValue: "Accepted" }), className: "bg-emerald-500/10 text-emerald-600 border-emerald-200" },
     open: { label: t("common.open"), className: "bg-chart-2/10 text-chart-2" },
     in_progress: { label: t("common.in_progress"), className: "bg-chart-4/10 text-chart-4" },
     completed: { label: t("common.completed"), className: "bg-chart-1/10 text-chart-1" },
@@ -113,14 +114,16 @@ function CreateProjectDialog() {
     },
     onSuccess: async (project) => {
       // Handle dataset attachment after project creation
-      if (datasetMode === "upload" && fileInputRef.current?.files?.[0]) {
-        const formData = new FormData();
-        formData.append("file", fileInputRef.current.files[0]);
-        formData.append("projectId", project.id);
-        try {
-          await fetch("/api/datasets", { method: "POST", body: formData });
-        } catch {
-          toast({ title: "Dataset upload failed", description: t("project_detail.dataset_upload_failed"), variant: "destructive" });
+      if (datasetMode === "upload" && fileInputRef.current?.files && fileInputRef.current.files.length > 0) {
+        for (const file of Array.from(fileInputRef.current.files)) {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("projectId", project.id);
+          try {
+            await fetch("/api/datasets", { method: "POST", body: formData });
+          } catch {
+            toast({ title: "Dataset upload failed", description: t("project_detail.dataset_upload_failed"), variant: "destructive" });
+          }
         }
       } else if (datasetMode === "existing" && selectedDatasetId) {
         try {
@@ -322,6 +325,7 @@ function CreateProjectDialog() {
                 <Input
                   type="file"
                   accept=".csv"
+                  multiple
                   ref={fileInputRef}
                   data-testid="input-dataset-file"
                 />
@@ -407,10 +411,10 @@ function ProjectCard({ project }: { project: UIProject }) {
                 <span className="capitalize">{project.analysisType}</span>
               </div>
             )}
-            {project.budget && (
+            {project.clientBudget && (
               <div className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
                 <DollarSign className="h-4 w-4" />
-                <span>{project.budget.toLocaleString()}</span>
+                <span>{project.clientBudget.toLocaleString()}</span>
               </div>
             )}
             {project.deadline && (

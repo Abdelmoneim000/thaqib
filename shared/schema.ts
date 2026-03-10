@@ -32,7 +32,7 @@ export const projects = pgTable("projects", {
   analystId: varchar("analyst_id"),
   status: text("status").notNull().default("pending_approval"),
   budget: integer("budget"),
-  platformFee: integer("platform_fee").default(0),
+  clientBudget: integer("client_budget"),
   analysisType: text("analysis_type"), // descriptive, diagnostic, predictive, prescriptive
   analysisField: text("analysis_field"), // financial, marketing, sales, customer, hr, product, others
   customAnalysisField: text("custom_analysis_field"), // when analysisField = "others"
